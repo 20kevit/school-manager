@@ -1,0 +1,828 @@
+from __future__ import annotations
+
+from datetime import date, datetime
+from decimal import Decimal
+
+from app.extensions import db
+from app.infrastructure.database.models import (
+    AcademyClassModel,
+    AssessmentModel,
+    AssessmentResultModel,
+    EnrollmentModel,
+    GradeHistoryModel,
+    ParentProfileModel,
+    UserModel,
+)
+
+VALID_ASSESSMENT_TYPES = {
+    "FINAL_EXAM",
+    "MIDTERM",
+    "QUIZ",
+    "PROJECT",
+    "PRACTICAL",
+    "ORAL",
+    "OTHER",
+}
+VALID_ASSESSMENT_STATUSES = {
+    "DRAFT",
+    "SCHEDULED",
+    "OPEN",
+    "CLOSED",
+    "GRADED",
+    "CANCELLED",
+}
+VALID_RESULT_STATUSES = {"NOT_GRADED", "GRADED", "CORRECTED"}
+VALID_PRESENCE_STATUSES = {"PRESENT", "ABSENT", "EXCUSED"}
+VALID_PASS_FAIL = {"PASS", "FAIL", "NOT_DETERMINED"}
+
+
+class AssessmentError(Exception):
+    """Raised when an assessment operation fails."""
+
+
+# ---------------------------------------------------------------------------
+# Assessment CRUD
+# ---------------------------------------------------------------------------
+
+
+def create_assessment(
+    class_id: int,
+    assessment_type: str,
+    title: str,
+    *,
+    description: str = "",
+    scheduled_date: date | None = None,
+    scheduled_time: datetime | None = None,
+    duration_minutes: int | None = None,
+    max_score: float = 100.0,
+    passing_score: float = 60.0,
+    status: str = "DRAFT",
+    created_by: int | None = None,
+    notes: str = "",
+) -> AssessmentModel:
+    """Create a new assessment for a class."""
+    if assessment_type not in VALID_ASSESSMENT_TYPES:
+        raise AssessmentError(f"Invalid assessment type: {assessment_type}")
+    if status not in VALID_ASSESSMENT_STATUSES:
+        raise AssessmentError(f"Invalid assessment status: {status}")
+    if not title or not title.strip():
+        raise AssessmentError("Assessment title is required.")
+    if max_score <= 0:
+        raise AssessmentError("Maximum score must be positive.")
+    if passing_score < 0:
+        raise AssessmentError("Passing score cannot be negative.")
+    if passing_score > max_score:
+        raise AssessmentError("Passing score cannot exceed maximum score.")
+    if duration_minutes is not None and duration_minutes <= 0:
+        raise AssessmentError("Duration must be positive.")
+
+    academy_class = AcademyClassModel.query.get(class_id)
+    if academy_class is None:
+        raise AssessmentError("Class not found.")
+
+    assessment = AssessmentModel(
+        class_id=class_id,
+        type=assessment_type,
+        title=title.strip(),
+        description=description,
+        scheduled_date=scheduled_date,
+        scheduled_time=scheduled_time,
+        duration_minutes=duration_minutes,
+        max_score=Decimal(str(max_score)),
+        passing_score=Decimal(str(passing_score)),
+        status=status,
+        created_by=created_by,
+        notes=notes,
+    )
+    db.session.add(assessment)
+    db.session.commit()
+    return assessment
+
+
+def update_assessment(
+    assessment: AssessmentModel,
+    *,
+    title: str | None = None,
+    description: str | None = None,
+    scheduled_date: date | None = None,
+    scheduled_time: datetime | None = None,
+    duration_minutes: int | None = None,
+    max_score: float | None = None,
+    passing_score: float | None = None,
+    notes: str | None = None,
+) -> AssessmentModel:
+    """Update an existing assessment (only DRAFT assessments can be fully edited)."""
+    if title is not None:
+        if not title.strip():
+            raise AssessmentError("Assessment title cannot be empty.")
+        assessment.title = title.strip()
+    if description is not None:
+        assessment.description = description
+    if scheduled_date is not None:
+        assessment.scheduled_date = scheduled_date
+    if scheduled_time is not None:
+        assessment.scheduled_time = scheduled_time
+    if duration_minutes is not None:
+        if duration_minutes <= 0:
+            raise AssessmentError("Duration must be positive.")
+        assessment.duration_minutes = duration_minutes
+    if max_score is not None:
+        if max_score <= 0:
+            raise AssessmentError("Maximum score must be positive.")
+        assessment.max_score = Decimal(str(max_score))
+        # Ensure passing_score doesn't exceed new max
+        if assessment.passing_score > assessment.max_score:
+            assessment.passing_score = assessment.max_score
+    if passing_score is not None:
+        if passing_score < 0:
+            raise AssessmentError("Passing score cannot be negative.")
+        if passing_score > assessment.max_score:
+            raise AssessmentError("Passing score cannot exceed maximum score.")
+        assessment.passing_score = Decimal(str(passing_score))
+    if notes is not None:
+        assessment.notes = notes
+
+    db.session.commit()
+    return assessment
+
+
+def update_assessment_status(
+    assessment: AssessmentModel, new_status: str
+) -> AssessmentModel:
+    """Update assessment status with lifecycle validation."""
+    if new_status not in VALID_ASSESSMENT_STATUSES:
+        raise AssessmentError(f"Invalid assessment status: {new_status}")
+
+    if not assessment.can_transition_to(new_status):
+        raise AssessmentError(
+            f"Cannot transition from {assessment.status} to {new_status}."
+        )
+
+    assessment.status = new_status
+    db.session.commit()
+    return assessment
+
+
+def cancel_assessment(assessment: AssessmentModel) -> AssessmentModel:
+    """Cancel an assessment. Results are preserved."""
+    if assessment.status == "CANCELLED":
+        raise AssessmentError("Assessment is already cancelled.")
+    assessment.status = "CANCELLED"
+    db.session.commit()
+    return assessment
+
+
+def reschedule_assessment(
+    assessment: AssessmentModel,
+    new_date: date,
+    new_time: datetime | None = None,
+) -> AssessmentModel:
+    """Reschedule an assessment to a new date/time."""
+    if assessment.status == "CANCELLED":
+        raise AssessmentError("Cannot reschedule a cancelled assessment.")
+    if assessment.status == "GRADED":
+        raise AssessmentError("Cannot reschedule a graded assessment.")
+    assessment.scheduled_date = new_date
+    if new_time is not None:
+        assessment.scheduled_time = new_time
+    assessment.status = "SCHEDULED"
+    db.session.commit()
+    return assessment
+
+
+def get_assessment(assessment_id: int) -> AssessmentModel | None:
+    """Get an assessment by ID."""
+    return AssessmentModel.query.get(assessment_id)
+
+
+def list_class_assessments(
+    class_id: int, include_cancelled: bool = False
+) -> list[AssessmentModel]:
+    """List assessments for a class."""
+    query = AssessmentModel.query.filter_by(class_id=class_id)
+    if not include_cancelled:
+        query = query.filter(AssessmentModel.status != "CANCELLED")
+    return query.order_by(
+        AssessmentModel.scheduled_date.desc(), AssessmentModel.id.desc()
+    ).all()
+
+
+def list_all_assessments(
+    *,
+    class_id: int | None = None,
+    assessment_type: str | None = None,
+    status: str | None = None,
+    limit: int = 100,
+    offset: int = 0,
+) -> list[AssessmentModel]:
+    """List assessments with optional filters (admin)."""
+    query = AssessmentModel.query
+
+    if class_id is not None:
+        query = query.filter_by(class_id=class_id)
+    if assessment_type is not None:
+        query = query.filter_by(type=assessment_type)
+    if status is not None:
+        query = query.filter_by(status=status)
+
+    return (
+        query.order_by(AssessmentModel.scheduled_date.desc(), AssessmentModel.id.desc())
+        .offset(offset)
+        .limit(limit)
+        .all()
+    )
+
+
+# ---------------------------------------------------------------------------
+# Eligibility
+# ---------------------------------------------------------------------------
+
+
+def get_eligible_enrollments(assessment_id: int) -> list[EnrollmentModel]:
+    """Get all approved enrollments eligible for an assessment."""
+    assessment = AssessmentModel.query.get(assessment_id)
+    if assessment is None:
+        raise AssessmentError("Assessment not found.")
+
+    return (
+        EnrollmentModel.query.filter_by(
+            class_id=assessment.class_id,
+            status="APPROVED",
+        )
+        .order_by(EnrollmentModel.id)
+        .all()
+    )
+
+
+# ---------------------------------------------------------------------------
+# Assessment Results
+# ---------------------------------------------------------------------------
+
+
+def record_result(
+    assessment_id: int,
+    enrollment_id: int,
+    *,
+    score: float | None = None,
+    presence_status: str = "PRESENT",
+    comments: str = "",
+    graded_by: int | None = None,
+) -> AssessmentResultModel:
+    """Record or update a result for one student in one assessment.
+
+    If a result already exists for this assessment+enrollment, it is updated.
+    """
+    assessment = AssessmentModel.query.get(assessment_id)
+    if assessment is None:
+        raise AssessmentError("Assessment not found.")
+
+    enrollment = EnrollmentModel.query.get(enrollment_id)
+    if enrollment is None:
+        raise AssessmentError("Enrollment not found.")
+
+    if enrollment.class_id != assessment.class_id:
+        raise AssessmentError("Enrollment does not belong to the assessment's class.")
+
+    if enrollment.status != "APPROVED":
+        raise AssessmentError("Results can only be recorded for approved enrollments.")
+
+    if presence_status not in VALID_PRESENCE_STATUSES:
+        raise AssessmentError(f"Invalid presence status: {presence_status}")
+
+    max_score = float(assessment.max_score)
+    passing_score = float(assessment.passing_score)
+
+    # Validate score
+    if presence_status == "ABSENT":
+        score = None
+    elif score is not None:
+        if score < 0:
+            raise AssessmentError("Score cannot be negative.")
+        if score > max_score:
+            raise AssessmentError(f"Score cannot exceed maximum score of {max_score}.")
+
+    # Calculate percentage and pass/fail
+    percentage = None
+    pass_fail = "NOT_DETERMINED"
+    if score is not None and presence_status != "ABSENT":
+        percentage = round(score / max_score * 100, 2)
+        pass_fail = "PASS" if score >= passing_score else "FAIL"
+
+    now = datetime.now()
+
+    existing = AssessmentResultModel.query.filter_by(
+        assessment_id=assessment_id,
+        enrollment_id=enrollment_id,
+    ).first()
+
+    if existing is not None:
+        # Record grade history before updating
+        if existing.result_status == "GRADED" and score is not None:
+            _create_grade_history(
+                result=existing,
+                new_score=score,
+                new_pass_fail=pass_fail,
+                corrected_by=graded_by,
+                reason="Grade updated",
+            )
+
+        existing.score = Decimal(str(score)) if score is not None else None
+        existing.max_score = Decimal(str(max_score))
+        existing.percentage = (
+            Decimal(str(percentage)) if percentage is not None else None
+        )
+        existing.presence_status = presence_status
+        existing.pass_fail = pass_fail
+        existing.result_status = "GRADED" if score is not None else "NOT_GRADED"
+        if comments:
+            existing.comments = comments
+        if graded_by is not None:
+            existing.graded_by = graded_by
+            existing.graded_at = now
+        existing.updated_at = now
+        db.session.commit()
+        return existing
+
+    result = AssessmentResultModel(
+        assessment_id=assessment_id,
+        enrollment_id=enrollment_id,
+        student_user_id=enrollment.student_user_id,
+        score=Decimal(str(score)) if score is not None else None,
+        max_score=Decimal(str(max_score)),
+        percentage=Decimal(str(percentage)) if percentage is not None else None,
+        result_status="GRADED" if score is not None else "NOT_GRADED",
+        presence_status=presence_status,
+        pass_fail=pass_fail,
+        comments=comments,
+        graded_by=graded_by,
+        graded_at=now if score is not None else None,
+    )
+    db.session.add(result)
+    db.session.commit()
+    return result
+
+
+def record_bulk_results(
+    assessment_id: int,
+    results_data: list[dict],
+    graded_by: int | None = None,
+) -> list[AssessmentResultModel]:
+    """Bulk record results for an assessment.
+
+    Args:
+        assessment_id: The assessment to record results for.
+        results_data: List of dicts with keys: enrollment_id, score (optional),
+                      presence_status (default PRESENT), comments (optional).
+        graded_by: User ID of the grader.
+
+    Returns:
+        List of created/updated AssessmentResultModel records.
+    """
+    assessment = AssessmentModel.query.get(assessment_id)
+    if assessment is None:
+        raise AssessmentError("Assessment not found.")
+
+    results = []
+    for item in results_data:
+        enrollment_id = item.get("enrollment_id")
+        if enrollment_id is None:
+            raise AssessmentError("Each result must have an enrollment_id.")
+
+        result = record_result(
+            assessment_id=assessment_id,
+            enrollment_id=enrollment_id,
+            score=item.get("score"),
+            presence_status=item.get("presence_status", "PRESENT"),
+            comments=item.get("comments", ""),
+            graded_by=graded_by,
+        )
+        results.append(result)
+
+    return results
+
+
+def update_result(
+    result_id: int,
+    *,
+    score: float | None = None,
+    presence_status: str | None = None,
+    comments: str | None = None,
+    graded_by: int | None = None,
+) -> AssessmentResultModel:
+    """Update an existing assessment result."""
+    result = AssessmentResultModel.query.get(result_id)
+    if result is None:
+        raise AssessmentError("Result not found.")
+
+    assessment = AssessmentModel.query.get(result.assessment_id)
+    if assessment is None:
+        raise AssessmentError("Assessment not found.")
+
+    max_score = float(assessment.max_score)
+    passing_score = float(assessment.passing_score)
+
+    new_presence = (
+        presence_status if presence_status is not None else result.presence_status
+    )
+    new_score = (
+        score
+        if score is not None
+        else (float(result.score) if result.score is not None else None)
+    )
+
+    if new_presence == "ABSENT":
+        new_score = None
+    elif new_score is not None:
+        if new_score < 0:
+            raise AssessmentError("Score cannot be negative.")
+        if new_score > max_score:
+            raise AssessmentError(f"Score cannot exceed maximum score of {max_score}.")
+
+    percentage = None
+    pass_fail = "NOT_DETERMINED"
+    if new_score is not None and new_presence != "ABSENT":
+        percentage = round(new_score / max_score * 100, 2)
+        pass_fail = "PASS" if new_score >= passing_score else "FAIL"
+
+    # Record history if score is being changed
+    if result.result_status == "GRADED" and new_score is not None:
+        _create_grade_history(
+            result=result,
+            new_score=new_score,
+            new_pass_fail=pass_fail,
+            corrected_by=graded_by,
+            reason="Grade corrected",
+        )
+
+    now = datetime.now()
+    result.score = Decimal(str(new_score)) if new_score is not None else None
+    result.percentage = Decimal(str(percentage)) if percentage is not None else None
+    result.presence_status = new_presence
+    result.pass_fail = pass_fail
+    result.result_status = "GRADED" if new_score is not None else "NOT_GRADED"
+    if comments is not None:
+        result.comments = comments
+    if graded_by is not None:
+        result.graded_by = graded_by
+        result.graded_at = now
+    result.updated_at = now
+    db.session.commit()
+    return result
+
+
+def get_result(result_id: int) -> AssessmentResultModel | None:
+    """Get a single result by ID."""
+    return AssessmentResultModel.query.get(result_id)
+
+
+def get_assessment_results(assessment_id: int) -> list[AssessmentResultModel]:
+    """Get all results for an assessment."""
+    return (
+        AssessmentResultModel.query.filter_by(assessment_id=assessment_id)
+        .order_by(AssessmentResultModel.student_user_id)
+        .all()
+    )
+
+
+def get_student_results(student_user_id: int) -> list[AssessmentResultModel]:
+    """Get all assessment results for a student across all classes."""
+    return (
+        AssessmentResultModel.query.filter_by(student_user_id=student_user_id)
+        .order_by(AssessmentResultModel.created_at.desc())
+        .all()
+    )
+
+
+def get_student_class_results(
+    student_user_id: int, class_id: int
+) -> list[AssessmentResultModel]:
+    """Get assessment results for a student in a specific class."""
+    return (
+        AssessmentResultModel.query.filter_by(
+            student_user_id=student_user_id,
+        )
+        .join(
+            AssessmentModel, AssessmentResultModel.assessment_id == AssessmentModel.id
+        )
+        .filter(AssessmentModel.class_id == class_id)
+        .order_by(AssessmentModel.scheduled_date.desc())
+        .all()
+    )
+
+
+def get_class_results(class_id: int) -> list[AssessmentResultModel]:
+    """Get all results for a class (across all assessments)."""
+    return (
+        AssessmentResultModel.query.join(
+            AssessmentModel,
+            AssessmentResultModel.assessment_id == AssessmentModel.id,
+        )
+        .filter(AssessmentModel.class_id == class_id)
+        .order_by(AssessmentResultModel.student_user_id)
+        .all()
+    )
+
+
+# ---------------------------------------------------------------------------
+# Grade History
+# ---------------------------------------------------------------------------
+
+
+def get_grade_history(result_id: int) -> list[GradeHistoryModel]:
+    """Get grade correction history for a result."""
+    return (
+        GradeHistoryModel.query.filter_by(result_id=result_id)
+        .order_by(GradeHistoryModel.corrected_at.desc())
+        .all()
+    )
+
+
+def _create_grade_history(
+    *,
+    result: AssessmentResultModel,
+    new_score: float | None,
+    new_pass_fail: str,
+    corrected_by: int | None = None,
+    reason: str = "",
+) -> GradeHistoryModel:
+    """Create a grade history entry for a correction."""
+    history = GradeHistoryModel(
+        result_id=result.id,
+        previous_score=float(result.score) if result.score is not None else None,
+        new_score=new_score,
+        previous_pass_fail=result.pass_fail,
+        new_pass_fail=new_pass_fail,
+        corrected_by=corrected_by,
+        reason=reason,
+    )
+    db.session.add(history)
+    db.session.flush()
+    return history
+
+
+# ---------------------------------------------------------------------------
+# Reports
+# ---------------------------------------------------------------------------
+
+
+def get_assessment_report(assessment_id: int) -> dict:
+    """Generate assessment report with statistics."""
+    assessment = AssessmentModel.query.get(assessment_id)
+    if assessment is None:
+        raise AssessmentError("Assessment not found.")
+
+    results = get_assessment_results(assessment_id)
+    eligible = get_eligible_enrollments(assessment_id)
+
+    scores = []
+    pass_count = 0
+    fail_count = 0
+    absent_count = 0
+    not_graded_count = 0
+
+    for r in results:
+        if r.presence_status == "ABSENT":
+            absent_count += 1
+        elif r.result_status == "NOT_GRADED":
+            not_graded_count += 1
+        else:
+            if r.score is not None:
+                scores.append(float(r.score))
+            if r.pass_fail == "PASS":
+                pass_count += 1
+            elif r.pass_fail == "FAIL":
+                fail_count += 1
+
+    graded_count = len(scores)
+    average = round(sum(scores) / graded_count, 2) if graded_count > 0 else None
+    highest = max(scores) if scores else None
+    lowest = min(scores) if scores else None
+    pass_rate = round(pass_count / graded_count * 100, 2) if graded_count > 0 else None
+
+    return {
+        "assessment": assessment,
+        "total_eligible": len(eligible),
+        "total_graded": graded_count,
+        "total_absent": absent_count,
+        "total_not_graded": not_graded_count,
+        "average": average,
+        "highest": highest,
+        "lowest": lowest,
+        "pass_count": pass_count,
+        "fail_count": fail_count,
+        "pass_rate": pass_rate,
+        "results": results,
+    }
+
+
+def get_student_academic_summary(student_user_id: int) -> dict:
+    """Generate academic summary for a student across all classes."""
+    results = get_student_results(student_user_id)
+
+    total = len(results)
+    graded = 0
+    passed = 0
+    failed = 0
+    absent = 0
+    scores = []
+
+    for r in results:
+        if r.presence_status == "ABSENT":
+            absent += 1
+        elif r.result_status in ("GRADED", "CORRECTED"):
+            graded += 1
+            if r.score is not None:
+                scores.append(float(r.score))
+            if r.pass_fail == "PASS":
+                passed += 1
+            elif r.pass_fail == "FAIL":
+                failed += 1
+
+    average = round(sum(scores) / len(scores), 2) if scores else None
+
+    return {
+        "total_assessments": total,
+        "graded": graded,
+        "passed": passed,
+        "failed": failed,
+        "absent": absent,
+        "average": average,
+        "results": results,
+    }
+
+
+def get_class_academic_summary(class_id: int) -> dict:
+    """Generate academic summary for a class."""
+    academy_class = AcademyClassModel.query.get(class_id)
+    if academy_class is None:
+        raise AssessmentError("Class not found.")
+
+    assessments = list_class_assessments(class_id, include_cancelled=True)
+    enrolled = EnrollmentModel.query.filter_by(
+        class_id=class_id, status="APPROVED"
+    ).count()
+    all_results = get_class_results(class_id)
+
+    total_results = len(all_results)
+    graded = 0
+    passed = 0
+    failed = 0
+    absent = 0
+    scores = []
+
+    for r in all_results:
+        if r.presence_status == "ABSENT":
+            absent += 1
+        elif r.result_status in ("GRADED", "CORRECTED"):
+            graded += 1
+            if r.score is not None:
+                scores.append(float(r.score))
+            if r.pass_fail == "PASS":
+                passed += 1
+            elif r.pass_fail == "FAIL":
+                failed += 1
+
+    average = round(sum(scores) / len(scores), 2) if scores else None
+    pass_rate = round(passed / graded * 100, 2) if graded > 0 else None
+
+    return {
+        "class": academy_class,
+        "enrolled_count": enrolled,
+        "total_assessments": len(assessments),
+        "total_results": total_results,
+        "graded": graded,
+        "passed": passed,
+        "failed": failed,
+        "absent": absent,
+        "average": average,
+        "pass_rate": pass_rate,
+        "assessments": assessments,
+        "results": all_results,
+    }
+
+
+# ---------------------------------------------------------------------------
+# CSV Export helpers
+# ---------------------------------------------------------------------------
+
+
+def get_assessment_csv_data(assessment_id: int) -> list[dict]:
+    """Get assessment results formatted for CSV export."""
+    assessment = AssessmentModel.query.get(assessment_id)
+    if assessment is None:
+        raise AssessmentError("Assessment not found.")
+
+    results = get_assessment_results(assessment_id)
+
+    rows = []
+
+    for r in results:
+        student = UserModel.query.get(r.student_user_id)
+        profile = student.student_profile if student else None
+        first_name = profile.first_name if profile else ""
+        last_name = profile.last_name if profile else ""
+        national_id = profile.national_id if profile else ""
+
+        rows.append(
+            {
+                "student_id": r.student_user_id,
+                "first_name": first_name,
+                "last_name": last_name,
+                "national_id": national_id,
+                "score": float(r.score) if r.score is not None else "",
+                "max_score": float(r.max_score),
+                "percentage": float(r.percentage) if r.percentage is not None else "",
+                "pass_fail": r.pass_fail,
+                "presence": r.presence_status,
+                "comments": r.comments,
+            }
+        )
+
+    return rows
+
+
+def get_student_csv_data(student_user_id: int) -> list[dict]:
+    """Get student results formatted for CSV export."""
+    results = get_student_results(student_user_id)
+    rows = []
+
+    for r in results:
+        assessment = AssessmentModel.query.get(r.assessment_id)
+        academy_class = (
+            AcademyClassModel.query.get(assessment.class_id) if assessment else None
+        )
+
+        rows.append(
+            {
+                "assessment_title": assessment.title if assessment else "",
+                "assessment_type": assessment.type if assessment else "",
+                "class_title": academy_class.title if academy_class else "",
+                "score": float(r.score) if r.score is not None else "",
+                "max_score": float(r.max_score),
+                "percentage": float(r.percentage) if r.percentage is not None else "",
+                "pass_fail": r.pass_fail,
+                "presence": r.presence_status,
+            }
+        )
+
+    return rows
+
+
+# ---------------------------------------------------------------------------
+# Authorization helpers
+# ---------------------------------------------------------------------------
+
+
+def is_teacher_of_class(teacher_user_id: int, class_id: int) -> bool:
+    """Check if a teacher is assigned to a class."""
+    academy_class = AcademyClassModel.query.get(class_id)
+    if academy_class is None:
+        return False
+    return academy_class.teacher_user_id == teacher_user_id
+
+
+def is_student_enrolled(student_user_id: int, class_id: int) -> bool:
+    """Check if a student has an approved enrollment in a class."""
+    return (
+        EnrollmentModel.query.filter_by(
+            student_user_id=student_user_id,
+            class_id=class_id,
+            status="APPROVED",
+        ).first()
+        is not None
+    )
+
+
+def is_parent_of_student(parent_user_id: int, student_user_id: int) -> bool:
+    """Check if a parent is linked to a student."""
+    parent_profile = ParentProfileModel.query.filter_by(user_id=parent_user_id).first()
+    if parent_profile is None:
+        return False
+    return any(child.user_id == student_user_id for child in parent_profile.children)
+
+
+def get_parent_children(parent_user_id: int) -> list[UserModel]:
+    """Get all linked children for a parent."""
+    parent_profile = ParentProfileModel.query.filter_by(user_id=parent_user_id).first()
+    if parent_profile is None:
+        return []
+    return [
+        UserModel.query.get(child.user_id)
+        for child in parent_profile.children
+        if UserModel.query.get(child.user_id) is not None
+    ]
+
+
+def get_student_enrolled_classes(student_user_id: int) -> list[AcademyClassModel]:
+    """Get all classes a student is enrolled in (approved)."""
+    enrollments = EnrollmentModel.query.filter_by(
+        student_user_id=student_user_id, status="APPROVED"
+    ).all()
+    class_ids = [e.class_id for e in enrollments]
+    if not class_ids:
+        return []
+    return (
+        AcademyClassModel.query.filter(AcademyClassModel.id.in_(class_ids))
+        .order_by(AcademyClassModel.title)
+        .all()
+    )

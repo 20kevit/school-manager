@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% block title %}{{ student.login }} - Academic Results{% endblock %}
+{% block content %}
+<h1>Student Academic Results: {{ student.student_profile.first_name }} {{ student.student_profile.last_name }}</h1>
+
+<div class="card">
+    <p><strong>Total Assessments:</strong> {{ summary.total_assessments }}</p>
+    <p><strong>Graded:</strong> {{ summary.graded }}</p>
+    <p><strong>Passed:</strong> {{ summary.passed }}</p>
+    <p><strong>Failed:</strong> {{ summary.failed }}</p>
+    <p><strong>Absent:</strong> {{ summary.absent }}</p>
+    <p><strong>Average:</strong> {{ summary.average if summary.average is not None else '-' }}</p>
+</div>
+
+{% if summary.results %}
+<h2>All Results</h2>
+<table>
+    <thead>
+        <tr>
+            <th>Assessment</th>
+            <th>Score</th>
+            <th>Max</th>
+            <th>%</th>
+            <th>Pass/Fail</th>
+            <th>Presence</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for r in summary.results %}
+        <tr>
+            <td>{{ r.assessment.title }}</td>
+            <td>{{ r.score if r.score is not None else '-' }}</td>
+            <td>{{ r.max_score }}</td>
+            <td>{{ r.percentage if r.percentage is not None else '-' }}</td>
+            <td>{{ r.pass_fail }}</td>
+            <td>{{ r.presence_status }}</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% else %}
+<p>No results recorded yet.</p>
+{% endif %}
+
+<a href="{{ url_for('assessment.admin_assessment_list') }}">Back to assessments</a>
+{% endblock %}

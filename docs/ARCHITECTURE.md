@@ -104,6 +104,7 @@ Separate configs per environment (development, testing, production) in `config/_
 | Attendance | attendance | attendance/ | web/attendance | attendance_bp |
 | Activity | activity, submission | activity/ | web/activity | activity_bp |
 | Finance | finance | finance/ | web/finance | finance_bp |
+| Assessment | assessment, result | assessment/ | web/assessment | assessment_bp |
 
 ## Academy Structure (P2)
 
@@ -306,6 +307,47 @@ Gateway Interface (abstract)
 ```
 
 The domain defines the payment port; infrastructure implements each gateway.
+
+## Exams, Assessments & Grades (P7)
+
+The assessment system manages academic evaluations, grading, and student results.
+
+```
+Class
+  ↓
+Assessment (types: FINAL_EXAM, MIDTERM, QUIZ, PROJECT, PRACTICAL, ORAL, OTHER)
+  ↓
+AssessmentResult (linked via Enrollment)
+  ↓
+GradeHistory (audit trail for corrections)
+```
+
+### Assessment Lifecycle
+
+```
+DRAFT → SCHEDULED → OPEN → CLOSED → GRADED
+DRAFT → CANCELLED
+SCHEDULED → CANCELLED
+OPEN → CANCELLED
+```
+
+### Grading System
+
+- Numeric 0–100 scale (configurable max_score per assessment)
+- Percentage calculated as `score / max_score * 100`
+- Pass/Fail determined by assessment's passing_score threshold
+- Absent/Excused states for non-numeric results
+- Grade history preserved for all corrections
+
+### Key Design Decisions
+
+- **Assessment belongs to Class**: Different classes may have different assessments
+- **Enrollment-based eligibility**: Only APPROVED enrollments are eligible for assessment results
+- **Configurable max score**: Each assessment defines its own maximum score
+- **Grade corrections**: History is preserved; original scores are never silently overwritten
+- **Historical preservation**: Results survive enrollment cancellation
+- **Bulk grading**: Teachers can grade entire assessments in a single operation
+- **Authorization**: Teachers only access their assigned classes; students see only their own results
 
 ## Notification Integration (Future)
 

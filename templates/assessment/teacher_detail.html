@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+{% block title %}{{ assessment.title }} - Assessment Detail{% endblock %}
+{% block content %}
+<h1>{{ assessment.title }}</h1>
+
+<div class="card">
+    <p><strong>Type:</strong> {{ assessment.type }}</p>
+    <p><strong>Class:</strong> {{ academy_class.title }}</p>
+    <p><strong>Status:</strong> {{ assessment.status }}</p>
+    <p><strong>Scheduled Date:</strong> {{ assessment.scheduled_date or 'Not set' }}</p>
+    <p><strong>Max Score:</strong> {{ assessment.max_score }}</p>
+    <p><strong>Passing Score:</strong> {{ assessment.passing_score }}</p>
+</div>
+
+<div style="margin: 1rem 0;">
+    <a href="{{ url_for('assessment.teacher_grade_assessment', assessment_id=assessment.id) }}" class="btn">Grade</a>
+    <a href="{{ url_for('assessment.teacher_history', assessment_id=assessment.id) }}" class="btn">History</a>
+</div>
+
+<h2>Results Summary</h2>
+<div class="card">
+    <p><strong>Eligible:</strong> {{ report.total_eligible }}</p>
+    <p><strong>Graded:</strong> {{ report.total_graded }}</p>
+    <p><strong>Absent:</strong> {{ report.total_absent }}</p>
+    <p><strong>Average:</strong> {{ report.average if report.average is not None else '-' }}</p>
+    <p><strong>Pass Rate:</strong> {{ report.pass_rate ~ '%' if report.pass_rate is not None else '-' }}</p>
+</div>
+
+{% if report.results %}
+<h2>Results</h2>
+<table>
+    <thead>
+        <tr>
+            <th>Student</th>
+            <th>Score</th>
+            <th>Max</th>
+            <th>%</th>
+            <th>Pass/Fail</th>
+            <th>Presence</th>
+            <th>Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for r in report.results %}
+        <tr>
+            <td>{{ r.student.student_profile.first_name }} {{ r.student.student_profile.last_name }}</td>
+            <td>{{ r.score if r.score is not None else '-' }}</td>
+            <td>{{ r.max_score }}</td>
+            <td>{{ r.percentage if r.percentage is not None else '-' }}</td>
+            <td>{{ r.pass_fail }}</td>
+            <td>{{ r.presence_status }}</td>
+            <td>
+                {% if r.id %}
+                <a href="{{ url_for('assessment.teacher_edit_result', assessment_id=assessment.id, result_id=r.id) }}">Edit</a>
+                {% endif %}
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endif %}
+
+<a href="{{ url_for('assessment.teacher_class_assessments', class_id=academy_class.id) }}">Back to class assessments</a>
+{% endblock %}

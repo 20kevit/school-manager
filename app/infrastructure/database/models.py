@@ -713,3 +713,162 @@ class FinancialTransactionModel(db.Model):
             f"type={self.transaction_type} "
             f"amount={self.amount}>"
         )
+
+
+# ---------------------------------------------------------------------------
+# P7 — Exams, Assessments & Grades
+# ---------------------------------------------------------------------------
+
+
+class AssessmentModel(db.Model):
+    """Assessment table — an academic evaluation belonging to a class."""
+
+    __tablename__ = "assessments"
+
+    id = db.Column(db.Integer, primary_key=True)
+    class_id = db.Column(
+        db.Integer, db.ForeignKey("academy_classes.id"), nullable=False
+    )
+    type = db.Column(db.String(20), nullable=False)
+    title = db.Column(db.String(200), nullable=False)
+    description = db.Column(db.Text, default="")
+    scheduled_date = db.Column(db.Date, nullable=True)
+    scheduled_time = db.Column(db.DateTime, nullable=True)
+    duration_minutes = db.Column(db.Integer, nullable=True)
+    max_score = db.Column(db.Numeric(10, 2), nullable=False, default=100)
+    passing_score = db.Column(db.Numeric(10, 2), nullable=False, default=60)
+    status = db.Column(db.String(20), nullable=False, default="DRAFT")
+    created_by = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=True)
+    notes = db.Column(db.Text, default="")
+    created_at = db.Column(db.DateTime, server_default=db.func.now(), nullable=False)
+    updated_at = db.Column(
+        db.DateTime,
+        server_default=db.func.now(),
+        onupdate=db.func.now(),
+        nullable=False,
+    )
+
+    academy_class = db.relationship(
+        "AcademyClassModel", backref=db.backref("assessments", lazy="select")
+    )
+    creator = db.relationship("UserModel", foreign_keys=[created_by])
+
+    __table_args__ = (
+        db.Index("ix_assessment_class", "class_id"),
+        db.Index("ix_assessment_type", "type"),
+        db.Index("ix_assessment_status", "status"),
+        db.Index("ix_assessment_date", "scheduled_date"),
+    )
+
+    VALID_TRANSITIONS = {
+        "DRAFT": {"SCHEDULED", "CANCELLED"},
+        "SCHEDULED": {"OPEN", "CANCELLED"},
+        "OPEN": {"CLOSED", "CANCELLED"},
+        "CLOSED": {"GRADED"},
+    }
+
+    def can_transition_to(self, new_status: str) -> bool:
+        """Check if a status transition is valid."""
+        return new_status in self.VALID_TRANSITIONS.get(self.status, set())
+
+    def __repr__(self) -> str:
+        return (
+            f"<AssessmentModel id={self.id} type={self.type} "
+            f"title={self.title!r} class={self.class_id}>"
+        )
+
+
+class AssessmentResultModel(db.Model):
+    """Assessment result table — a student's result in an assessment."""
+
+    __tablename__ = "assessment_results"
+
+    id = db.Column(db.Integer, primary_key=True)
+    assessment_id = db.Column(
+        db.Integer, db.ForeignKey("assessments.id"), nullable=False
+    )
+    enrollment_id = db.Column(
+        db.Integer, db.ForeignKey("enrollments.id"), nullable=False
+    )
+    student_user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)
+    score = db.Column(db.Numeric(10, 2), nullable=True)
+    max_score = db.Column(db.Numeric(10, 2), nullable=False, default=100)
+    percentage = db.Column(db.Numeric(5, 2), nullable=True)
+    result_status = db.Column(db.String(20), nullable=False, default="NOT_GRADED")
+    presence_status = db.Column(db.String(20), nullable=False, default="PRESENT")
+    pass_fail = db.Column(db.String(20), nullable=False, default="NOT_DETERMINED")
+    comments = db.Column(db.Text, default="")
+    graded_by = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=True)
+    graded_at = db.Column(db.DateTime, nullable=True)
+    created_at = db.Column(db.DateTime, server_default=db.func.now(), nullable=False)
+    updated_at = db.Column(
+        db.DateTime,
+        server_default=db.func.now(),
+        onupdate=db.func.now(),
+        nullable=False,
+    )
+
+    assessment = db.relationship(
+        "AssessmentModel", backref=db.backref("results", lazy="select")
+    )
+    enrollment = db.relationship(
+        "EnrollmentModel", backref=db.backref("assessment_results", lazy="select")
+    )
+    student = db.relationship("UserModel", foreign_keys=[student_user_id])
+    grader = db.relationship("UserModel", foreign_keys=[graded_by])
+
+    __table_args__ = (
+        db.UniqueConstraint(
+            "assessment_id",
+            "enrollment_id",
+            name="uq_result_assessment_enrollment",
+        ),
+        db.Index("ix_result_assessment", "assessment_id"),
+        db.Index("ix_result_student", "student_user_id"),
+        db.Index("ix_result_enrollment", "enrollment_id"),
+        db.Index("ix_result_status", "result_status"),
+        db.Index("ix_result_passfail", "pass_fail"),
+    )
+
+    def __repr__(self) -> str:
+        return (
+            f"<AssessmentResultModel id={self.id} assessment={self.assessment_id} "
+            f"student={self.student_user_id} score={self.score}>"
+        )
+
+
+class GradeHistoryModel(db.Model):
+    """Grade history table — audit trail for grade corrections."""
+
+    __tablename__ = "grade_history"
+
+    id = db.Column(db.Integer, primary_key=True)
+    result_id = db.Column(
+        db.Integer, db.ForeignKey("assessment_results.id"), nullable=False
+    )
+    previous_score = db.Column(db.Numeric(10, 2), nullable=True)
+    new_score = db.Column(db.Numeric(10, 2), nullable=True)
+    previous_pass_fail = db.Column(db.String(20), nullable=False)
+    new_pass_fail = db.Column(db.String(20), nullable=False)
+    corrected_by = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=True)
+    reason = db.Column(db.Text, default="")
+    corrected_at = db.Column(db.DateTime, server_default=db.func.now(), nullable=False)
+
+    result = db.relationship(
+        "AssessmentResultModel",
+        backref=db.backref(
+            "grade_history", lazy="select", order_by="GradeHistoryModel.corrected_at"
+        ),
+    )
+    corrector = db.relationship("UserModel", foreign_keys=[corrected_by])
+
+    __table_args__ = (
+        db.Index("ix_grade_history_result", "result_id"),
+        db.Index("ix_grade_history_corrected_at", "corrected_at"),
+    )
+
+    def __repr__(self) -> str:
+        return (
+            f"<GradeHistoryModel id={self.id} result={self.result_id} "
+            f"prev={self.previous_score} new={self.new_score}>"
+        )

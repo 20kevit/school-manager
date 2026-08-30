@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% block title %}Class Report - {{ summary.class.title }}{% endblock %}
+{% block content %}
+<h1>Class Academic Report: {{ summary.class.title }}</h1>
+
+<div class="card">
+    <p><strong>Course:</strong> {{ summary.class.course.title }}</p>
+    <p><strong>Enrolled Students:</strong> {{ summary.enrolled_count }}</p>
+    <p><strong>Total Assessments:</strong> {{ summary.total_assessments }}</p>
+    <p><strong>Total Results:</strong> {{ summary.total_results }}</p>
+    <p><strong>Graded:</strong> {{ summary.graded }}</p>
+    <p><strong>Passed:</strong> {{ summary.passed }}</p>
+    <p><strong>Failed:</strong> {{ summary.failed }}</p>
+    <p><strong>Absent:</strong> {{ summary.absent }}</p>
+    <p><strong>Class Average:</strong> {{ summary.average if summary.average is not None else '-' }}</p>
+    <p><strong>Pass Rate:</strong> {{ summary.pass_rate ~ '%' if summary.pass_rate is not None else '-' }}</p>
+</div>
+
+{% if summary.assessments %}
+<h2>Assessments</h2>
+<table>
+    <thead>
+        <tr>
+            <th>Title</th>
+            <th>Type</th>
+            <th>Date</th>
+            <th>Status</th>
+            <th>Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for a in summary.assessments %}
+        <tr>
+            <td>{{ a.title }}</td>
+            <td>{{ a.type }}</td>
+            <td>{{ a.scheduled_date or '-' }}</td>
+            <td>{{ a.status }}</td>
+            <td>
+                <a href="{{ url_for('assessment.admin_assessment_detail', assessment_id=a.id) }}">Detail</a>
+                <a href="{{ url_for('assessment.admin_assessment_report', assessment_id=a.id) }}">Report</a>
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endif %}
+
+<a href="{{ url_for('assessment.admin_assessment_list') }}">Back to assessments</a>
+{% endblock %}

@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+{% block title %}My Assessments{% endblock %}
+{% block content %}
+<h1>My Assessments</h1>
+
+<div class="card">
+    <p><strong>Total Assessments:</strong> {{ summary.total_assessments }}</p>
+    <p><strong>Graded:</strong> {{ summary.graded }}</p>
+    <p><strong>Passed:</strong> {{ summary.passed }}</p>
+    <p><strong>Failed:</strong> {{ summary.failed }}</p>
+    <p><strong>Absent:</strong> {{ summary.absent }}</p>
+    <p><strong>Average:</strong> {{ summary.average if summary.average is not None else '-' }}</p>
+</div>
+
+<div style="margin: 1rem 0;">
+    <a href="{{ url_for('assessment.student_export_csv') }}" class="btn">Export My Results (CSV)</a>
+</div>
+
+{% if classes %}
+<h2>My Classes</h2>
+<table>
+    <thead>
+        <tr>
+            <th>Class</th>
+            <th>Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for c in classes %}
+        <tr>
+            <td>{{ c.title }}</td>
+            <td><a href="{{ url_for('assessment.student_class_results', class_id=c.id) }}">View Results</a></td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endif %}
+
+{% if summary.results %}
+<h2>All My Results</h2>
+<table>
+    <thead>
+        <tr>
+            <th>Assessment</th>
+            <th>Score</th>
+            <th>Max</th>
+            <th>%</th>
+            <th>Pass/Fail</th>
+            <th>Presence</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for r in summary.results %}
+        <tr>
+            <td><a href="{{ url_for('assessment.student_result_detail', result_id=r.id) }}">{{ r.assessment.title }}</a></td>
+            <td>{{ r.score if r.score is not None else '-' }}</td>
+            <td>{{ r.max_score }}</td>
+            <td>{{ r.percentage if r.percentage is not None else '-' }}</td>
+            <td>{{ r.pass_fail }}</td>
+            <td>{{ r.presence_status }}</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% else %}
+<p>No assessment results yet.</p>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+{% block title %}Assessments - Admin{% endblock %}
+{% block content %}
+<h1>Assessments</h1>
+
+<div style="margin-bottom: 1rem;">
+    <a href="{{ url_for('assessment.admin_create_assessment') }}" class="btn">Create Assessment</a>
+</div>
+
+<form method="GET" style="margin-bottom: 1rem; display: flex; gap: 1rem; flex-wrap: wrap;">
+    <select name="class_id">
+        <option value="">All Classes</option>
+        {% for c in classes %}
+        <option value="{{ c.id }}" {% if filters.class_id == c.id %}selected{% endif %}>{{ c.title }}</option>
+        {% endfor %}
+    </select>
+    <select name="type">
+        <option value="">All Types</option>
+        {% for t in ['FINAL_EXAM', 'MIDTERM', 'QUIZ', 'PROJECT', 'PRACTICAL', 'ORAL', 'OTHER'] %}
+        <option value="{{ t }}" {% if filters.type == t %}selected{% endif %}>{{ t }}</option>
+        {% endfor %}
+    </select>
+    <select name="status">
+        <option value="">All Statuses</option>
+        {% for s in ['DRAFT', 'SCHEDULED', 'OPEN', 'CLOSED', 'GRADED', 'CANCELLED'] %}
+        <option value="{{ s }}" {% if filters.status == s %}selected{% endif %}>{{ s }}</option>
+        {% endfor %}
+    </select>
+    <button type="submit" class="btn">Filter</button>
+</form>
+
+{% if assessments %}
+<table>
+    <thead>
+        <tr>
+            <th>Title</th>
+            <th>Type</th>
+            <th>Class</th>
+            <th>Date</th>
+            <th>Max Score</th>
+            <th>Status</th>
+            <th>Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for a in assessments %}
+        <tr>
+            <td><a href="{{ url_for('assessment.admin_assessment_detail', assessment_id=a.id) }}">{{ a.title }}</a></td>
+            <td>{{ a.type }}</td>
+            <td>{{ a.academy_class.title }}</td>
+            <td>{{ a.scheduled_date or '-' }}</td>
+            <td>{{ a.max_score }}</td>
+            <td>{{ a.status }}</td>
+            <td>
+                <a href="{{ url_for('assessment.admin_grade_assessment', assessment_id=a.id) }}">Grade</a>
+                <a href="{{ url_for('assessment.admin_assessment_report', assessment_id=a.id) }}">Report</a>
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% else %}
+<p>No assessments found.</p>
+{% endif %}
+{% endblock %}

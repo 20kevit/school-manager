@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% block title %}Assessments - {{ academy_class.title }}{% endblock %}
+{% block content %}
+<h1>Assessments: {{ academy_class.title }}</h1>
+
+{% if assessments %}
+<table>
+    <thead>
+        <tr>
+            <th>Title</th>
+            <th>Type</th>
+            <th>Date</th>
+            <th>Max Score</th>
+            <th>Status</th>
+            <th>Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for a in assessments %}
+        <tr>
+            <td><a href="{{ url_for('assessment.teacher_assessment_detail', assessment_id=a.id) }}">{{ a.title }}</a></td>
+            <td>{{ a.type }}</td>
+            <td>{{ a.scheduled_date or '-' }}</td>
+            <td>{{ a.max_score }}</td>
+            <td>{{ a.status }}</td>
+            <td>
+                <a href="{{ url_for('assessment.teacher_grade_assessment', assessment_id=a.id) }}">Grade</a>
+                <a href="{{ url_for('assessment.teacher_history', assessment_id=a.id) }}">History</a>
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% else %}
+<p>No assessments for this class.</p>
+{% endif %}
+
+<a href="{{ url_for('assessment.teacher_my_classes') }}">Back to classes</a>
+{% endblock %}

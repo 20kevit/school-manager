@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+{% block title %}Assessment Report - {{ report.assessment.title }}{% endblock %}
+{% block content %}
+<h1>Report: {{ report.assessment.title }}</h1>
+
+<div class="card">
+    <p><strong>Class:</strong> {{ report.assessment.academy_class.title }}</p>
+    <p><strong>Type:</strong> {{ report.assessment.type }}</p>
+    <p><strong>Date:</strong> {{ report.assessment.scheduled_date or 'Not set' }}</p>
+    <p><strong>Max Score:</strong> {{ report.assessment.max_score }}</p>
+    <p><strong>Passing Score:</strong> {{ report.assessment.passing_score }}</p>
+</div>
+
+<h2>Statistics</h2>
+<div class="card">
+    <p><strong>Total Eligible Students:</strong> {{ report.total_eligible }}</p>
+    <p><strong>Graded:</strong> {{ report.total_graded }}</p>
+    <p><strong>Absent:</strong> {{ report.total_absent }}</p>
+    <p><strong>Not Graded:</strong> {{ report.total_not_graded }}</p>
+    <p><strong>Average Score:</strong> {{ report.average if report.average is not None else '-' }}</p>
+    <p><strong>Highest Score:</strong> {{ report.highest if report.highest is not None else '-' }}</p>
+    <p><strong>Lowest Score:</strong> {{ report.lowest if report.lowest is not None else '-' }}</p>
+    <p><strong>Passed:</strong> {{ report.pass_count }}</p>
+    <p><strong>Failed:</strong> {{ report.fail_count }}</p>
+    <p><strong>Pass Rate:</strong> {{ report.pass_rate ~ '%' if report.pass_rate is not None else '-' }}</p>
+</div>
+
+<h2>Detailed Results</h2>
+{% if report.results %}
+<table>
+    <thead>
+        <tr>
+            <th>Student</th>
+            <th>Score</th>
+            <th>Max</th>
+            <th>Percentage</th>
+            <th>Pass/Fail</th>
+            <th>Presence</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for r in report.results %}
+        <tr>
+            <td>{{ r.student.student_profile.first_name }} {{ r.student.student_profile.last_name }}</td>
+            <td>{{ r.score if r.score is not None else '-' }}</td>
+            <td>{{ r.max_score }}</td>
+            <td>{{ r.percentage if r.percentage is not None else '-' }}</td>
+            <td>{{ r.pass_fail }}</td>
+            <td>{{ r.presence_status }}</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% else %}
+<p>No results recorded yet.</p>
+{% endif %}
+
+<a href="{{ url_for('assessment.admin_assessment_detail', assessment_id=report.assessment.id) }}">Back to assessment</a>
+{% endblock %}

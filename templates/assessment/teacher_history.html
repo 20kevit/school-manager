@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% block title %}Grade History - {{ assessment.title }}{% endblock %}
+{% block content %}
+<h1>Grade History: {{ assessment.title }}</h1>
+
+{% if history_data %}
+{% for item in history_data %}
+<div class="card" style="margin-bottom: 1rem;">
+    <h3>{{ item.student.student_profile.first_name }} {{ item.student.student_profile.last_name }}</h3>
+    <p><strong>Current Score:</strong> {{ item.result.score if item.result.score is not None else '-' }} / {{ item.result.max_score }}</p>
+    <p><strong>Pass/Fail:</strong> {{ item.result.pass_fail }}</p>
+
+    <h4>Correction History</h4>
+    <table>
+        <thead>
+            <tr>
+                <th>Date</th>
+                <th>Previous Score</th>
+                <th>New Score</th>
+                <th>Previous Pass/Fail</th>
+                <th>New Pass/Fail</th>
+                <th>Reason</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for h in item.history %}
+            <tr>
+                <td>{{ h.corrected_at.strftime('%Y-%m-%d %H:%M') if h.corrected_at else '-' }}</td>
+                <td>{{ h.previous_score if h.previous_score is not None else '-' }}</td>
+                <td>{{ h.new_score if h.new_score is not None else '-' }}</td>
+                <td>{{ h.previous_pass_fail }}</td>
+                <td>{{ h.new_pass_fail }}</td>
+                <td>{{ h.reason or '-' }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endfor %}
+{% else %}
+<p>No grading history found for this assessment.</p>
+{% endif %}
+
+<a href="{{ url_for('assessment.teacher_assessment_detail', assessment_id=assessment.id) }}">Back to assessment</a>
+{% endblock %}

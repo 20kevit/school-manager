@@ -1,0 +1,100 @@
+{% extends "base.html" %}
+{% block title %}{{ assessment.title }} - Assessment Detail{% endblock %}
+{% block content %}
+<h1>{{ assessment.title }}</h1>
+
+<div class="card">
+    <p><strong>Type:</strong> {{ assessment.type }}</p>
+    <p><strong>Class:</strong> {{ academy_class.title }}</p>
+    <p><strong>Status:</strong> {{ assessment.status }}</p>
+    <p><strong>Scheduled Date:</strong> {{ assessment.scheduled_date or 'Not set' }}</p>
+    <p><strong>Duration:</strong> {{ assessment.duration_minutes ~ ' min' if assessment.duration_minutes else 'Not set' }}</p>
+    <p><strong>Max Score:</strong> {{ assessment.max_score }}</p>
+    <p><strong>Passing Score:</strong> {{ assessment.passing_score }}</p>
+    {% if assessment.description %}
+    <p><strong>Description:</strong> {{ assessment.description }}</p>
+    {% endif %}
+    {% if assessment.notes %}
+    <p><strong>Notes:</strong> {{ assessment.notes }}</p>
+    {% endif %}
+</div>
+
+<div style="margin: 1rem 0; display: flex; gap: 0.5rem; flex-wrap: wrap;">
+    <a href="{{ url_for('assessment.admin_edit_assessment', assessment_id=assessment.id) }}" class="btn">Edit</a>
+    <a href="{{ url_for('assessment.admin_grade_assessment', assessment_id=assessment.id) }}" class="btn">Grade</a>
+    <a href="{{ url_for('assessment.admin_assessment_report', assessment_id=assessment.id) }}" class="btn">Report</a>
+    <a href="{{ url_for('assessment.admin_export_assessment_csv', assessment_id=assessment.id) }}" class="btn">Export CSV</a>
+
+    {% if assessment.status != 'CANCELLED' and assessment.status != 'GRADED' %}
+    <form method="POST" action="{{ url_for('assessment.admin_cancel_assessment', assessment_id=assessment.id) }}" style="display:inline;">
+        <button type="submit" class="btn btn-danger" onclick="return confirm('Cancel this assessment?')">Cancel Assessment</button>
+    </form>
+    {% endif %}
+
+    {% if assessment.status == 'DRAFT' %}
+    <form method="POST" action="{{ url_for('assessment.admin_update_status', assessment_id=assessment.id) }}" style="display:inline;">
+        <input type="hidden" name="status" value="SCHEDULED">
+        <button type="submit" class="btn">Schedule</button>
+    </form>
+    {% elif assessment.status == 'SCHEDULED' %}
+    <form method="POST" action="{{ url_for('assessment.admin_update_status', assessment_id=assessment.id) }}" style="display:inline;">
+        <input type="hidden" name="status" value="OPEN">
+        <button type="submit" class="btn">Open</button>
+    </form>
+    {% elif assessment.status == 'OPEN' %}
+    <form method="POST" action="{{ url_for('assessment.admin_update_status', assessment_id=assessment.id) }}" style="display:inline;">
+        <input type="hidden" name="status" value="CLOSED">
+        <button type="submit" class="btn">Close</button>
+    </form>
+    {% elif assessment.status == 'CLOSED' %}
+    <form method="POST" action="{{ url_for('assessment.admin_update_status', assessment_id=assessment.id) }}" style="display:inline;">
+        <input type="hidden" name="status" value="GRADED">
+        <button type="submit" class="btn">Mark Graded</button>
+    </form>
+    {% endif %}
+</div>
+
+<h2>Results Summary</h2>
+<div class="card">
+    <p><strong>Total Eligible:</strong> {{ report.total_eligible }}</p>
+    <p><strong>Graded:</strong> {{ report.total_graded }}</p>
+    <p><strong>Absent:</strong> {{ report.total_absent }}</p>
+    <p><strong>Not Graded:</strong> {{ report.total_not_graded }}</p>
+    <p><strong>Average:</strong> {{ report.average if report.average is not None else '-' }}</p>
+    <p><strong>Highest:</strong> {{ report.highest if report.highest is not None else '-' }}</p>
+    <p><strong>Lowest:</strong> {{ report.lowest if report.lowest is not None else '-' }}</p>
+    <p><strong>Pass Rate:</strong> {{ report.pass_rate ~ '%' if report.pass_rate is not None else '-' }}</p>
+</div>
+
+{% if report.results %}
+<h2>Student Results</h2>
+<table>
+    <thead>
+        <tr>
+            <th>Student</th>
+            <th>Score</th>
+            <th>Max</th>
+            <th>%</th>
+            <th>Pass/Fail</th>
+            <th>Presence</th>
+            <th>Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for r in report.results %}
+        <tr>
+            <td>{{ r.student.student_profile.first_name }} {{ r.student.student_profile.last_name }}</td>
+            <td>{{ r.score if r.score is not None else '-' }}</td>
+            <td>{{ r.max_score }}</td>
+            <td>{{ r.percentage if r.percentage is not None else '-' }}</td>
+            <td>{{ r.pass_fail }}</td>
+            <td>{{ r.presence_status }}</td>
+            <td><a href="{{ url_for('assessment.admin_student_results', student_id=r.student_user_id) }}">History</a></td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endif %}
+
+<a href="{{ url_for('assessment.admin_assessment_list') }}">Back to list</a>
+{% endblock %}

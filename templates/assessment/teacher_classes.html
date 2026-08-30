@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block title %}My Classes - Assessments{% endblock %}
+{% block content %}
+<h1>My Classes</h1>
+
+{% if classes %}
+<table>
+    <thead>
+        <tr>
+            <th>Class</th>
+            <th>Course</th>
+            <th>Status</th>
+            <th>Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for c in classes %}
+        <tr>
+            <td>{{ c.title }}</td>
+            <td>{{ c.course.title }}</td>
+            <td>{{ c.status }}</td>
+            <td><a href="{{ url_for('assessment.teacher_class_assessments', class_id=c.id) }}">Assessments</a></td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% else %}
+<p>No classes assigned to you.</p>
+{% endif %}
+{% endblock %}

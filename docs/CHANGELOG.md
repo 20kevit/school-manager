@@ -204,3 +204,46 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 - Tuition snapshot at enrollment time preserves historical amounts
 - Student finance access restricted by age (18+)
 - Parent access limited to linked children via parent_student table
+
+## P7 — Exams, Assessments & Grades (2026-08-30)
+
+### Added
+
+- Assessment domain entity with enums (AssessmentType, AssessmentStatus)
+- AssessmentResult domain entity with enums (ResultStatus, PresenceStatus, PassFailStatus)
+- GradeHistory domain entity for grade correction audit trail
+- Assessment database model with class relationship, indexes, and configurable scores
+- AssessmentResult database model with unique constraint (assessment_id, enrollment_id)
+- GradeHistory database model with indexes for correction history
+- Assessment application service with full CRUD, status lifecycle, results, bulk grading, history, reports, and CSV export
+- Assessment types: FINAL_EXAM, MIDTERM, QUIZ, PROJECT, PRACTICAL, ORAL, OTHER
+- Assessment statuses: DRAFT, SCHEDULED, OPEN, CLOSED, GRADED, CANCELLED
+- Configurable maximum score per assessment (not hardcoded 100)
+- Configurable passing score per assessment
+- Automatic pass/fail calculation based on passing threshold
+- Absent/Excused presence states for non-numeric results
+- Grade correction history preserving previous scores and metadata
+- Bulk grading interface for entire assessments
+- Enrollment-based eligibility (only APPROVED enrollments eligible)
+- Historical results preserved when enrollment is cancelled
+- Assessment scheduling independent of class sessions
+- Server-side authorization (Admin full, Teacher assigned classes, Student own results, Parent linked children)
+- Admin web UI: assessment list, create, edit, detail, grading, reports, CSV export, student/class reports
+- Teacher web UI: my classes, class assessments, grading, grade history
+- Student web UI: my assessments, class results, result detail, CSV export
+- Parent web UI: children overview, child results, result detail
+- Navigation links for assessment management
+- CSV export for assessment and student results with BOM for Excel compatibility
+- Database migration for assessment models
+- 76 tests covering assessment CRUD, types, statuses, eligibility, results, bulk grading, grade history, authorization, reports, CSV export, domain entities, and integration
+
+### Design Decisions
+
+- Assessment belongs to Class (not Course) for class-specific evaluations
+- Grade corrections create history entries rather than overwriting
+- Max score stored per assessment (not global constant)
+- Passing score belongs to assessment (not global threshold)
+- Results linked via Enrollment (consistent with Attendance pattern)
+- Historical data preserved through enrollment cancellation
+- Assessment scheduling independent of session schedule
+- Extensible type system supports future assessment categories

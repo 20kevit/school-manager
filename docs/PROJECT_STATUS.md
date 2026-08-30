@@ -1,9 +1,9 @@
 # Project Status
 
-**Current Phase:** P6 — Finance & Tuition — Completed
-**Current Objective:** Complete P6 — Finance & Tuition.
+**Current Phase:** P7 — Exams, Assessments & Grades — Completed
+**Current Objective:** Complete P7 — Exams, Assessments & Grades.
 
-**Previous Phase:** P5 — Learning Activities
+**Previous Phase:** P6 — Finance & Tuition
 
 ## Status
 
@@ -139,3 +139,37 @@ P5 — Learning Activities & Homework is complete.
 - [x] ZarinPal prepared architecturally (not implemented)
 - [x] Database migration for finance models
 - [x] 70 tests covering finance domain, services, enrollment integration, authorization, reports, and routes
+
+### P7 — Exams, Assessments & Grades
+- [x] Assessment domain entity with enums (AssessmentType, AssessmentStatus)
+- [x] AssessmentResult domain entity with enums (ResultStatus, PresenceStatus, PassFailStatus)
+- [x] GradeHistory domain entity for grade correction
+- [x] Assessment database model with class relationship and indexes
+- [x] AssessmentResult database model with unique constraint (assessment_id, enrollment_id)
+- [x] GradeHistory database model with indexes
+- [x] Assessment application service with CRUD, status transitions, results, bulk grading, history, reports, CSV export
+- [x] Configurable maximum score per assessment
+- [x] Configurable passing score per assessment
+- [x] Pass/fail calculation from score and passing threshold
+- [x] Absent/Excused presence states
+- [x] Grade correction history with previous/new scores and metadata
+- [x] Teacher authorization (assigned classes only)
+- [x] Admin full access
+- [x] Student result view (own results only)
+- [x] Parent result view (linked children only)
+- [x] Bulk grading for entire assessments
+- [x] Class academic summary report
+- [x] Student academic summary report
+- [x] Assessment report (scores, averages, pass rates, etc.)
+- [x] CSV export for assessment and student results
+- [x] Historical results preserved on enrollment cancellation
+- [x] Assessment scheduling independent of sessions
+- [x] Server-side authorization enforcement
+- [x] Admin web UI: assessment list, create, edit, detail, grading, reports, CSV export
+- [x] Teacher web UI: my classes, class assessments, grading, grade history
+- [x] Student web UI: my assessments, class results, result detail, CSV export
+- [x] Parent web UI: children overview, child results, result detail
+- [x] Navigation links for assessment management
+- [x] Database migration for assessment models
+- [x] 76 tests covering assessment CRUD, eligibility, results, bulk grading, grade history, authorization, reports, CSV export, domain entities, and integration
+- [x] 394 total tests passing (P1-P7)

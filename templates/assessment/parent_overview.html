@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block title %}Children's Results{% endblock %}
+{% block content %}
+<h1>Children's Academic Results</h1>
+
+{% if children_data %}
+{% for item in children_data %}
+<div class="card" style="margin-bottom: 1rem;">
+    <h2>{{ item.child.student_profile.first_name }} {{ item.child.student_profile.last_name }}</h2>
+    <p><strong>Total Assessments:</strong> {{ item.summary.total_assessments }}</p>
+    <p><strong>Graded:</strong> {{ item.summary.graded }}</p>
+    <p><strong>Passed:</strong> {{ item.summary.passed }}</p>
+    <p><strong>Failed:</strong> {{ item.summary.failed }}</p>
+    <p><strong>Average:</strong> {{ item.summary.average if item.summary.average is not None else '-' }}</p>
+
+    <a href="{{ url_for('assessment.parent_child_results', student_id=item.child.id) }}">View Details</a>
+</div>
+{% endfor %}
+{% else %}
+<p>No linked children found.</p>
+{% endif %}
+{% endblock %}

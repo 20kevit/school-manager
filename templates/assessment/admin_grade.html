@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% block title %}Grade - {{ assessment.title }}{% endblock %}
+{% block content %}
+<h1>Grade: {{ assessment.title }}</h1>
+<p><strong>Class:</strong> {{ assessment.academy_class.title }} | <strong>Max Score:</strong> {{ assessment.max_score }} | <strong>Passing Score:</strong> {{ assessment.passing_score }}</p>
+
+<form method="POST">
+    <table>
+        <thead>
+            <tr>
+                <th>Student</th>
+                <th>Score (out of {{ assessment.max_score }})</th>
+                <th>Presence</th>
+                <th>Comments</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in eligible %}
+            {% set r = result_map.get(item.enrollment.id) %}
+            <tr>
+                <td>{{ item.student.student_profile.first_name }} {{ item.student.student_profile.last_name }}</td>
+                <td>
+                    <input type="number" name="grade_{{ item.enrollment.id }}_score"
+                           value="{{ float(r.score) if r and r.score is not None else '' }}"
+                           min="0" max="{{ assessment.max_score }}" step="0.01"
+                           placeholder="Score">
+                </td>
+                <td>
+                    <select name="grade_{{ item.enrollment.id }}_presence">
+                        {% for p in ['PRESENT', 'ABSENT', 'EXCUSED'] %}
+                        <option value="{{ p }}" {% if r and r.presence_status == p %}selected{% endif %}>{{ p }}</option>
+                        {% endfor %}
+                    </select>
+                </td>
+                <td>
+                    <input type="text" name="grade_{{ item.enrollment.id }}_comments"
+                           value="{{ r.comments if r else '' }}" placeholder="Comments">
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <button type="submit" class="btn" style="margin-top: 1rem;">Save Grades</button>
+</form>
+
+<a href="{{ url_for('assessment.admin_assessment_detail', assessment_id=assessment.id) }}">Back to assessment</a>
+{% endblock %}
