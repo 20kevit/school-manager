@@ -98,3 +98,33 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 - Capacity enforcement: Checked at approval time, not at request time
 - Historical records: Rejected and cancelled enrollments preserved for tracking
 - Basic eligibility: Only essential checks at this phase (extensible for future)
+
+## P4 — Attendance (2026-08-30)
+
+### Added
+
+- Attendance domain entity with status enum (PRESENT, ABSENT, LATE, EXCUSED)
+- Attendance database model with unique constraint (enrollment_id, session_id)
+- Attendance application service with record, bulk record, query, and summary functions
+- Enrollment/Session same-class validation
+- Approved enrollment requirement for attendance
+- One attendance per student per session enforcement (application + database level)
+- Bulk attendance recording for entire sessions in a single operation
+- Teacher authorization (attendance only for assigned classes)
+- Admin full access to all attendance
+- Student attendance history view
+- Admin web UI: session list with attendance summary, take attendance
+- Teacher web UI: my classes, class sessions, take attendance
+- Student web UI: my attendance history with summary
+- Attendance summary computation (present/absent/late/excused counts)
+- Historical attendance preservation (cancelled enrollment does not delete records)
+- Database migration for attendance model
+- 34 new tests covering attendance creation, integrity, duplicates, bulk recording, authorization, and UI routes
+
+### Design Decisions
+
+- Attendance linked via Enrollment (not directly to Student) to enforce class membership
+- Unique constraint on (enrollment_id, session_id) prevents duplicate attendance
+- Updating existing attendance modifies in-place rather than creating new records
+- Cancelled enrollments preserve historical attendance records
+- Teachers authorized server-side via class assignment, not just UI hiding

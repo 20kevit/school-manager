@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+{% block title %}جلسات - {{ academy_class.title }}{% endblock %}
+{% block content %}
+<div class="page-header">
+    <h1>جلسات {{ academy_class.title }}</h1>
+    <a href="{{ url_for('attendance.teacher_my_classes') }}" class="btn btn-outline">بازگشت</a>
+</div>
+
+{% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+        {% for category, message in messages %}
+            <div class="alert alert-{{ category }}">{{ message }}</div>
+        {% endfor %}
+    {% endif %}
+{% endwith %}
+
+{% if sessions %}
+<div class="table-container">
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th>جلسه</th>
+                <th>تاریخ</th>
+                <th>وضعیت</th>
+                <th>حاضر</th>
+                <th>غایب</th>
+                <th>تأخیر</th>
+                <th>معذور</th>
+                <th>عملیات</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for session in sessions %}
+            {% set s = session_summaries[session.id] %}
+            <tr>
+                <td>{{ session.session_number }}</td>
+                <td>{{ session.scheduled_date.strftime('%Y-%m-%d') }}</td>
+                <td><span class="status-badge status-{{ session.status|lower }}">{{ session.status }}</span></td>
+                <td>{{ s.PRESENT }}</td>
+                <td>{{ s.ABSENT }}</td>
+                <td>{{ s.LATE }}</td>
+                <td>{{ s.EXCUSED }}</td>
+                <td>
+                    <a href="{{ url_for('attendance.teacher_session_attendance', session_id=session.id) }}" class="btn btn-sm btn-primary">حضور و غیاب</a>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% else %}
+<p class="empty-state">جلسه‌ای یافت نشد.</p>
+{% endif %}
+{% endblock %}

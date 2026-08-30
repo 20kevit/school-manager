@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% block title %}کلاس‌های من{% endblock %}
+{% block content %}
+<div class="page-header">
+    <h1>کلاس‌های من</h1>
+</div>
+
+{% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+        {% for category, message in messages %}
+            <div class="alert alert-{{ category }}">{{ message }}</div>
+        {% endfor %}
+    {% endif %}
+{% endwith %}
+
+{% if classes %}
+<div class="table-container">
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th>عنوان</th>
+                <th>وضعیت</th>
+                <th>تاریخ شروع</th>
+                <th>تاریخ پایان</th>
+                <th>عملیات</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for cls in classes %}
+            <tr>
+                <td>{{ cls.title }}</td>
+                <td><span class="status-badge status-{{ cls.status|lower }}">{{ cls.status }}</span></td>
+                <td>{{ cls.start_date.strftime('%Y-%m-%d') }}</td>
+                <td>{{ cls.end_date.strftime('%Y-%m-%d') if cls.end_date else '—' }}</td>
+                <td>
+                    <a href="{{ url_for('attendance.teacher_class_sessions', class_id=cls.id) }}" class="btn btn-sm btn-outline">جلسات</a>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% else %}
+<p class="empty-state">شما هیچ کلاسی ندارید.</p>
+{% endif %}
+{% endblock %}

@@ -437,3 +437,53 @@ class EnrollmentModel(db.Model):
             f"<EnrollmentModel id={self.id} student={self.student_user_id} "
             f"class={self.class_id} status={self.status}>"
         )
+
+
+# ---------------------------------------------------------------------------
+# P4 — Attendance
+# ---------------------------------------------------------------------------
+
+
+class AttendanceModel(db.Model):
+    """Attendance table — records a student's presence for a session."""
+
+    __tablename__ = "attendances"
+
+    id = db.Column(db.Integer, primary_key=True)
+    enrollment_id = db.Column(
+        db.Integer, db.ForeignKey("enrollments.id"), nullable=False
+    )
+    session_id = db.Column(db.Integer, db.ForeignKey("sessions.id"), nullable=False)
+    status = db.Column(db.String(20), nullable=False)
+    note = db.Column(db.Text, default="")
+    recorded_at = db.Column(db.DateTime, server_default=db.func.now(), nullable=False)
+    updated_at = db.Column(
+        db.DateTime,
+        server_default=db.func.now(),
+        onupdate=db.func.now(),
+        nullable=False,
+    )
+    recorded_by = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=True)
+
+    enrollment = db.relationship(
+        "EnrollmentModel", backref=db.backref("attendances", lazy="select")
+    )
+    session = db.relationship(
+        "SessionModel", backref=db.backref("attendances", lazy="select")
+    )
+    recorder = db.relationship("UserModel", foreign_keys=[recorded_by])
+
+    __table_args__ = (
+        db.UniqueConstraint(
+            "enrollment_id", "session_id", name="uq_attendance_enrollment_session"
+        ),
+        db.Index("ix_attendance_enrollment", "enrollment_id"),
+        db.Index("ix_attendance_session", "session_id"),
+        db.Index("ix_attendance_status", "status"),
+    )
+
+    def __repr__(self) -> str:
+        return (
+            f"<AttendanceModel id={self.id} enrollment={self.enrollment_id} "
+            f"session={self.session_id} status={self.status}>"
+        )

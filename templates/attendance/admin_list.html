@@ -1,0 +1,69 @@
+{% extends "base.html" %}
+{% block title %}لیست حضور و غیاب{% endblock %}
+{% block content %}
+<div class="page-header">
+    <h1>حضور و غیاب</h1>
+</div>
+
+{% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+        {% for category, message in messages %}
+            <div class="alert alert-{{ category }}">{{ message }}</div>
+        {% endfor %}
+    {% endif %}
+{% endwith %}
+
+<div class="filter-bar">
+    <form method="GET" class="filter-form">
+        <div class="form-group">
+            <label for="class_id">فیلتر بر اساس کلاس</label>
+            <select id="class_id" name="class_id" onchange="this.form.submit()">
+                <option value="">همه کلاس‌ها</option>
+                {% for cls in classes %}
+                <option value="{{ cls.id }}" {{ 'selected' if selected_class_id == cls.id }}>{{ cls.title }}</option>
+                {% endfor %}
+            </select>
+        </div>
+    </form>
+</div>
+
+{% if sessions %}
+<div class="table-container">
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th>کلاس</th>
+                <th>جلسه</th>
+                <th>تاریخ</th>
+                <th>وضعیت جلسه</th>
+                <th>حاضر</th>
+                <th>غایب</th>
+                <th>تأخیر</th>
+                <th>معذور</th>
+                <th>عملیات</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for session in sessions %}
+            {% set s = session_summaries[session.id] %}
+            <tr>
+                <td>{{ session.academy_class.title }}</td>
+                <td>{{ session.session_number }}</td>
+                <td>{{ session.scheduled_date.strftime('%Y-%m-%d') }}</td>
+                <td><span class="status-badge status-{{ session.status|lower }}">{{ session.status }}</span></td>
+                <td>{{ s.PRESENT }}</td>
+                <td>{{ s.ABSENT }}</td>
+                <td>{{ s.LATE }}</td>
+                <td>{{ s.EXCUSED }}</td>
+                <td>
+                    <a href="{{ url_for('attendance.admin_session_attendance', session_id=session.id) }}" class="btn btn-sm btn-outline">حضور و غیاب</a>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% else %}
+<p class="empty-state">جلسه‌ای یافت نشد.</p>
+{% endif %}
+{% endblock %}

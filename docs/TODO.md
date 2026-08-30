@@ -37,9 +37,9 @@
 
 ## P4 — Attendance
 
-- [ ] Attendance
-- [ ] Teacher attendance management
-- [ ] Attendance history
+- [x] Attendance
+- [x] Teacher attendance management
+- [x] Attendance history
 - [ ] Attendance reports
 
 ## P5 — Learning

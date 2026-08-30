@@ -1,9 +1,9 @@
 # Project Status
 
-**Current Phase:** P3 — Enrollment — In Progress
-**Current Objective:** Complete P3 — Enrollment.
+**Current Phase:** P4 — Attendance — Completed
+**Current Objective:** Complete P4 — Attendance.
 
-**Previous Phase:** P2 — Academy Structure
+**Previous Phase:** P3 — Enrollment
 
 ## Status
 
@@ -61,16 +61,33 @@ P3 — Enrollment is in progress.
 - [x] Database migration for academy structure
 - [x] 114 tests passing
 
-## In Progress
+### P3 — Enrollment
+- [x] Enrollment domain entity with status lifecycle
+- [x] Student enrollment requests
+- [x] Admin direct enrollment with auto-approval
+- [x] Enrollment approval with capacity checks
+- [x] Enrollment rejection and cancellation
+- [x] Duplicate active enrollment prevention
+- [x] Admin web UI for enrollment management
+- [x] Student web UI for enrollment requests
+- [x] Database migration for enrollment model
+- [x] 140 tests passing
 
-- [ ] P3 — Enrollment
-
-## Blocked
-
-- (none)
-
-## Next Steps
-
-- Implement Student Enrollment (P3)
-- Implement Enrollment approval workflow
-- Implement Attendance tracking
+### P4 — Attendance
+- [x] Attendance domain entity with status enum (PRESENT, ABSENT, LATE, EXCUSED)
+- [x] Attendance database model with unique constraint (enrollment_id, session_id)
+- [x] Attendance application service (record, bulk record, query, summary)
+- [x] Enrollment/Session same-class validation
+- [x] Approved enrollment requirement
+- [x] One attendance per student per session enforcement
+- [x] Bulk attendance recording for entire sessions
+- [x] Teacher authorization (own classes only)
+- [x] Admin full access
+- [x] Student attendance history view
+- [x] Admin web UI: session list with attendance summary
+- [x] Teacher web UI: my classes, sessions, take attendance
+- [x] Student web UI: my attendance history
+- [x] Attendance summary computation
+- [x] Historical attendance preservation (cancelled enrollment)
+- [x] Database migration for attendance model
+- [x] 174 tests passing

@@ -94,6 +94,15 @@ Separate configs per environment (development, testing, production) in `config/_
 5. Create interface (blueprint) in `app/interface/web/` or `app/interface/api/`.
 6. Register blueprint in `app/__init__.py`.
 
+## Module Overview
+
+| Module | Domain | Application | Interface | Blueprint |
+|--------|--------|-------------|-----------|-----------|
+| Auth | user, role, profiles | auth/services | web/auth | auth_bp |
+| Academy | course, class_, session | academy/ | web/academy | academy_bp |
+| Enrollment | enrollment | enrollment/ | web/enrollment | enrollment_bp |
+| Attendance | attendance | attendance/ | web/attendance | attendance_bp |
+
 ## Academy Structure (P2)
 
 The academy structure follows a hierarchical model:
@@ -144,6 +153,39 @@ APPROVED → CANCELLED
 - **Capacity enforcement**: Capacity is checked at approval time. A class at full capacity cannot have new APPROVED enrollments.
 - **Historical records**: Rejected and cancelled enrollments are preserved for historical tracking.
 - **Basic eligibility**: At this phase, only basic checks are implemented (student exists, class exists, class is accepting enrollments).
+
+## Attendance (P4)
+
+The attendance system records student presence for individual class sessions.
+
+```
+Student
+   ↓
+Enrollment
+   ↓
+Class
+   ↓
+Session
+   ↓
+Attendance
+```
+
+### Attendance Status
+
+- **PRESENT** — student attended
+- **ABSENT** — student did not attend
+- **LATE** — student arrived late
+- **EXCUSED** — absence excused (medical, etc.)
+
+### Key Design Decisions
+
+- **Enrollment-based linking**: Attendance is linked via Enrollment (not directly to Student) to enforce class membership and eligibility.
+- **One per session**: Unique constraint on (enrollment_id, session_id) prevents duplicate attendance per student per session.
+- **Update not create**: Updating existing attendance modifies the record in-place rather than creating duplicates.
+- **Approved enrollment required**: Attendance can only be recorded for APPROVED enrollments (not PENDING or CANCELLED).
+- **Historical preservation**: Cancelling an enrollment does not delete existing attendance records.
+- **Bulk recording**: Teachers can record attendance for an entire session in a single operation.
+- **Server-side authorization**: Teachers can only manage attendance for classes they are assigned to.
 
 ## Payment Integration (Future)
 

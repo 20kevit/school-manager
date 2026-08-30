@@ -42,6 +42,7 @@ def _register_blueprints(app):
     """Register Flask blueprints."""
     from app.interface.web import web_bp
     from app.interface.web.academy.routes import academy_bp
+    from app.interface.web.attendance.routes import attendance_bp
     from app.interface.web.auth import auth_bp
     from app.interface.web.enrollment.routes import enrollment_bp
 
@@ -49,6 +50,7 @@ def _register_blueprints(app):
     app.register_blueprint(auth_bp)
     app.register_blueprint(academy_bp)
     app.register_blueprint(enrollment_bp)
+    app.register_blueprint(attendance_bp)
 
 
 def _register_routes(app):
