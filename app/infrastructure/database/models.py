@@ -385,3 +385,55 @@ class ClassSessionContentModel(db.Model):
 
     def __repr__(self) -> str:
         return f"<ClassSessionContentModel id={self.id} session={self.session_number}>"
+
+
+# ---------------------------------------------------------------------------
+# P3 — Enrollment
+# ---------------------------------------------------------------------------
+
+
+class EnrollmentModel(db.Model):
+    """Enrollment table — represents a student's participation in a class."""
+
+    __tablename__ = "enrollments"
+
+    id = db.Column(db.Integer, primary_key=True)
+    student_user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)
+    class_id = db.Column(
+        db.Integer, db.ForeignKey("academy_classes.id"), nullable=False
+    )
+    status = db.Column(db.String(20), nullable=False, default="PENDING")
+    requested_at = db.Column(db.DateTime, server_default=db.func.now(), nullable=False)
+    approved_at = db.Column(db.DateTime, nullable=True)
+    rejected_at = db.Column(db.DateTime, nullable=True)
+    cancelled_at = db.Column(db.DateTime, nullable=True)
+    created_at = db.Column(db.DateTime, server_default=db.func.now(), nullable=False)
+    updated_at = db.Column(
+        db.DateTime,
+        server_default=db.func.now(),
+        onupdate=db.func.now(),
+        nullable=False,
+    )
+
+    student = db.relationship("UserModel", foreign_keys=[student_user_id])
+    academy_class = db.relationship(
+        "AcademyClassModel", backref=db.backref("enrollments", lazy="select")
+    )
+
+    __table_args__ = (
+        db.UniqueConstraint(
+            "student_user_id",
+            "class_id",
+            "status",
+            name="uq_enrollment_student_class_status",
+        ),
+        db.Index("ix_enrollment_student", "student_user_id"),
+        db.Index("ix_enrollment_class", "class_id"),
+        db.Index("ix_enrollment_status", "status"),
+    )
+
+    def __repr__(self) -> str:
+        return (
+            f"<EnrollmentModel id={self.id} student={self.student_user_id} "
+            f"class={self.class_id} status={self.status}>"
+        )

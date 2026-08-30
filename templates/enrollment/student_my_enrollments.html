@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% block title %}ثبت‌نام‌های من{% endblock %}
+{% block content %}
+<div class="page-header">
+    <h1>ثبت‌نام‌های من</h1>
+</div>
+
+{% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+        {% for category, message in messages %}
+            <div class="alert alert-{{ category }}">{{ message }}</div>
+        {% endfor %}
+    {% endif %}
+{% endwith %}
+
+{% if enrollments %}
+<div class="table-container">
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th>کلاس</th>
+                <th>وضعیت</th>
+                <th>تاریخ درخواست</th>
+                <th>عملیات</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for enrollment in enrollments %}
+            <tr>
+                <td>{{ enrollment.academy_class.title }}</td>
+                <td><span class="status-badge status-{{ enrollment.status|lower }}">{{ enrollment.status }}</span></td>
+                <td>{{ enrollment.requested_at.strftime('%Y-%m-%d') }}</td>
+                <td>
+                    {% if enrollment.status in ('PENDING', 'APPROVED') %}
+                    <form method="POST" action="{{ url_for('enrollment.student_cancel', enrollment_id=enrollment.id) }}" style="display: inline;">
+                        <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('آیا از لغو ثبت‌نام اطمینان دارید؟')">لغو</button>
+                    </form>
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% else %}
+<p class="empty-state">شما هنوز در هیچ کلاسی ثبت‌نام نکرده‌اید.</p>
+{% endif %}
+{% endblock %}

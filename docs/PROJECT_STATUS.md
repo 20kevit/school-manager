@@ -1,13 +1,13 @@
 # Project Status
 
-**Current Phase:** P2 — Academy Structure — Complete
-**Current Objective:** P2 complete. Ready for P3 — Enrollment.
+**Current Phase:** P3 — Enrollment — In Progress
+**Current Objective:** Complete P3 — Enrollment.
 
-**Previous Phase:** P1 — Identity & Access
+**Previous Phase:** P2 — Academy Structure
 
 ## Status
 
-P2 — Academy Structure is complete.
+P3 — Enrollment is in progress.
 
 ## Completed
 
@@ -63,7 +63,7 @@ P2 — Academy Structure is complete.
 
 ## In Progress
 
-- (none)
+- [ ] P3 — Enrollment
 
 ## Blocked
 

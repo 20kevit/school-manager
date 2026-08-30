@@ -16,6 +16,11 @@
                     {% if current_user.has_any_role('ADMIN') %}
                     <a href="{{ url_for('academy.course_list') }}">Courses</a>
                     <a href="{{ url_for('academy.class_list') }}">Classes</a>
+                    <a href="{{ url_for('enrollment.admin_enrollment_list') }}">Enrollments</a>
+                    {% endif %}
+                    {% if current_user.has_any_role('STUDENT') %}
+                    <a href="{{ url_for('enrollment.student_available_classes') }}">Classes</a>
+                    <a href="{{ url_for('enrollment.student_my_enrollments') }}">My Enrollments</a>
                     {% endif %}
                     <a href="{{ url_for('auth.logout') }}">Logout</a>
                 {% else %}

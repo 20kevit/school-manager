@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+{% block title %}جزئیات ثبت‌نام{% endblock %}
+{% block content %}
+<div class="page-header">
+    <h1>جزئیات ثبت‌نام</h1>
+</div>
+
+{% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+        {% for category, message in messages %}
+            <div class="alert alert-{{ category }}">{{ message }}</div>
+        {% endfor %}
+    {% endif %}
+{% endwith %}
+
+<div class="detail-card">
+    <div class="detail-row">
+        <label>دانش‌آموز:</label>
+        <span>{{ student.student_profile.first_name }} {{ student.student_profile.last_name }}</span>
+    </div>
+    <div class="detail-row">
+        <label>کلاس:</label>
+        <span>{{ academy_class.title }}</span>
+    </div>
+    <div class="detail-row">
+        <label>وضعیت:</label>
+        <span class="status-badge status-{{ enrollment.status|lower }}">{{ enrollment.status }}</span>
+    </div>
+    <div class="detail-row">
+        <label>تاریخ درخواست:</label>
+        <span>{{ enrollment.requested_at.strftime('%Y-%m-%d %H:%M') }}</span>
+    </div>
+    {% if enrollment.approved_at %}
+    <div class="detail-row">
+        <label>تاریخ تایید:</label>
+        <span>{{ enrollment.approved_at.strftime('%Y-%m-%d %H:%M') }}</span>
+    </div>
+    {% endif %}
+    {% if enrollment.rejected_at %}
+    <div class="detail-row">
+        <label>تاریخ رد:</label>
+        <span>{{ enrollment.rejected_at.strftime('%Y-%m-%d %H:%M') }}</span>
+    </div>
+    {% endif %}
+    {% if enrollment.cancelled_at %}
+    <div class="detail-row">
+        <label>تاریخ لغو:</label>
+        <span>{{ enrollment.cancelled_at.strftime('%Y-%m-%d %H:%M') }}</span>
+    </div>
+    {% endif %}
+</div>
+
+<div class="action-buttons">
+    {% if enrollment.status == 'PENDING' %}
+    <form method="POST" action="{{ url_for('enrollment.admin_approve', enrollment_id=enrollment.id) }}" style="display: inline;">
+        <button type="submit" class="btn btn-success">تایید</button>
+    </form>
+    <form method="POST" action="{{ url_for('enrollment.admin_reject', enrollment_id=enrollment.id) }}" style="display: inline;">
+        <button type="submit" class="btn btn-danger">رد</button>
+    </form>
+    {% endif %}
+    {% if enrollment.status in ('PENDING', 'APPROVED') %}
+    <form method="POST" action="{{ url_for('enrollment.admin_cancel', enrollment_id=enrollment.id) }}" style="display: inline;">
+        <button type="submit" class="btn btn-warning">لغو</button>
+    </form>
+    {% endif %}
+</div>
+
+<a href="{{ url_for('enrollment.admin_enrollment_list') }}" class="btn btn-outline">بازگشت به لیست</a>
+{% endblock %}

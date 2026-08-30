@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% block title %}کلاس‌های موجود{% endblock %}
+{% block content %}
+<div class="page-header">
+    <h1>کلاس‌های موجود</h1>
+</div>
+
+{% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+        {% for category, message in messages %}
+            <div class="alert alert-{{ category }}">{{ message }}</div>
+        {% endfor %}
+    {% endif %}
+{% endwith %}
+
+{% if classes %}
+<div class="table-container">
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th>عنوان</th>
+                <th>درس</th>
+                <th>تاریخ شروع</th>
+                <th>ظرفیت باقیمانده</th>
+                <th>وضعیت</th>
+                <th>عملیات</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for cls in classes %}
+            <tr>
+                <td>{{ cls.title }}</td>
+                <td>{{ cls.course.title }}</td>
+                <td>{{ cls.start_date }}</td>
+                <td>{{ cls.capacity }}</td>
+                <td><span class="status-badge status-{{ cls.status|lower }}">{{ cls.status }}</span></td>
+                <td>
+                    {% if cls.id in enrolled_class_ids %}
+                    <span class="btn btn-sm btn-disabled">ثبت‌نام شده</span>
+                    {% else %}
+                    <a href="{{ url_for('enrollment.student_class_detail', class_id=cls.id) }}" class="btn btn-sm btn-primary">مشاهده و ثبت‌نام</a>
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% else %}
+<p class="empty-state">کلاسی موجود نیست.</p>
+{% endif %}
+{% endblock %}

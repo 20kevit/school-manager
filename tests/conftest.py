@@ -104,6 +104,8 @@ def student_user(db):
     db.session.add(role)
     db.session.flush()
     user.roles.append(role)
+    db.session.add(user)
+    db.session.flush()
 
     profile = StudentProfileModel(
         user_id=user.id,

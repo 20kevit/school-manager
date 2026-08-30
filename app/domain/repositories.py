@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 
+from app.domain.enrollment import Enrollment
 from app.domain.profiles import ParentProfile, StudentProfile, TeacherProfile
 from app.domain.role import Role
 from app.domain.user import User
@@ -72,3 +73,38 @@ class ParentProfileRepository(ABC):
 
     @abstractmethod
     def get_parents(self, child_id: int) -> list[User]: ...
+
+
+class EnrollmentRepository(ABC):
+    """Abstract repository for Enrollment persistence."""
+
+    @abstractmethod
+    def get_by_id(self, enrollment_id: int) -> Enrollment | None: ...
+
+    @abstractmethod
+    def get_by_student_and_class(
+        self, student_user_id: int, class_id: int
+    ) -> Enrollment | None: ...
+
+    @abstractmethod
+    def get_active_enrollment(
+        self, student_user_id: int, class_id: int
+    ) -> Enrollment | None: ...
+
+    @abstractmethod
+    def create(self, enrollment: Enrollment) -> Enrollment: ...
+
+    @abstractmethod
+    def update(self, enrollment: Enrollment) -> Enrollment: ...
+
+    @abstractmethod
+    def list_by_student(self, student_user_id: int) -> list[Enrollment]: ...
+
+    @abstractmethod
+    def list_by_class(self, class_id: int) -> list[Enrollment]: ...
+
+    @abstractmethod
+    def list_pending_by_class(self, class_id: int) -> list[Enrollment]: ...
+
+    @abstractmethod
+    def count_approved_by_class(self, class_id: int) -> int: ...

@@ -69,3 +69,32 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 - Schedule exceptions: Individual sessions can have custom dates without modifying the recurring schedule
 - Session shifting: Cancelling and shifting preserves session numbering and total count
 - Content overrides: 3-level hierarchy allows Course → Class → Session customization
+
+## P3 — Enrollment (2026-08-30)
+
+### Added
+
+- Enrollment domain entity with status enum (PENDING, APPROVED, REJECTED, CANCELLED)
+- Enrollment database model with timestamps and relationships
+- Enrollment application service with lifecycle management
+- Student enrollment request functionality
+- Admin direct enrollment with optional auto-approval
+- Enrollment approval with capacity and duplicate checks
+- Enrollment rejection with timestamp preservation
+- Enrollment cancellation for pending and approved enrollments
+- Duplicate active enrollment prevention (application and database level)
+- Class capacity enforcement at approval time
+- Admin web UI: enrollment list, pending requests, enrollment details, direct enrollment form
+- Student web UI: available classes, class details, enrollment request, my enrollments
+- Navigation links for enrollment management
+- Database migration for enrollment model
+- Enrollment repository interface
+- 20+ tests covering enrollment lifecycle, capacity, and authorization
+
+### Design Decisions
+
+- Student vs Admin enrollment: Students request (PENDING), Admins may auto-approve
+- Duplicate prevention: Only one active enrollment per student per class
+- Capacity enforcement: Checked at approval time, not at request time
+- Historical records: Rejected and cancelled enrollments preserved for tracking
+- Basic eligibility: Only essential checks at this phase (extensible for future)

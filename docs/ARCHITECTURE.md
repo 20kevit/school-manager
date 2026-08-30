@@ -116,6 +116,35 @@ Course (reusable template)
 - **Session Shifting**: Cancelling and shifting preserves session numbering and total planned session count.
 - **Content Hierarchy**: Course syllabus → Class-specific overrides → Individual session overrides.
 
+## Enrollment (P3)
+
+The enrollment system manages the relationship between Students and Classes.
+
+```
+Student
+   ↓
+Enrollment
+   ↓
+Class
+```
+
+### Enrollment Lifecycle
+
+```
+PENDING → APPROVED
+PENDING → REJECTED
+PENDING → CANCELLED
+APPROVED → CANCELLED
+```
+
+### Key Design Decisions
+
+- **Student vs Admin enrollment**: Students can request enrollment (PENDING), Admins can directly enroll students (may be auto-approved).
+- **Duplicate prevention**: Only one active enrollment (PENDING or APPROVED) per student per class is allowed.
+- **Capacity enforcement**: Capacity is checked at approval time. A class at full capacity cannot have new APPROVED enrollments.
+- **Historical records**: Rejected and cancelled enrollments are preserved for historical tracking.
+- **Basic eligibility**: At this phase, only basic checks are implemented (student exists, class exists, class is accepting enrollments).
+
 ## Payment Integration (Future)
 
 ```

@@ -30,10 +30,10 @@
 
 ## P3 — Enrollment
 
-- [ ] Enrollment
-- [ ] Enrollment requests
-- [ ] Admin approval
-- [ ] Enrollment lifecycle
+- [x] Enrollment
+- [x] Enrollment requests
+- [x] Admin approval
+- [x] Enrollment lifecycle
 
 ## P4 — Attendance
 
