@@ -321,3 +321,34 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 - Event-driven architecture for loose coupling with existing services
 - Missing provider credentials do not break application startup
 - Provider abstraction allows future provider additions without domain changes
+
+## P10 — Reporting & Analytics (2026-08-30)
+
+### Added
+
+- Reporting application service with centralized dashboard overview
+- Student comprehensive report (profile, enrollments, attendance, activities, assessments, finance)
+- Class comprehensive report (enrollments, sessions, attendance, activities, assessments, finance)
+- Course comprehensive report (classes, enrollments, activities)
+- Attendance reports with filters (class, student, date range)
+- Attendance alerts (low attendance detection with configurable threshold)
+- Assessment reports (scores, averages, pass rates, distribution)
+- Activity/homework reports (completion rates, late submissions, grades)
+- Finance reports (revenue, debt, payments, discounts, refunds)
+- Enrollment reports (status counts, approval rates, filters)
+- Teacher reports (classes, students, sessions, activities, assessments)
+- Operational reports (today's classes, pending requests, attention items)
+- Notification reports (delivery stats, channel success rates)
+- CSV export (attendance, assessment, finance)
+- Authorization enforcement (Admin full, Teacher own classes, Student own, Parent linked children)
+- 17 report templates with Persian RTL UI
+- Navigation links for all roles (Admin, Teacher, Student, Parent)
+- 35 tests covering reporting services, authorization, filters, and edge cases
+
+### Design Decisions
+
+- Centralized ReportingService queries cross-cutting data without duplicating domain logic
+- Role-based access enforced at service level (Admin sees all, Teacher sees own classes, Student sees own data, Parent sees linked children)
+- Report routes organized by domain area (admin, student, class, course, attendance, assessment, activity, finance, enrollment, teacher, operational, notification)
+- CSV export available for attendance, assessment, and finance data
+- Reports use existing domain services for data access (no direct queries bypassing business logic)

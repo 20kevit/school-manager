@@ -54,6 +54,7 @@ def _register_blueprints(app):
     from app.interface.web.finance.routes import finance_bp
     from app.interface.web.notification.routes import notification_bp
     from app.interface.web.portal.routes import portal_bp
+    from app.interface.web.reporting.routes import reporting_bp
 
     app.register_blueprint(web_bp)
     app.register_blueprint(auth_bp)
@@ -65,6 +66,7 @@ def _register_blueprints(app):
     app.register_blueprint(assessment_bp)
     app.register_blueprint(portal_bp)
     app.register_blueprint(notification_bp)
+    app.register_blueprint(reporting_bp)
 
 
 def _register_routes(app):

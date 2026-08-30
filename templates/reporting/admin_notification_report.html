@@ -1,0 +1,63 @@
+{% extends "reporting/base_report.html" %}
+
+{% block title %}گزارش اعلانات - Academy{% endblock %}
+
+{% block report_title %}گزارش اعلانات{% endblock %}
+
+{% block report_actions %}
+<a href="{{ url_for('reporting.admin_overview') }}" class="btn btn-secondary">بازگشت</a>
+{% endblock %}
+
+{% block report_content %}
+<div class="report-card">
+    <h2>آمار کلی اعلانات</h2>
+    <div class="report-stats">
+        <div class="stat-item">
+            <span class="stat-value">{{ report.total }}</span>
+            <span class="stat-label">کل اعلانات</span>
+        </div>
+        <div class="stat-item">
+            <span class="stat-value">{{ report.sent }}</span>
+            <span class="stat-label">ارسال شده</span>
+        </div>
+        <div class="stat-item">
+            <span class="stat-value">{{ report.failed }}</span>
+            <span class="stat-label">ناموفق</span>
+        </div>
+        <div class="stat-item">
+            <span class="stat-value">{{ report.pending }}</span>
+            <span class="stat-label">در انتظار ارسال</span>
+        </div>
+        <div class="stat-item">
+            <span class="stat-value">{{ report.success_rate }}%</span>
+            <span class="stat-label">نرخ موفقیت</span>
+        </div>
+    </div>
+</div>
+
+{% if report.channels %}
+<div class="report-card">
+    <h2>آمار بر اساس کانال</h2>
+    <table class="report-table">
+        <thead>
+            <tr>
+                <th>کانال</th>
+                <th>کل</th>
+                <th>تحویل شده</th>
+                <th>نرخ موفقیت</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for channel in report.channels %}
+            <tr>
+                <td>{{ channel.channel }}</td>
+                <td>{{ channel.total }}</td>
+                <td>{{ channel.delivered }}</td>
+                <td>{{ channel.success_rate }}%</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endif %}
+{% endblock %}

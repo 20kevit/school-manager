@@ -1,0 +1,103 @@
+{% extends "reporting/base_report.html" %}
+
+{% block title %}گزارش حضور و غیاب - Academy{% endblock %}
+
+{% block report_title %}گزارش حضور و غیاب{% endblock %}
+
+{% block report_actions %}
+<a href="{{ url_for('reporting.admin_overview') }}" class="btn btn-secondary">بازگشت</a>
+<a href="{{ url_for('reporting.export_attendance_csv', class_id=selected_class_id, student_id=selected_student_id) }}" class="btn btn-success">خروجی CSV</a>
+{% endblock %}
+
+{% block report_content %}
+<div class="report-filters">
+    <form method="GET" action="{{ url_for('reporting.admin_attendance_report') }}">
+        <div class="filter-group">
+            <label for="class_id">کلاس:</label>
+            <select name="class_id" id="class_id">
+                <option value="">همه کلاس‌ها</option>
+                {% for class in classes %}
+                <option value="{{ class.id }}" {% if selected_class_id == class.id %}selected{% endif %}>
+                    {{ class.title }}
+                </option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="filter-group">
+            <label for="start_date">از تاریخ:</label>
+            <input type="date" name="start_date" id="start_date" value="{{ start_date or '' }}">
+        </div>
+        <div class="filter-group">
+            <label for="end_date">تا تاریخ:</label>
+            <input type="date" name="end_date" id="end_date" value="{{ end_date or '' }}">
+        </div>
+        <button type="submit" class="btn btn-primary">اعمال فیلتر</button>
+    </form>
+</div>
+
+<div class="report-card">
+    <h2>آمار کلی حضور و غیاب</h2>
+    <div class="report-stats">
+        <div class="stat-item">
+            <span class="stat-value">{{ report.percentage }}%</span>
+            <span class="stat-label">درصد حضور</span>
+        </div>
+        <div class="stat-item">
+            <span class="stat-value">{{ report.total }}</span>
+            <span class="stat-label">کل رکوردها</span>
+        </div>
+        <div class="stat-item">
+            <span class="stat-value">{{ report.present }}</span>
+            <span class="stat-label">حضور</span>
+        </div>
+        <div class="stat-item">
+            <span class="stat-value">{{ report.absent }}</span>
+            <span class="stat-label">غیبت</span>
+        </div>
+        <div class="stat-item">
+            <span class="stat-value">{{ report.late }}</span>
+            <span class="stat-label">تاخیر</span>
+        </div>
+        <div class="stat-item">
+            <span class="stat-value">{{ report.excused }}</span>
+            <span class="stat-label">معذوریت</span>
+        </div>
+    </div>
+    <div class="progress-bar">
+        <div class="progress-fill" style="width: {{ report.percentage }}%"></div>
+    </div>
+</div>
+
+{% if alerts %}
+<div class="report-card">
+    <h2>هشدارهای حضور و غیاب</h2>
+    <div class="alert alert-warning">
+        دانش‌آموزان با درصد حضور کمتر از ۷۰٪
+    </div>
+    <table class="report-table">
+        <thead>
+            <tr>
+                <th>نام دانش‌آموز</th>
+                <th>درصد حضور</th>
+                <th>کل جلسات</th>
+                <th>جلسات حضور</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for alert in alerts %}
+            <tr>
+                <td>
+                    <a href="{{ url_for('reporting.admin_student_report', student_id=alert.student_id) }}">
+                        {{ alert.student_name }}
+                    </a>
+                </td>
+                <td>{{ alert.attendance_percentage }}%</td>
+                <td>{{ alert.total_sessions }}</td>
+                <td>{{ alert.present_sessions }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endif %}
+{% endblock %}

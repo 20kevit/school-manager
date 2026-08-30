@@ -463,3 +463,31 @@ Portal
 - **Main dashboard redirect**: `auth.dashboard` redirects to role-specific portal routes
 - **Finance visibility**: Student financial data restricted by age (18+) via existing profile
 - **Authorization**: Role-based access enforced at route level
+
+## Reporting & Analytics (P10)
+
+Reporting provides cross-cutting analytics by querying existing domain services.
+
+```
+ReportingService
+  ├── Admin Overview: total users, students, teachers, classes, revenue, pending enrollments
+  ├── Student Report: profile, enrollments, attendance, activities, assessments, finance
+  ├── Class Report: enrollments, sessions, attendance, activities, assessments, finance
+  ├── Course Report: classes, enrollments, activities
+  ├── Attendance Reports: filters, alerts (configurable threshold)
+  ├── Assessment Reports: scores, averages, pass rates, distribution
+  ├── Activity Reports: completion rates, late submissions, grades
+  ├── Finance Reports: revenue, debt, payments, discounts, refunds
+  ├── Enrollment Reports: status counts, approval rates
+  ├── Teacher Reports: classes, students, sessions, activities, assessments
+  ├── Operational Reports: today's classes, pending requests, attention items
+  └── Notification Reports: delivery stats, channel success rates
+```
+
+### Key Design Decisions
+
+- **Centralized service**: Single ReportingService class aggregates data from all domain areas
+- **Service reuse**: No direct database queries; all data comes from existing domain services
+- **Role-based access**: Admin sees all data; Teacher sees own classes; Student sees own data; Parent sees linked children
+- **CSV export**: Available for attendance, assessment, and finance data
+- **No new domain entities**: Reports are read-only views of existing data

@@ -1,0 +1,130 @@
+{% extends "reporting/base_report.html" %}
+
+{% block title %}گزارش امتحان - Academy{% endblock %}
+
+{% block report_title %}گزارش جامع امتحان{% endblock %}
+
+{% block report_actions %}
+<a href="{{ url_for('reporting.admin_overview') }}" class="btn btn-secondary">بازگشت</a>
+<a href="{{ url_for('reporting.export_assessment_csv', assessment_id=assessment_id) }}" class="btn btn-success">خروجی CSV</a>
+{% endblock %}
+
+{% block report_content %}
+<div class="report-card">
+    <h2>مشخصات امتحان</h2>
+    <div class="report-stats">
+        <div class="stat-item">
+            <span class="stat-value">{{ report.assessment.title }}</span>
+            <span class="stat-label">عنوان امتحان</span>
+        </div>
+        <div class="stat-item">
+            <span class="stat-value">{{ report.assessment.type }}</span>
+            <span class="stat-label">نوع</span>
+        </div>
+        <div class="stat-item">
+            <span class="stat-value">{{ report.assessment.status }}</span>
+            <span class="stat-label">وضعیت</span>
+        </div>
+        <div class="stat-item">
+            <span class="stat-value">{{ report.assessment.max_score }}</span>
+            <span class="stat-label">حداکثر نمره</span>
+        </div>
+        <div class="stat-item">
+            <span class="stat-value">{{ report.assessment.passing_score }}</span>
+            <span class="stat-label">نمره قبولی</span>
+        </div>
+    </div>
+</div>
+
+<div class="report-card">
+    <h2>آمار امتحان</h2>
+    <div class="report-stats">
+        <div class="stat-item">
+            <span class="stat-value">{{ report.stats.eligible }}</span>
+            <span class="stat-label">دانش‌آموزان واجد شرایط</span>
+        </div>
+        <div class="stat-item">
+            <span class="stat-value">{{ report.stats.submitted }}</span>
+            <span class="stat-label">شرکت‌کنندگان</span>
+        </div>
+        <div class="stat-item">
+            <span class="stat-value">{{ report.stats.missing }}</span>
+            <span class="stat-label">غایبان</span>
+        </div>
+    </div>
+</div>
+
+<div class="report-card">
+    <h2>نتایج</h2>
+    <div class="report-stats">
+        <div class="stat-item">
+            <span class="stat-value">{{ report.stats.average }}</span>
+            <span class="stat-label">میانگین نمره</span>
+        </div>
+        <div class="stat-item">
+            <span class="stat-value">{{ report.stats.min }}</span>
+            <span class="stat-label">حداقل نمره</span>
+        </div>
+        <div class="stat-item">
+            <span class="stat-value">{{ report.stats.max }}</span>
+            <span class="stat-label">حداکثر نمره</span>
+        </div>
+        <div class="stat-item">
+            <span class="stat-value">{{ report.stats.passed }}</span>
+            <span class="stat-label">قبول شده</span>
+        </div>
+        <div class="stat-item">
+            <span class="stat-value">{{ report.stats.failed }}</span>
+            <span class="stat-label">مردود شده</span>
+        </div>
+        <div class="stat-item">
+            <span class="stat-value">{{ report.stats.pass_rate }}%</span>
+            <span class="stat-label">نرخ قبولی</span>
+        </div>
+    </div>
+</div>
+
+<div class="report-card">
+    <h2>توزیع نمرات</h2>
+    <div class="report-stats">
+        {% for range_name, count in report.stats.score_distribution.items() %}
+        <div class="stat-item">
+            <span class="stat-value">{{ count }}</span>
+            <span class="stat-label">{{ range_name }}</span>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+{% if report.results %}
+<div class="report-card">
+    <h2>لیست نتایج</h2>
+    <table class="report-table">
+        <thead>
+            <tr>
+                <th>دانش‌آموز</th>
+                <th>نمره</th>
+                <th>درصد</th>
+                <th>وضعیت</th>
+                <th>حضور</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for result in report.results %}
+            <tr>
+                <td>
+                    <a href="{{ url_for('reporting.admin_student_report', student_id=result.student_user_id) }}">
+                        {{ result.student.profile.first_name }} {{ result.student.profile.last_name }}
+                    </a>
+                </td>
+                <td>{{ result.score }}</td>
+                <td>{{ result.percentage }}%</td>
+                <td>{{ result.pass_fail }}</td>
+                <td>{{ result.presence_status }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endif %}
+{% endblock %}

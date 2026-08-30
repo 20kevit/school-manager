@@ -1,0 +1,112 @@
+{% extends "reporting/base_report.html" %}
+
+{% block title %}داشبورد مدیریت - Academy{% endblock %}
+
+{% block report_title %}داشبورد مدیریت{% endblock %}
+
+{% block report_actions %}
+<a href="{{ url_for('reporting.admin_operational_report') }}" class="btn btn-secondary">گزارش عملیاتی</a>
+<a href="{{ url_for('reporting.admin_finance_report') }}" class="btn btn-primary">گزارش مالی</a>
+{% endblock %}
+
+{% block report_content %}
+<div class="report-card">
+    <h2>آمار کلی</h2>
+    <div class="report-stats">
+        <div class="stat-item">
+            <span class="stat-value">{{ overview.students.total }}</span>
+            <span class="stat-label">کل دانش‌آموزان</span>
+        </div>
+        <div class="stat-item">
+            <span class="stat-value">{{ overview.students.active }}</span>
+            <span class="stat-label">دانش‌آموزان فعال</span>
+        </div>
+        <div class="stat-item">
+            <span class="stat-value">{{ overview.teachers.total }}</span>
+            <span class="stat-label">معلمان</span>
+        </div>
+        <div class="stat-item">
+            <span class="stat-value">{{ overview.classes.total }}</span>
+            <span class="stat-label">کل کلاس‌ها</span>
+        </div>
+        <div class="stat-item">
+            <span class="stat-value">{{ overview.classes.active }}</span>
+            <span class="stat-label">کلاس‌های فعال</span>
+        </div>
+    </div>
+</div>
+
+<div class="report-card">
+    <h2>ثبت‌نام‌ها</h2>
+    <div class="report-stats">
+        <div class="stat-item">
+            <span class="stat-value">{{ overview.enrollments.total }}</span>
+            <span class="stat-label">کل ثبت‌نام‌ها</span>
+        </div>
+        <div class="stat-item">
+            <span class="stat-value">{{ overview.enrollments.pending }}</span>
+            <span class="stat-label">در انتظار تأیید</span>
+        </div>
+    </div>
+</div>
+
+<div class="report-card">
+    <h2>حضور و غیاب</h2>
+    <div class="report-stats">
+        <div class="stat-item">
+            <span class="stat-value">{{ overview.attendance.percentage }}%</span>
+            <span class="stat-label">درصد حضور</span>
+        </div>
+        <div class="stat-item">
+            <span class="stat-value">{{ overview.attendance.total }}</span>
+            <span class="stat-label">کل جلسات</span>
+        </div>
+        <div class="stat-item">
+            <span class="stat-value">{{ overview.attendance.present }}</span>
+            <span class="stat-label">حضور</span>
+        </div>
+    </div>
+</div>
+
+<div class="report-card">
+    <h2>امتحانات</h2>
+    <div class="report-stats">
+        <div class="stat-item">
+            <span class="stat-value">{{ overview.assessments.total }}</span>
+            <span class="stat-label">کل امتحانات</span>
+        </div>
+        <div class="stat-item">
+            <span class="stat-value">{{ overview.assessments.graded }}</span>
+            <span class="stat-label">نمره‌گذاری شده</span>
+        </div>
+    </div>
+</div>
+
+<div class="report-card">
+    <h2>مالی</h2>
+    <div class="report-stats">
+        <div class="stat-item">
+            <span class="stat-value">{{ "{:,.0f}".format(overview.finance.total_revenue) }}</span>
+            <span class="stat-label">درآمد کل (تومان)</span>
+        </div>
+        <div class="stat-item">
+            <span class="stat-value">{{ "{:,.0f}".format(overview.finance.total_debt) }}</span>
+            <span class="stat-label">بدهی کل (تومان)</span>
+        </div>
+    </div>
+</div>
+
+<div class="report-card">
+    <h2>اعلانات</h2>
+    <div class="report-stats">
+        <div class="stat-item">
+            <span class="stat-value">{{ overview.notifications.total }}</span>
+            <span class="stat-label">کل اعلانات</span>
+        </div>
+        <div class="stat-item">
+            <span class="stat-value">{{ overview.notifications.failed }}</span>
+            <span class="stat-label">ناموفق</span>
+        </div>
+    </div>
+</div>
+{% endblock %}

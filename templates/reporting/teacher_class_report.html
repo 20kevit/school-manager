@@ -1,0 +1,103 @@
+{% extends "reporting/base_report.html" %}
+
+{% block title %}گزارش کلاس - Academy{% endblock %}
+
+{% block report_title %}گزارش جامع کلاس{% endblock %}
+
+{% block report_actions %}
+<a href="{{ url_for('reporting.teacher_overview') }}" class="btn btn-secondary">بازگشت</a>
+{% endblock %}
+
+{% block report_content %}
+<div class="report-card">
+    <h2>مشخصات کلاس</h2>
+    <div class="report-stats">
+        <div class="stat-item">
+            <span class="stat-value">{{ report.class.title }}</span>
+            <span class="stat-label">عنوان کلاس</span>
+        </div>
+        <div class="stat-item">
+            <span class="stat-value">{{ report.class.course.title }}</span>
+            <span class="stat-label">دوره</span>
+        </div>
+        <div class="stat-item">
+            <span class="stat-value">{{ report.class.status }}</span>
+            <span class="stat-label">وضعیت</span>
+        </div>
+    </div>
+</div>
+
+<div class="report-card">
+    <h2>ظرفیت و ثبت‌نام</h2>
+    <div class="report-stats">
+        <div class="stat-item">
+            <span class="stat-value">{{ report.enrollments.approved }}/{{ report.class.capacity }}</span>
+            <span class="stat-label">ثبت‌نام شده/ظرفیت</span>
+        </div>
+        <div class="stat-item">
+            <span class="stat-value">{{ report.finance.occupancy_rate }}%</span>
+            <span class="stat-label">نرخ اشغال</span>
+        </div>
+    </div>
+    <div class="progress-bar">
+        <div class="progress-fill" style="width: {{ report.finance.occupancy_rate }}%"></div>
+    </div>
+</div>
+
+<div class="report-card">
+    <h2>جلسات</h2>
+    <div class="report-stats">
+        <div class="stat-item">
+            <span class="stat-value">{{ report.sessions.total }}</span>
+            <span class="stat-label">کل جلسات</span>
+        </div>
+        <div class="stat-item">
+            <span class="stat-value">{{ report.sessions.completed }}</span>
+            <span class="stat-label">برگزار شده</span>
+        </div>
+        <div class="stat-item">
+            <span class="stat-value">{{ report.sessions.scheduled }}</span>
+            <span class="stat-label">برنامه‌ریزی شده</span>
+        </div>
+    </div>
+</div>
+
+<div class="report-card">
+    <h2>حضور و غیاب</h2>
+    <div class="report-stats">
+        <div class="stat-item">
+            <span class="stat-value">{{ report.attendance.percentage }}%</span>
+            <span class="stat-label">درصد حضور</span>
+        </div>
+        <div class="stat-item">
+            <span class="stat-value">{{ report.attendance.total }}</span>
+            <span class="stat-label">کل رکوردها</span>
+        </div>
+        <div class="stat-item">
+            <span class="stat-value">{{ report.attendance.present }}</span>
+            <span class="stat-label">حضور</span>
+        </div>
+        <div class="stat-item">
+            <span class="stat-value">{{ report.attendance.absent }}</span>
+            <span class="stat-label">غیبت</span>
+        </div>
+    </div>
+    <div class="progress-bar">
+        <div class="progress-fill" style="width: {{ report.attendance.percentage }}%"></div>
+    </div>
+</div>
+
+<div class="report-card">
+    <h2>فعالیت‌ها و امتحانات</h2>
+    <div class="report-stats">
+        <div class="stat-item">
+            <span class="stat-value">{{ report.activities.total }}</span>
+            <span class="stat-label">کل فعالیت‌ها</span>
+        </div>
+        <div class="stat-item">
+            <span class="stat-value">{{ report.assessments.total }}</span>
+            <span class="stat-label">کل امتحانات</span>
+        </div>
+    </div>
+</div>
+{% endblock %}

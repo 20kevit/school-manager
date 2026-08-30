@@ -1,0 +1,59 @@
+{% extends "reporting/base_report.html" %}
+
+{% block title %}گزارش من - Academy{% endblock %}
+
+{% block report_title %}گزارش جامع من{% endblock %}
+
+{% block report_content %}
+<div class="report-card">
+    <h2>کلاس‌ها</h2>
+    <div class="report-stats">
+        <div class="stat-item">
+            <span class="stat-value">{{ report.classes.total }}</span>
+            <span class="stat-label">کل کلاس‌ها</span>
+        </div>
+        <div class="stat-item">
+            <span class="stat-value">{{ report.classes.active }}</span>
+            <span class="stat-label">فعال</span>
+        </div>
+    </div>
+</div>
+
+<div class="report-card">
+    <h2>دانش‌آموزان</h2>
+    <div class="report-stats">
+        <div class="stat-item">
+            <span class="stat-value">{{ report.students.total }}</span>
+            <span class="stat-label">کل دانش‌آموزان</span>
+        </div>
+    </div>
+</div>
+
+<div class="report-card">
+    <h2>جلسات</h2>
+    <div class="report-stats">
+        <div class="stat-item">
+            <span class="stat-value">{{ report.sessions.total }}</span>
+            <span class="stat-label">کل جلسات</span>
+        </div>
+        <div class="stat-item">
+            <span class="stat-value">{{ report.sessions.completed }}</span>
+            <span class="stat-label">برگزار شده</span>
+        </div>
+    </div>
+</div>
+
+<div class="report-card">
+    <h2>فعالیت‌ها و امتحانات</h2>
+    <div class="report-stats">
+        <div class="stat-item">
+            <span class="stat-value">{{ report.activities.total }}</span>
+            <span class="stat-label">کل فعالیت‌ها</span>
+        </div>
+        <div class="stat-item">
+            <span class="stat-value">{{ report.assessments.total }}</span>
+            <span class="stat-label">کل امتحانات</span>
+        </div>
+    </div>
+</div>
+{% endblock %}

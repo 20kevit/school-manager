@@ -1,0 +1,83 @@
+{% extends "reporting/base_report.html" %}
+
+{% block title %}گزارش عملیاتی - Academy{% endblock %}
+
+{% block report_title %}گزارش عملیاتی{% endblock %}
+
+{% block report_actions %}
+<a href="{{ url_for('reporting.admin_overview') }}" class="btn btn-secondary">بازگشت</a>
+{% endblock %}
+
+{% block report_content %}
+<div class="report-card">
+    <h2>کلاس‌های امروز</h2>
+    {% if report.today_classes %}
+    <table class="report-table">
+        <thead>
+            <tr>
+                <th>عنوان کلاس</th>
+                <th>دوره</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for class in report.today_classes %}
+            <tr>
+                <td>
+                    <a href="{{ url_for('reporting.admin_class_report', class_id=class.id) }}">
+                        {{ class.title }}
+                    </a>
+                </td>
+                <td>{{ class.course }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <p>کلاسی برای امروز برنامه‌ریزی نشده است.</p>
+    {% endif %}
+</div>
+
+<div class="report-card">
+    <h2>آمار عملیاتی</h2>
+    <div class="report-stats">
+        <div class="stat-item">
+            <span class="stat-value">{{ report.upcoming_sessions }}</span>
+            <span class="stat-label">جلسات آینده (۷ روز)</span>
+        </div>
+        <div class="stat-item">
+            <span class="stat-value">{{ report.pending_enrollments }}</span>
+            <span class="stat-label">درخواست‌های ثبت‌نام در انتظار</span>
+        </div>
+        <div class="stat-item">
+            <span class="stat-value">{{ report.sessions_without_attendance }}</span>
+            <span class="stat-label">جلسات بدون حضور و غیاب</span>
+        </div>
+        <div class="stat-item">
+            <span class="stat-value">{{ report.failed_notifications }}</span>
+            <span class="stat-label">اعلانات ناموفق</span>
+        </div>
+        <div class="stat-item">
+            <span class="stat-value">{{ report.unpaid_balances }}</span>
+            <span class="stat-label">بدهکاران</span>
+        </div>
+    </div>
+</div>
+
+{% if report.pending_enrollments > 0 %}
+<div class="alert alert-warning">
+    {{ report.pending_enrollments }} درخواست ثبت‌نام در انتظار تأیید است.
+</div>
+{% endif %}
+
+{% if report.sessions_without_attendance > 0 %}
+<div class="alert alert-warning">
+    {{ report.sessions_without_attendance }} جلسه برگزار شده بدون ثبت حضور و غیاب است.
+</div>
+{% endif %}
+
+{% if report.failed_notifications > 0 %}
+<div class="alert alert-danger">
+    {{ report.failed_notifications }} اعلان ناموفق ارسال شده است.
+</div>
+{% endif %}
+{% endblock %}

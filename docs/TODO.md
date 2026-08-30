@@ -143,12 +143,24 @@
 
 ## P10 — Reports & Analytics
 
-- [ ] Advanced financial reports
-- [ ] Advanced student reports
-- [ ] Advanced attendance reports
-- [ ] Teacher reports
-- [ ] Advanced class reports
-- [ ] Advanced analytics
+- [x] Reporting service with centralized dashboard overview
+- [x] Student comprehensive report (profile, enrollments, attendance, activities, assessments, finance)
+- [x] Class comprehensive report (enrollments, sessions, attendance, activities, assessments, finance)
+- [x] Course comprehensive report (classes, enrollments, activities)
+- [x] Attendance reports with filters (class, student, date range)
+- [x] Attendance alerts (low attendance detection with configurable threshold)
+- [x] Assessment reports (scores, averages, pass rates, distribution)
+- [x] Activity/homework reports (completion rates, late submissions, grades)
+- [x] Finance reports (revenue, debt, payments, discounts, refunds)
+- [x] Enrollment reports (status counts, approval rates, filters)
+- [x] Teacher reports (classes, students, sessions, activities, assessments)
+- [x] Operational reports (today's classes, pending requests, attention items)
+- [x] Notification reports (delivery stats, channel success rates)
+- [x] CSV export (attendance, assessment, finance)
+- [x] Authorization enforcement (Admin, Teacher, Student, Parent)
+- [x] Persian RTL UI templates for all reports
+- [x] Navigation links for all roles
+- [x] 35 reporting tests
 
 ## P11 — Administration
 

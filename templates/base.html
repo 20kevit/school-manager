@@ -22,11 +22,13 @@
                     <a href="{{ url_for('assessment.admin_assessment_list') }}">Assessments</a>
                     <a href="{{ url_for('finance.admin_dashboard') }}">Finance</a>
                     <a href="{{ url_for('notification.admin_dashboard') }}">Notifications</a>
+                    <a href="{{ url_for('reporting.admin_overview') }}">Reports</a>
                     {% endif %}
                     {% if current_user.has_any_role('TEACHER') %}
                     <a href="{{ url_for('attendance.teacher_my_classes') }}">My Classes</a>
                     <a href="{{ url_for('activity.teacher_my_classes') }}">Activities</a>
                     <a href="{{ url_for('assessment.teacher_my_classes') }}">Assessments</a>
+                    <a href="{{ url_for('reporting.teacher_overview') }}">My Reports</a>
                     {% endif %}
                     {% if current_user.has_any_role('STUDENT') %}
                     <a href="{{ url_for('enrollment.student_available_classes') }}">Classes</a>
@@ -36,6 +38,7 @@
                     <a href="{{ url_for('assessment.student_my_assessments') }}">My Results</a>
                     <a href="{{ url_for('finance.student_my_finance') }}">My Finance</a>
                     <a href="{{ url_for('notification.my_notifications') }}">Notifications</a>
+                    <a href="{{ url_for('reporting.student_overview') }}">My Reports</a>
                     {% endif %}
                     {% if current_user.has_any_role('PARENT') %}
                     <a href="{{ url_for('assessment.parent_overview') }}">Children Results</a>

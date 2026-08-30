@@ -1,0 +1,69 @@
+{% extends "reporting/base_report.html" %}
+
+{% block title %}گزارش ثبت‌نام - Academy{% endblock %}
+
+{% block report_title %}گزارش ثبت‌نام‌ها{% endblock %}
+
+{% block report_actions %}
+<a href="{{ url_for('reporting.admin_overview') }}" class="btn btn-secondary">بازگشت</a>
+{% endblock %}
+
+{% block report_content %}
+<div class="report-filters">
+    <form method="GET" action="{{ url_for('reporting.admin_enrollment_report') }}">
+        <div class="filter-group">
+            <label for="class_id">کلاس:</label>
+            <select name="class_id" id="class_id">
+                <option value="">همه کلاس‌ها</option>
+                {% for class in classes %}
+                <option value="{{ class.id }}" {% if selected_class_id == class.id %}selected{% endif %}>
+                    {{ class.title }}
+                </option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="filter-group">
+            <label for="course_id">دوره:</label>
+            <select name="course_id" id="course_id">
+                <option value="">همه دوره‌ها</option>
+                {% for course in courses %}
+                <option value="{{ course.id }}" {% if selected_course_id == course.id %}selected{% endif %}>
+                    {{ course.title }}
+                </option>
+                {% endfor %}
+            </select>
+        </div>
+        <button type="submit" class="btn btn-primary">اعمال فیلتر</button>
+    </form>
+</div>
+
+<div class="report-card">
+    <h2>آمار کلی ثبت‌نام‌ها</h2>
+    <div class="report-stats">
+        <div class="stat-item">
+            <span class="stat-value">{{ report.total }}</span>
+            <span class="stat-label">کل ثبت‌نام‌ها</span>
+        </div>
+        <div class="stat-item">
+            <span class="stat-value">{{ report.pending }}</span>
+            <span class="stat-label">در انتظار تأیید</span>
+        </div>
+        <div class="stat-item">
+            <span class="stat-value">{{ report.approved }}</span>
+            <span class="stat-label">تأیید شده</span>
+        </div>
+        <div class="stat-item">
+            <span class="stat-value">{{ report.rejected }}</span>
+            <span class="stat-label">رد شده</span>
+        </div>
+        <div class="stat-item">
+            <span class="stat-value">{{ report.cancelled }}</span>
+            <span class="stat-label">لغو شده</span>
+        </div>
+        <div class="stat-item">
+            <span class="stat-value">{{ report.approval_rate }}%</span>
+            <span class="stat-label">نرخ تأیید</span>
+        </div>
+    </div>
+</div>
+{% endblock %}

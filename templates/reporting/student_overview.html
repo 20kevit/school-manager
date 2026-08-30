@@ -1,0 +1,96 @@
+{% extends "reporting/base_report.html" %}
+
+{% block title %}گزارش من - Academy{% endblock %}
+
+{% block report_title %}گزارش جامع من{% endblock %}
+
+{% block report_content %}
+<div class="report-card">
+    <h2>ثبت‌نام‌ها</h2>
+    <div class="report-stats">
+        <div class="stat-item">
+            <span class="stat-value">{{ report.enrollments.total }}</span>
+            <span class="stat-label">کل ثبت‌نام‌ها</span>
+        </div>
+        <div class="stat-item">
+            <span class="stat-value">{{ report.enrollments.approved }}</span>
+            <span class="stat-label">تأیید شده</span>
+        </div>
+        <div class="stat-item">
+            <span class="stat-value">{{ report.enrollments.pending }}</span>
+            <span class="stat-label">در انتظار</span>
+        </div>
+    </div>
+</div>
+
+<div class="report-card">
+    <h2>حضور و غیاب</h2>
+    <div class="report-stats">
+        <div class="stat-item">
+            <span class="stat-value">{{ report.attendance.percentage }}%</span>
+            <span class="stat-label">درصد حضور</span>
+        </div>
+        <div class="stat-item">
+            <span class="stat-value">{{ report.attendance.total }}</span>
+            <span class="stat-label">کل جلسات</span>
+        </div>
+        <div class="stat-item">
+            <span class="stat-value">{{ report.attendance.present }}</span>
+            <span class="stat-label">حضور</span>
+        </div>
+        <div class="stat-item">
+            <span class="stat-value">{{ report.attendance.absent }}</span>
+            <span class="stat-label">غیبت</span>
+        </div>
+    </div>
+    <div class="progress-bar">
+        <div class="progress-fill" style="width: {{ report.attendance.percentage }}%"></div>
+    </div>
+</div>
+
+<div class="report-card">
+    <h2>امتحانات</h2>
+    <div class="report-stats">
+        <div class="stat-item">
+            <span class="stat-value">{{ report.assessments.total }}</span>
+            <span class="stat-label">کل امتحانات</span>
+        </div>
+        <div class="stat-item">
+            <span class="stat-value">{{ report.assessments.passed }}</span>
+            <span class="stat-label">قبول شده</span>
+        </div>
+        <div class="stat-item">
+            <span class="stat-value">{{ report.assessments.failed }}</span>
+            <span class="stat-label">مردود شده</span>
+        </div>
+        <div class="stat-item">
+            <span class="stat-value">{{ report.assessments.average_score }}</span>
+            <span class="stat-label">میانگین نمره</span>
+        </div>
+    </div>
+</div>
+
+{% if report.current_classes %}
+<div class="report-card">
+    <h2>کلاس‌های فعلی</h2>
+    <table class="report-table">
+        <thead>
+            <tr>
+                <th>عنوان کلاس</th>
+                <th>دوره</th>
+                <th>وضعیت</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for class in report.current_classes %}
+            <tr>
+                <td>{{ class.title }}</td>
+                <td>{{ class.course.title }}</td>
+                <td>{{ class.status }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endif %}
+{% endblock %}
