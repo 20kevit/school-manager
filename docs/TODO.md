@@ -20,13 +20,13 @@
 
 ## P2 — Academy Structure
 
-- [ ] Course
-- [ ] Course syllabus
-- [ ] Class
-- [ ] Class schedule
-- [ ] Session generation
-- [ ] Session rescheduling
-- [ ] Session cancellation
+- [x] Course
+- [x] Course syllabus
+- [x] Class
+- [x] Class schedule
+- [x] Session generation
+- [x] Session rescheduling
+- [x] Session cancellation
 
 ## P3 — Enrollment
 

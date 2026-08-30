@@ -94,6 +94,28 @@ Separate configs per environment (development, testing, production) in `config/_
 5. Create interface (blueprint) in `app/interface/web/` or `app/interface/api/`.
 6. Register blueprint in `app/__init__.py`.
 
+## Academy Structure (P2)
+
+The academy structure follows a hierarchical model:
+
+```
+Course (reusable template)
+  └── Syllabus (ordered content items)
+  └── Class (running instance)
+        ├── Weekly Schedule (recurring time slots)
+        ├── Sessions (generated from schedule)
+        └── Session Content Overrides (class-level customization)
+```
+
+### Key Design Decisions
+
+- **Course vs Class**: A Course is a reusable educational template. A Class is an actual running instance created from a Course.
+- **Capacity at Class level**: Different classes of the same Course can have different capacities.
+- **Persisted Sessions**: Sessions are real database records, not dynamically calculated on each request.
+- **Schedule Exceptions**: Individual sessions can have custom dates without modifying the recurring schedule.
+- **Session Shifting**: Cancelling and shifting preserves session numbering and total planned session count.
+- **Content Hierarchy**: Course syllabus → Class-specific overrides → Individual session overrides.
+
 ## Payment Integration (Future)
 
 ```

@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% block title %}{{ 'ویرایش درس' if course else 'ایجاد درس جدید' }}{% endblock %}
+{% block content %}
+<div class="page-header">
+    <h1>{{ 'ویرایش درس' if course else 'ایجاد درس جدید' }}</h1>
+</div>
+
+{% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+        {% for category, message in messages %}
+            <div class="alert alert-{{ category }}">{{ message }}</div>
+        {% endfor %}
+    {% endif %}
+{% endwith %}
+
+<div class="form-card">
+    <form method="POST" class="auth-form">
+        <div class="form-group">
+            <label for="title">عنوان درس</label>
+            <input type="text" id="title" name="title" value="{{ course.title if course else '' }}" required>
+        </div>
+        <div class="form-group">
+            <label for="description">توضیحات</label>
+            <textarea id="description" name="description" rows="3">{{ course.description if course else '' }}</textarea>
+        </div>
+        <div class="form-row">
+            <div class="form-group">
+                <label for="num_sessions">تعداد جلسات</label>
+                <input type="number" id="num_sessions" name="num_sessions" value="{{ course.num_sessions if course else 1 }}" min="1">
+            </div>
+            <div class="form-group">
+                <label for="min_age">حداقل سن</label>
+                <input type="number" id="min_age" name="min_age" value="{{ course.min_age if course and course.min_age is not none else '' }}" min="0">
+            </div>
+            <div class="form-group">
+                <label for="max_age">حداکثر سن</label>
+                <input type="number" id="max_age" name="max_age" value="{{ course.max_age if course and course.max_age is not none else '' }}" min="0">
+            </div>
+        </div>
+        <div class="form-group">
+            <label for="prerequisites">پیش‌نیازها</label>
+            <textarea id="prerequisites" name="prerequisites" rows="2">{{ course.prerequisites if course else '' }}</textarea>
+        </div>
+        <div class="form-actions">
+            <button type="submit" class="btn btn-primary">{{ 'ذخیره تغییرات' if course else 'ایجاد درس' }}</button>
+            <a href="{{ url_for('academy.course_list') }}" class="btn btn-secondary">لغو</a>
+        </div>
+    </form>
+</div>
+{% endblock %}

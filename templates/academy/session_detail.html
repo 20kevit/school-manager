@@ -1,0 +1,90 @@
+{% extends "base.html" %}
+{% block title %}جلسه {{ session.session_number }}{% endblock %}
+{% block content %}
+<div class="page-header">
+    <h1>جلسه {{ session.session_number }} — {{ class_obj.title }}</h1>
+    <a href="{{ url_for('academy.session_list', class_id=class_obj.id) }}" class="btn btn-outline">بازگشت به لیست جلسات</a>
+</div>
+
+{% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+        {% for category, message in messages %}
+            <div class="alert alert-{{ category }}">{{ message }}</div>
+        {% endfor %}
+    {% endif %}
+{% endwith %}
+
+<div class="detail-card">
+    <div class="detail-row">
+        <strong>شماره جلسه:</strong>
+        <span>{{ session.session_number }}</span>
+    </div>
+    <div class="detail-row">
+        <strong>تاریخ:</strong>
+        <span>{{ session.scheduled_date }}</span>
+    </div>
+    <div class="detail-row">
+        <strong>ساعت شروع:</strong>
+        <span>{{ session.start_time.strftime('%H:%M') }}</span>
+    </div>
+    <div class="detail-row">
+        <strong>ساعت پایان:</strong>
+        <span>{{ session.end_time.strftime('%H:%M') }}</span>
+    </div>
+    <div class="detail-row">
+        <strong>عنوان:</strong>
+        <span>{{ session.title or '—' }}</span>
+    </div>
+    <div class="detail-row">
+        <strong>توضیحات:</strong>
+        <span>{{ session.description or '—' }}</span>
+    </div>
+    <div class="detail-row">
+        <strong>وضعیت:</strong>
+        <span class="status-badge status-{{ session.status|lower }}">{{ session.status }}</span>
+    </div>
+    <div class="detail-row">
+        <strong>تغییر زمان:</strong>
+        <span>{{ 'بله' if session.is_rescheduled else 'خیر' }}</span>
+    </div>
+</div>
+
+{% if session.status == 'SCHEDULED' %}
+<div class="section-header">
+    <h2>عملیات</h2>
+</div>
+
+<div class="action-buttons">
+    <form method="POST" action="{{ url_for('academy.session_complete', session_id=session.id) }}" style="display:inline;">
+        <button type="submit" class="btn btn-primary">تکمیل جلسه</button>
+    </form>
+    <form method="POST" action="{{ url_for('academy.session_cancel', session_id=session.id) }}" style="display:inline;">
+        <button type="submit" class="btn btn-danger" onclick="return confirm('آیا مطمئن هستید؟')">لغو جلسه</button>
+    </form>
+</div>
+
+<div class="section-header">
+    <h2>تغییر زمان</h2>
+</div>
+
+<div class="form-card">
+    <form method="POST" action="{{ url_for('academy.session_reschedule', session_id=session.id) }}" class="auth-form">
+        <div class="form-row">
+            <div class="form-group">
+                <label for="new_date">تاریخ جدید</label>
+                <input type="date" id="new_date" name="new_date" required>
+            </div>
+            <div class="form-group">
+                <label for="new_start_time">ساعت شروع جدید</label>
+                <input type="time" id="new_start_time" name="new_start_time" required>
+            </div>
+            <div class="form-group">
+                <label for="new_end_time">ساعت پایان جدید</label>
+                <input type="time" id="new_end_time" name="new_end_time" required>
+            </div>
+        </div>
+        <button type="submit" class="btn btn-primary">ذخیره تغییرات</button>
+    </form>
+</div>
+{% endif %}
+{% endblock %}

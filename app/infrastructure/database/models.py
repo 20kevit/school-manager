@@ -173,3 +173,215 @@ class ParentProfileModel(db.Model):
 
     def __repr__(self) -> str:
         return f"<ParentProfileModel id={self.id} national_id={self.national_id!r}>"
+
+
+# ---------------------------------------------------------------------------
+# P2 — Academy Structure
+# ---------------------------------------------------------------------------
+
+
+class CourseModel(db.Model):
+    """Course table — reusable educational template."""
+
+    __tablename__ = "courses"
+
+    id = db.Column(db.Integer, primary_key=True)
+    title = db.Column(db.String(200), nullable=False)
+    description = db.Column(db.Text, default="")
+    num_sessions = db.Column(db.Integer, nullable=False, default=1)
+    min_age = db.Column(db.Integer, nullable=True)
+    max_age = db.Column(db.Integer, nullable=True)
+    prerequisites = db.Column(db.Text, default="")
+    created_at = db.Column(db.DateTime, server_default=db.func.now(), nullable=False)
+    updated_at = db.Column(
+        db.DateTime,
+        server_default=db.func.now(),
+        onupdate=db.func.now(),
+        nullable=False,
+    )
+
+    syllabus_items = db.relationship(
+        "SyllabusItemModel",
+        back_populates="course",
+        order_by="SyllabusItemModel.order",
+        lazy="select",
+        cascade="all, delete-orphan",
+    )
+    classes = db.relationship(
+        "AcademyClassModel",
+        back_populates="course",
+        lazy="select",
+    )
+
+    def __repr__(self) -> str:
+        return f"<CourseModel id={self.id} title={self.title!r}>"
+
+
+class SyllabusItemModel(db.Model):
+    """Syllabus item table — planned content for a course session."""
+
+    __tablename__ = "syllabus_items"
+
+    id = db.Column(db.Integer, primary_key=True)
+    course_id = db.Column(db.Integer, db.ForeignKey("courses.id"), nullable=False)
+    order = db.Column(db.Integer, nullable=False)
+    title = db.Column(db.String(200), nullable=False)
+    description = db.Column(db.Text, default="")
+    homework = db.Column(db.Text, default="")
+    assessment = db.Column(db.Text, default="")
+
+    course = db.relationship("CourseModel", back_populates="syllabus_items")
+
+    __table_args__ = (
+        db.UniqueConstraint("course_id", "order", name="uq_syllabus_course_order"),
+    )
+
+    def __repr__(self) -> str:
+        return f"<SyllabusItemModel id={self.id} order={self.order}>"
+
+
+class AcademyClassModel(db.Model):
+    """Class table — an actual running class created from a Course."""
+
+    __tablename__ = "academy_classes"
+
+    id = db.Column(db.Integer, primary_key=True)
+    course_id = db.Column(db.Integer, db.ForeignKey("courses.id"), nullable=False)
+    title = db.Column(db.String(200), nullable=False)
+    start_date = db.Column(db.Date, nullable=False)
+    end_date = db.Column(db.Date, nullable=True)
+    capacity = db.Column(db.Integer, nullable=False, default=30)
+    num_sessions = db.Column(db.Integer, nullable=False, default=1)
+    status = db.Column(db.String(20), nullable=False, default="PLANNED")
+    teacher_user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=True)
+    created_at = db.Column(db.DateTime, server_default=db.func.now(), nullable=False)
+    updated_at = db.Column(
+        db.DateTime,
+        server_default=db.func.now(),
+        onupdate=db.func.now(),
+        nullable=False,
+    )
+
+    course = db.relationship("CourseModel", back_populates="classes")
+    teacher = db.relationship("UserModel", foreign_keys=[teacher_user_id])
+    schedule_entries = db.relationship(
+        "ClassScheduleModel",
+        back_populates="academy_class",
+        order_by="ClassScheduleModel.weekday",
+        lazy="select",
+        cascade="all, delete-orphan",
+    )
+    sessions = db.relationship(
+        "SessionModel",
+        back_populates="academy_class",
+        order_by="SessionModel.session_number",
+        lazy="select",
+        cascade="all, delete-orphan",
+    )
+    session_content_overrides = db.relationship(
+        "ClassSessionContentModel",
+        back_populates="academy_class",
+        order_by="ClassSessionContentModel.session_number",
+        lazy="select",
+        cascade="all, delete-orphan",
+    )
+
+    def __repr__(self) -> str:
+        return f"<AcademyClassModel id={self.id} title={self.title!r}>"
+
+
+class ClassScheduleModel(db.Model):
+    """Weekly schedule entry table — one recurring weekly time slot."""
+
+    __tablename__ = "class_schedules"
+
+    id = db.Column(db.Integer, primary_key=True)
+    class_id = db.Column(
+        db.Integer, db.ForeignKey("academy_classes.id"), nullable=False
+    )
+    weekday = db.Column(db.String(10), nullable=False)
+    start_time = db.Column(db.Time, nullable=False)
+    end_time = db.Column(db.Time, nullable=False)
+
+    academy_class = db.relationship(
+        "AcademyClassModel", back_populates="schedule_entries"
+    )
+
+    __table_args__ = (
+        db.UniqueConstraint("class_id", "weekday", name="uq_class_weekday"),
+    )
+
+    def __repr__(self) -> str:
+        return (
+            f"<ClassScheduleModel id={self.id} {self.weekday} "
+            f"{self.start_time}-{self.end_time}>"
+        )
+
+
+class SessionModel(db.Model):
+    """Session table — an individual occurrence of a class."""
+
+    __tablename__ = "sessions"
+
+    id = db.Column(db.Integer, primary_key=True)
+    class_id = db.Column(
+        db.Integer, db.ForeignKey("academy_classes.id"), nullable=False
+    )
+    session_number = db.Column(db.Integer, nullable=False)
+    scheduled_date = db.Column(db.Date, nullable=False)
+    start_time = db.Column(db.Time, nullable=False)
+    end_time = db.Column(db.Time, nullable=False)
+    status = db.Column(db.String(20), nullable=False, default="SCHEDULED")
+    title = db.Column(db.String(200), nullable=True)
+    description = db.Column(db.Text, nullable=True)
+    is_rescheduled = db.Column(db.Boolean, nullable=False, default=False)
+    created_at = db.Column(db.DateTime, server_default=db.func.now(), nullable=False)
+    updated_at = db.Column(
+        db.DateTime,
+        server_default=db.func.now(),
+        onupdate=db.func.now(),
+        nullable=False,
+    )
+
+    academy_class = db.relationship("AcademyClassModel", back_populates="sessions")
+
+    __table_args__ = (
+        db.UniqueConstraint(
+            "class_id", "session_number", name="uq_session_class_number"
+        ),
+    )
+
+    def __repr__(self) -> str:
+        return (
+            f"<SessionModel id={self.id} class={self.class_id} "
+            f"num={self.session_number} date={self.scheduled_date}>"
+        )
+
+
+class ClassSessionContentModel(db.Model):
+    """Class-specific session content override table."""
+
+    __tablename__ = "class_session_contents"
+
+    id = db.Column(db.Integer, primary_key=True)
+    class_id = db.Column(
+        db.Integer, db.ForeignKey("academy_classes.id"), nullable=False
+    )
+    session_number = db.Column(db.Integer, nullable=False)
+    title = db.Column(db.String(200), nullable=True)
+    description = db.Column(db.Text, nullable=True)
+    homework = db.Column(db.Text, nullable=True)
+    assessment = db.Column(db.Text, nullable=True)
+
+    academy_class = db.relationship(
+        "AcademyClassModel", back_populates="session_content_overrides"
+    )
+
+    __table_args__ = (
+        db.UniqueConstraint(
+            "class_id", "session_number", name="uq_class_content_session_number"
+        ),
+    )
+
+    def __repr__(self) -> str:
+        return f"<ClassSessionContentModel id={self.id} session={self.session_number}>"

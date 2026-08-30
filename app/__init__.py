@@ -41,10 +41,12 @@ def _register_extensions(app):
 def _register_blueprints(app):
     """Register Flask blueprints."""
     from app.interface.web import web_bp
+    from app.interface.web.academy.routes import academy_bp
     from app.interface.web.auth import auth_bp
 
     app.register_blueprint(web_bp)
     app.register_blueprint(auth_bp)
+    app.register_blueprint(academy_bp)
 
 
 def _register_routes(app):

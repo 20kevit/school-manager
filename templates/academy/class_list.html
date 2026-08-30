@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+{% block title %}لیست کلاس‌ها{% endblock %}
+{% block content %}
+<div class="page-header">
+    <h1>لیست کلاس‌ها</h1>
+    <a href="{{ url_for('academy.class_create') }}" class="btn btn-primary">ایجاد کلاس جدید</a>
+</div>
+
+{% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+        {% for category, message in messages %}
+            <div class="alert alert-{{ category }}">{{ message }}</div>
+        {% endfor %}
+    {% endif %}
+{% endwith %}
+
+<div class="filter-bar">
+    <form method="GET" class="filter-form">
+        <div class="form-group">
+            <label for="course_id">فیلتر بر اساس درس</label>
+            <select id="course_id" name="course_id" onchange="this.form.submit()">
+                <option value="">همه دروس</option>
+                {% for course in courses %}
+                <option value="{{ course.id }}" {{ 'selected' if selected_course_id == course.id }}>{{ course.title }}</option>
+                {% endfor %}
+            </select>
+        </div>
+    </form>
+</div>
+
+{% if classes %}
+<div class="table-container">
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th>عنوان</th>
+                <th>درس</th>
+                <th>تاریخ شروع</th>
+                <th>تعداد جلسات</th>
+                <th>ظرفیت</th>
+                <th>وضعیت</th>
+                <th>عملیات</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for cls in classes %}
+            <tr>
+                <td><a href="{{ url_for('academy.class_detail', class_id=cls.id) }}">{{ cls.title }}</a></td>
+                <td>{{ cls.course.title }}</td>
+                <td>{{ cls.start_date }}</td>
+                <td>{{ cls.num_sessions }}</td>
+                <td>{{ cls.capacity }}</td>
+                <td><span class="status-badge status-{{ cls.status|lower }}">{{ cls.status }}</span></td>
+                <td>
+                    <a href="{{ url_for('academy.session_list', class_id=cls.id) }}" class="btn btn-sm btn-outline">جلسات</a>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% else %}
+<p class="empty-state">کلاسی ثبت نشده است.</p>
+{% endif %}
+{% endblock %}

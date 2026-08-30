@@ -40,3 +40,32 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 - Student initial login (national_id as login and initial password)
 - Database migration for identity and access models
 - 44 tests covering User, Roles, Profiles, Authentication, Authorization
+
+## P2 — Academy Structure (2026-08-30)
+
+### Added
+
+- Course model with title, description, num_sessions, age range, prerequisites
+- Syllabus items for ordered course content planning
+- Academy Class model with capacity at class level (not course)
+- Teacher assignment structure (single teacher, extendable to multiple)
+- Weekly class schedule supporting multiple weekdays with different times
+- Session generation from class schedule (persisted records, not dynamic)
+- Individual session rescheduling without changing recurring schedule
+- Session cancellation preserving session records with CANCELLED status
+- Session shifting after cancellation (regenerate remaining sessions)
+- Class-specific session content overrides (3-level hierarchy: Course → Class → Session)
+- Admin authorization for all academy management routes
+- Persian RTL web UI for course management
+- Persian RTL web UI for class management with schedule builder
+- Persian RTL web UI for session management (list, detail, reschedule, cancel, complete)
+- Database migration for academy structure models
+- 70 new tests covering Course, Syllabus, Class, Schedule, Session operations
+
+### Design Decisions
+
+- Course vs Class: Course is a reusable template; Class is a running instance
+- Session persistence: Sessions are real database records, not dynamically calculated
+- Schedule exceptions: Individual sessions can have custom dates without modifying the recurring schedule
+- Session shifting: Cancelling and shifting preserves session numbering and total count
+- Content overrides: 3-level hierarchy allows Course → Class → Session customization

@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% block title %}لیست دروس{% endblock %}
+{% block content %}
+<div class="page-header">
+    <h1>لیست دروس</h1>
+    <a href="{{ url_for('academy.course_create') }}" class="btn btn-primary">ایجاد درس جدید</a>
+</div>
+
+{% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+        {% for category, message in messages %}
+            <div class="alert alert-{{ category }}">{{ message }}</div>
+        {% endfor %}
+    {% endif %}
+{% endwith %}
+
+{% if courses %}
+<div class="table-container">
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th>عنوان</th>
+                <th>تعداد جلسات</th>
+                <th>سن</th>
+                <th>عملیات</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for course in courses %}
+            <tr>
+                <td><a href="{{ url_for('academy.course_detail', course_id=course.id) }}">{{ course.title }}</a></td>
+                <td>{{ course.num_sessions }}</td>
+                <td>
+                    {% if course.min_age is not none or course.max_age is not none %}
+                        {{ course.min_age or '—' }} تا {{ course.max_age or '—' }}
+                    {% else %}
+                        —
+                    {% endif %}
+                </td>
+                <td>
+                    <a href="{{ url_for('academy.course_edit', course_id=course.id) }}" class="btn btn-sm btn-outline">ویرایش</a>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% else %}
+<p class="empty-state">هیچ درسی ثبت نشده است.</p>
+{% endif %}
+{% endblock %}
