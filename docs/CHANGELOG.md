@@ -247,3 +247,28 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 - Historical data preserved through enrollment cancellation
 - Assessment scheduling independent of session schedule
 - Extensible type system supports future assessment categories
+
+## P8 — Portals (2026-08-30)
+
+### Added
+
+- Portal module with role-specific dashboards
+- Student dashboard: enrolled classes, academic summary (average, pass/fail), attendance summary (present/absent/late), financial balance (18+ only), recent results
+- Parent dashboard: children overview, per-child academic/attendance/finance summaries
+- Teacher dashboard: assigned classes, class summaries (enrolled students, assessments, averages, pass rates), pending grading counts
+- Admin dashboard: quick stats (students, teachers, classes, enrollments, assessments), pending enrollment requests, financial summary (payments, debtors), recent classes
+- Portal service aggregating data from enrollment, assessment, attendance, finance, and academy modules
+- Portal blueprint registered and integrated
+- Main dashboard redirect to role-specific portal (auth.dashboard → portal.*_dashboard)
+- 4 role-specific templates with Persian RTL UI
+
+### Design Decisions
+
+- Portal is a pure aggregation layer — no new domain entities or database tables
+- All dashboard data comes from existing services (no duplicate data access)
+- Main auth.dashboard redirects to role-specific portal routes
+- Finance visibility follows existing age-18+ restriction for students
+- Student financial balance only shown for adults (18+)
+- Portal service reuses existing service functions for data access
+
+## P9 — Notifications

@@ -49,7 +49,15 @@ def logout():
 @auth_bp.route("/dashboard")
 @login_required
 def dashboard():
-    """Dashboard page for authenticated users."""
+    """Dashboard page for authenticated users — redirects to role-specific portal."""
+    if current_user.has_any_role("ADMIN"):
+        return redirect(url_for("portal.admin_dashboard"))
+    if current_user.has_any_role("TEACHER"):
+        return redirect(url_for("portal.teacher_dashboard"))
+    if current_user.has_any_role("STUDENT"):
+        return redirect(url_for("portal.student_dashboard"))
+    if current_user.has_any_role("PARENT"):
+        return redirect(url_for("portal.parent_dashboard"))
     return render_template("auth/dashboard.html")
 
 

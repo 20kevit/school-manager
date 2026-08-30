@@ -103,10 +103,10 @@
 
 ## P8 — Portals
 
-- [ ] Student dashboard
-- [ ] Parent dashboard
-- [ ] Teacher dashboard
-- [ ] Admin dashboard
+- [x] Student dashboard
+- [x] Parent dashboard
+- [x] Teacher dashboard
+- [x] Admin dashboard
 
 ## P9 — Notifications
 

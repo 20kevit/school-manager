@@ -1,0 +1,108 @@
+{% extends "base.html" %}
+
+{% block title %}داشبورد والدین - Academy{% endblock %}
+
+{% block content %}
+<div class="dashboard-container">
+    <div class="dashboard-header">
+        <h1>داشبورد والدین</h1>
+        <div class="user-info">
+            <span class="user-name">{{ current_user.login }}</span>
+            <span class="role-badge">والدین</span>
+        </div>
+    </div>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="alert alert-{{ category }}">{{ message }}</div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+
+    <div class="dashboard-section">
+        <h2>فرزندان ({{ data.total_children }})</h2>
+    </div>
+
+    {% if data.children_data %}
+        {% for child_data in data.children_data %}
+        <div class="dashboard-card child-card">
+            <div class="card-header">
+                <h3>{{ child_data.user.student_profile.first_name }} {{ child_data.user.student_profile.last_name }}</h3>
+            </div>
+
+            <div class="dashboard-grid">
+                <div class="stat-block">
+                    <h4>وضعیت تحصیلی</h4>
+                    {% if child_data.academic_summary %}
+                    <div class="stat-row">
+                        <span class="stat-label">میانگین:</span>
+                        <span class="stat-value">{{ "%.1f"|format(child_data.academic_summary.average or 0) }}</span>
+                    </div>
+                    <div class="stat-row">
+                        <span class="stat-label">قبول:</span>
+                        <span class="stat-value text-success">{{ child_data.academic_summary.passed or 0 }}</span>
+                    </div>
+                    <div class="stat-row">
+                        <span class="stat-label">مردود:</span>
+                        <span class="stat-value text-danger">{{ child_data.academic_summary.failed or 0 }}</span>
+                    </div>
+                    {% else %}
+                    <p class="text-muted">هنوز نمره‌ای ثبت نشده</p>
+                    {% endif %}
+                </div>
+
+                <div class="stat-block">
+                    <h4>حضور و غیاب</h4>
+                    {% if child_data.attendance_summary and child_data.attendance_summary.total > 0 %}
+                    <div class="stat-row">
+                        <span class="stat-label">حاضر:</span>
+                        <span class="stat-value text-success">{{ child_data.attendance_summary.PRESENT or 0 }}</span>
+                    </div>
+                    <div class="stat-row">
+                        <span class="stat-label">غایب:</span>
+                        <span class="stat-value text-danger">{{ child_data.attendance_summary.ABSENT or 0 }}</span>
+                    </div>
+                    <div class="stat-row">
+                        <span class="stat-label">تاخیر:</span>
+                        <span class="stat-value text-warning">{{ child_data.attendance_summary.LATE or 0 }}</span>
+                    </div>
+                    {% else %}
+                    <p class="text-muted">هنوز حضور و غیابی ثبت نشده</p>
+                    {% endif %}
+                </div>
+
+                {% if child_data.can_see_finance %}
+                <div class="stat-block">
+                    <h4>وضعیت مالی</h4>
+                    {% if child_data.finance_balance is not none %}
+                    <div class="stat-value {% if child_data.finance_balance < 0 %}text-danger{% elif child_data.finance_balance > 0 %}text-success{% endif %}">
+                        {{ "{:,.0f}".format(child_data.finance_balance|int) }} تومان
+                    </div>
+                    {% else %}
+                    <p class="text-muted">اطلاعات مالی موجود نیست</p>
+                    {% endif %}
+                </div>
+                {% endif %}
+            </div>
+
+            <div class="card-actions">
+                <a href="{{ url_for('assessment.parent_child_results', student_id=child_data.user.id) }}" class="btn btn-sm">نتایج</a>
+                {% if child_data.can_see_finance %}
+                <a href="{{ url_for('finance.parent_child_statement', child_user_id=child_data.user.id) }}" class="btn btn-sm">صورتحساب</a>
+                {% endif %}
+            </div>
+        </div>
+        {% endfor %}
+    {% else %}
+    <div class="dashboard-card">
+        <p>هیچ فرزندی مرتبط با حساب شما یافت نشد.</p>
+    </div>
+    {% endif %}
+
+    <div class="dashboard-actions">
+        <a href="{{ url_for('auth.change_password_view') }}" class="btn btn-secondary">تغییر رمز عبور</a>
+        <a href="{{ url_for('auth.logout') }}" class="btn btn-outline">خروج</a>
+    </div>
+</div>
+{% endblock %}

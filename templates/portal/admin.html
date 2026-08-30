@@ -1,0 +1,116 @@
+{% extends "base.html" %}
+
+{% block title %}داشبورد مدیر - Academy{% endblock %}
+
+{% block content %}
+<div class="dashboard-container">
+    <div class="dashboard-header">
+        <h1>داشبورد مدیریت</h1>
+        <div class="user-info">
+            <span class="user-name">{{ current_user.login }}</span>
+            <span class="role-badge">مدیر</span>
+        </div>
+    </div>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="alert alert-{{ category }}">{{ message }}</div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+
+    <div class="dashboard-grid">
+        <div class="dashboard-card">
+            <h3>دانش‌آموزان</h3>
+            <div class="stat-value">{{ data.total_students }}</div>
+            <p>دانش‌آموز فعال</p>
+        </div>
+
+        <div class="dashboard-card">
+            <h3>معلمان</h3>
+            <div class="stat-value">{{ data.total_teachers }}</div>
+            <p>معلم فعال</p>
+        </div>
+
+        <div class="dashboard-card">
+            <h3>کلاس‌ها</h3>
+            <div class="stat-value">{{ data.total_classes }}</div>
+            <p>کلاس</p>
+            <a href="{{ url_for('academy.class_list') }}" class="btn btn-sm">مشاهده همه</a>
+        </div>
+
+        <div class="dashboard-card">
+            <h3>ثبت‌نام‌ها</h3>
+            <div class="stat-value">{{ data.total_enrollments }}</div>
+            <p>ثبت‌نام تایید شده</p>
+            {% if data.pending_enrollments > 0 %}
+            <p class="text-warning">{{ data.pending_enrollments }} درخواست در انتظار</p>
+            {% endif %}
+            <a href="{{ url_for('enrollment.admin_enrollment_list') }}" class="btn btn-sm">مشاهده</a>
+        </div>
+
+        <div class="dashboard-card">
+            <h3>آزمون‌ها</h3>
+            <div class="stat-value">{{ data.total_assessments }}</div>
+            <p>آزمون</p>
+            {% if data.open_assessments > 0 %}
+            <p class="text-info">{{ data.open_assessments }} آزمون فعال</p>
+            {% endif %}
+            <a href="{{ url_for('assessment.admin_assessment_list') }}" class="btn btn-sm">مشاهده</a>
+        </div>
+
+        <div class="dashboard-card">
+            <h3>وضعیت مالی</h3>
+            {% if data.finance_summary %}
+            <div class="stat-row">
+                <span class="stat-label">کل پرداختی:</span>
+                <span class="stat-value">{{ "{:,.0f}".format(data.finance_summary.total_payments|int) }} تومان</span>
+            </div>
+            <div class="stat-row">
+                <span class="stat-label">بدهکار:</span>
+                <span class="stat-value text-danger">{{ data.finance_summary.debtors_count }} نفر</span>
+            </div>
+            {% endif %}
+            <a href="{{ url_for('finance.admin_dashboard') }}" class="btn btn-sm">مشاهده مالی</a>
+        </div>
+    </div>
+
+    {% if data.recent_enrollments %}
+    <div class="dashboard-section">
+        <h2>درخواست‌های ثبت‌نام در انتظار</h2>
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>دانش‌آموز</th>
+                    <th>کلاس</th>
+                    <th>تاریخ</th>
+                    <th>عملیات</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for enrollment in data.recent_enrollments %}
+                <tr>
+                    <td>{{ enrollment.student.login }}</td>
+                    <td>{{ enrollment.class_obj.title if enrollment.class_obj else '—' }}</td>
+                    <td>{{ enrollment.enrolled_at.strftime('%Y-%m-%d') }}</td>
+                    <td>
+                        <a href="{{ url_for('enrollment.admin_enrollment_detail', enrollment_id=enrollment.id) }}" class="btn btn-sm">مشاهده</a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% endif %}
+
+    <div class="dashboard-actions">
+        <a href="{{ url_for('academy.course_list') }}" class="btn">مدیریت دوره‌ها</a>
+        <a href="{{ url_for('academy.class_list') }}" class="btn">مدیریت کلاس‌ها</a>
+        <a href="{{ url_for('enrollment.admin_pending_list') }}" class="btn">ثبت‌نام‌های در انتظار</a>
+        <a href="{{ url_for('finance.admin_dashboard') }}" class="btn">داشبورد مالی</a>
+        <a href="{{ url_for('auth.change_password_view') }}" class="btn btn-secondary">تغییر رمز عبور</a>
+        <a href="{{ url_for('auth.logout') }}" class="btn btn-outline">خروج</a>
+    </div>
+</div>
+{% endblock %}

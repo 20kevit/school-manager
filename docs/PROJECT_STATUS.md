@@ -1,13 +1,13 @@
 # Project Status
 
-**Current Phase:** P7 — Exams, Assessments & Grades — Completed
-**Current Objective:** Complete P7 — Exams, Assessments & Grades.
+**Current Phase:** P8 — Portals (Dashboards) — Completed
+**Current Objective:** P8 — Portals (Dashboards) complete.
 
-**Previous Phase:** P6 — Finance & Tuition
+**Previous Phase:** P7 — Exams, Assessments & Grades
 
 ## Status
 
-P5 — Learning Activities & Homework is complete.
+P8 — Portals (Dashboards) is complete.
 
 ## Completed
 
@@ -173,3 +173,15 @@ P5 — Learning Activities & Homework is complete.
 - [x] Database migration for assessment models
 - [x] 76 tests covering assessment CRUD, eligibility, results, bulk grading, grade history, authorization, reports, CSV export, domain entities, and integration
 - [x] 394 total tests passing (P1-P7)
+
+### P8 — Portals (Dashboards)
+- [x] Portal module with role-specific dashboards
+- [x] Student dashboard: enrolled classes, academic summary, attendance summary, financial balance (18+), recent results
+- [x] Parent dashboard: children overview, per-child academic/attendance/finance summaries
+- [x] Teacher dashboard: assigned classes, class summaries, pending grading counts
+- [x] Admin dashboard: quick stats, pending enrollments, financial summary, recent classes
+- [x] Portal service aggregating data from enrollment, assessment, attendance, finance, and academy modules
+- [x] Portal blueprint registered and integrated
+- [x] Main dashboard redirect to role-specific portal
+- [x] 4 role-specific templates with Persian RTL UI
+- [x] 394 total tests passing (P1-P8)

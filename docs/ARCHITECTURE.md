@@ -105,6 +105,7 @@ Separate configs per environment (development, testing, production) in `config/_
 | Activity | activity, submission | activity/ | web/activity | activity_bp |
 | Finance | finance | finance/ | web/finance | finance_bp |
 | Assessment | assessment, result | assessment/ | web/assessment | assessment_bp |
+| Portal | — (aggregation layer) | portal/ | web/portal | portal_bp |
 
 ## Academy Structure (P2)
 
@@ -348,6 +349,26 @@ OPEN → CANCELLED
 - **Historical preservation**: Results survive enrollment cancellation
 - **Bulk grading**: Teachers can grade entire assessments in a single operation
 - **Authorization**: Teachers only access their assigned classes; students see only their own results
+
+## Portals (P8)
+
+Portals are role-specific dashboards aggregating data from multiple modules.
+
+```
+Portal
+  ├── Student Dashboard: classes, academics, attendance, finance (18+)
+  ├── Parent Dashboard: children overview, per-child summaries
+  ├── Teacher Dashboard: assigned classes, grading, class summaries
+  └── Admin Dashboard: system stats, pending requests, financial overview
+```
+
+### Key Design Decisions
+
+- **Pure aggregation layer**: No new domain entities or database tables
+- **Service reuse**: All data comes from existing services (enrollment, assessment, attendance, finance)
+- **Main dashboard redirect**: `auth.dashboard` redirects to role-specific portal routes
+- **Finance visibility**: Student financial data restricted by age (18+) via existing profile
+- **Authorization**: Role-based access enforced at route level
 
 ## Notification Integration (Future)
 

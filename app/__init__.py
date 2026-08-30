@@ -48,6 +48,7 @@ def _register_blueprints(app):
     from app.interface.web.auth import auth_bp
     from app.interface.web.enrollment.routes import enrollment_bp
     from app.interface.web.finance.routes import finance_bp
+    from app.interface.web.portal.routes import portal_bp
 
     app.register_blueprint(web_bp)
     app.register_blueprint(auth_bp)
@@ -57,6 +58,7 @@ def _register_blueprints(app):
     app.register_blueprint(activity_bp)
     app.register_blueprint(finance_bp)
     app.register_blueprint(assessment_bp)
+    app.register_blueprint(portal_bp)
 
 
 def _register_routes(app):
