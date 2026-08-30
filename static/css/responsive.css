@@ -1,0 +1,43 @@
+/* === Error Pages === */
+.error-page {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: calc(100vh - var(--header-height) - var(--space-12));
+    text-align: center;
+    padding: var(--space-8);
+}
+
+.error-code {
+    font-size: 6rem;
+    font-weight: var(--font-weight-bold);
+    color: var(--color-border);
+    line-height: 1;
+    margin-bottom: var(--space-4);
+}
+
+.error-title {
+    font-size: var(--font-size-2xl);
+    font-weight: var(--font-weight-bold);
+    color: var(--color-text);
+    margin-bottom: var(--space-3);
+}
+
+.error-message {
+    font-size: var(--font-size-base);
+    color: var(--color-muted);
+    max-width: 400px;
+    margin-bottom: var(--space-6);
+}
+
+/* === Responsive Adjustments === */
+@media (max-width: 768px) {
+    .error-code {
+        font-size: 4rem;
+    }
+
+    .error-title {
+        font-size: var(--font-size-xl);
+    }
+}

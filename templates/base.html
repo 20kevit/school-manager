@@ -3,59 +3,208 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}Academy Management System{% endblock %}</title>
+    <title>{% block title %}آکادمی{% endblock %}</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/tokens.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/base.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/layout.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/components.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/forms.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/tables.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/utilities.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/responsive.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    {% block extra_css %}{% endblock %}
 </head>
 <body>
-    <nav class="navbar">
-        <div class="container">
-            <a href="{{ url_for('web.index') }}" class="nav-brand">Academy</a>
-            <div class="nav-links">
+    <a href="#main-content" class="skip-link">رفتن به محتوای اصلی</a>
+
+    <div class="app-layout">
+        <!-- Sidebar -->
+        <aside class="sidebar" id="sidebar">
+            <a href="{{ url_for('web.index') }}" class="sidebar-brand">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c3 3 9 3 12 0v-5"/></svg>
+                آکادمی
+            </a>
+
+            <nav class="sidebar-nav">
                 {% if current_user.is_authenticated %}
-                    <a href="{{ url_for('auth.dashboard') }}">Dashboard</a>
+                    <a href="{{ url_for('auth.dashboard') }}" class="sidebar-link {% if request.endpoint == 'auth.dashboard' %}active{% endif %}">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+                        داشبورد
+                    </a>
+
                     {% if current_user.has_any_role('ADMIN') %}
-                    <a href="{{ url_for('academy.course_list') }}">Courses</a>
-                    <a href="{{ url_for('academy.class_list') }}">Classes</a>
-                    <a href="{{ url_for('enrollment.admin_enrollment_list') }}">Enrollments</a>
-                    <a href="{{ url_for('attendance.admin_attendance_list') }}">Attendance</a>
-                    <a href="{{ url_for('activity.admin_activity_list') }}">Activities</a>
-                    <a href="{{ url_for('assessment.admin_assessment_list') }}">Assessments</a>
-                    <a href="{{ url_for('finance.admin_dashboard') }}">Finance</a>
-                    <a href="{{ url_for('notification.admin_dashboard') }}">Notifications</a>
-                    <a href="{{ url_for('reporting.admin_overview') }}">Reports</a>
+                    <div class="sidebar-section">آموزش</div>
+                    <a href="{{ url_for('academy.course_list') }}" class="sidebar-link {% if request.endpoint and 'academy.course' in request.endpoint %}active{% endif %}">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+                        دوره‌ها
+                    </a>
+                    <a href="{{ url_for('academy.class_list') }}" class="sidebar-link {% if request.endpoint and 'academy.class' in request.endpoint %}active{% endif %}">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                        کلاس‌ها
+                    </a>
+
+                    <div class="sidebar-section">مدیریت</div>
+                    <a href="{{ url_for('enrollment.admin_enrollment_list') }}" class="sidebar-link {% if request.endpoint and 'enrollment' in request.endpoint %}active{% endif %}">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="20" y1="8" x2="20" y2="14"/><line x1="23" y1="11" x2="17" y2="11"/></svg>
+                        ثبت‌نام
+                    </a>
+                    <a href="{{ url_for('attendance.admin_attendance_list') }}" class="sidebar-link {% if request.endpoint and 'attendance' in request.endpoint %}active{% endif %}">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+                        حضور و غیاب
+                    </a>
+                    <a href="{{ url_for('activity.admin_activity_list') }}" class="sidebar-link {% if request.endpoint and 'activity' in request.endpoint %}active{% endif %}">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+                        تکالیف
+                    </a>
+                    <a href="{{ url_for('assessment.admin_assessment_list') }}" class="sidebar-link {% if request.endpoint and 'assessment' in request.endpoint %}active{% endif %}">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+                        ارزیابی
+                    </a>
+
+                    <div class="sidebar-section">مالی و اعلان</div>
+                    <a href="{{ url_for('finance.admin_dashboard') }}" class="sidebar-link {% if request.endpoint and 'finance' in request.endpoint %}active{% endif %}">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+                        مالی
+                    </a>
+                    <a href="{{ url_for('notification.admin_dashboard') }}" class="sidebar-link {% if request.endpoint and 'notification' in request.endpoint %}active{% endif %}">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+                        اعلان‌ها
+                    </a>
+
+                    <div class="sidebar-section">گزارش و فایل</div>
+                    <a href="{{ url_for('reporting.admin_overview') }}" class="sidebar-link {% if request.endpoint and 'reporting' in request.endpoint %}active{% endif %}">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+                        گزارش‌ها
+                    </a>
+                    <a href="{{ url_for('file_management.admin_file_list') }}" class="sidebar-link {% if request.endpoint and 'file_management' in request.endpoint %}active{% endif %}">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><polyline points="13 2 13 9 20 9"/></svg>
+                        فایل‌ها
+                    </a>
                     {% endif %}
+
                     {% if current_user.has_any_role('TEACHER') %}
-                    <a href="{{ url_for('attendance.teacher_my_classes') }}">My Classes</a>
-                    <a href="{{ url_for('activity.teacher_my_classes') }}">Activities</a>
-                    <a href="{{ url_for('assessment.teacher_my_classes') }}">Assessments</a>
-                    <a href="{{ url_for('reporting.teacher_overview') }}">My Reports</a>
+                    <div class="sidebar-section">معلم</div>
+                    <a href="{{ url_for('attendance.teacher_my_classes') }}" class="sidebar-link {% if request.endpoint and 'attendance.teacher' in request.endpoint %}active{% endif %}">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+                        کلاس‌های من
+                    </a>
+                    <a href="{{ url_for('activity.teacher_my_classes') }}" class="sidebar-link {% if request.endpoint and 'activity.teacher' in request.endpoint %}active{% endif %}">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+                        تکالیف
+                    </a>
+                    <a href="{{ url_for('assessment.teacher_my_classes') }}" class="sidebar-link {% if request.endpoint and 'assessment.teacher' in request.endpoint %}active{% endif %}">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+                        ارزیابی
+                    </a>
+                    <a href="{{ url_for('reporting.teacher_overview') }}" class="sidebar-link {% if request.endpoint and 'reporting.teacher' in request.endpoint %}active{% endif %}">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+                        گزارش‌ها
+                    </a>
                     {% endif %}
+
                     {% if current_user.has_any_role('STUDENT') %}
-                    <a href="{{ url_for('enrollment.student_available_classes') }}">Classes</a>
-                    <a href="{{ url_for('enrollment.student_my_enrollments') }}">My Enrollments</a>
-                    <a href="{{ url_for('attendance.student_my_attendance') }}">My Attendance</a>
-                    <a href="{{ url_for('activity.student_my_classes') }}">My Activities</a>
-                    <a href="{{ url_for('assessment.student_my_assessments') }}">My Results</a>
-                    <a href="{{ url_for('finance.student_my_finance') }}">My Finance</a>
-                    <a href="{{ url_for('notification.my_notifications') }}">Notifications</a>
-                    <a href="{{ url_for('reporting.student_overview') }}">My Reports</a>
+                    <div class="sidebar-section">دانش‌آموز</div>
+                    <a href="{{ url_for('enrollment.student_available_classes') }}" class="sidebar-link {% if request.endpoint == 'enrollment.student_available_classes' %}active{% endif %}">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                        کلاس‌ها
+                    </a>
+                    <a href="{{ url_for('enrollment.student_my_enrollments') }}" class="sidebar-link {% if request.endpoint == 'enrollment.student_my_enrollments' %}active{% endif %}">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="20" y1="8" x2="20" y2="14"/><line x1="23" y1="11" x2="17" y2="11"/></svg>
+                        ثبت‌نام‌های من
+                    </a>
+                    <a href="{{ url_for('attendance.student_my_attendance') }}" class="sidebar-link {% if request.endpoint == 'attendance.student_my_attendance' %}active{% endif %}">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+                        حضور و غیاب
+                    </a>
+                    <a href="{{ url_for('activity.student_my_classes') }}" class="sidebar-link {% if request.endpoint and 'activity.student' in request.endpoint %}active{% endif %}">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+                        تکالیف
+                    </a>
+                    <a href="{{ url_for('assessment.student_my_assessments') }}" class="sidebar-link {% if request.endpoint and 'assessment.student' in request.endpoint %}active{% endif %}">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                        نتایج
+                    </a>
+                    <a href="{{ url_for('finance.student_my_finance') }}" class="sidebar-link {% if request.endpoint == 'finance.student_my_finance' %}active{% endif %}">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+                        وضعیت مالی
+                    </a>
+                    <a href="{{ url_for('notification.my_notifications') }}" class="sidebar-link {% if request.endpoint and 'notification.my' in request.endpoint %}active{% endif %}">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+                        اعلان‌ها
+                    </a>
+                    <a href="{{ url_for('reporting.student_overview') }}" class="sidebar-link {% if request.endpoint == 'reporting.student_overview' %}active{% endif %}">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+                        گزارش‌ها
+                    </a>
                     {% endif %}
+
                     {% if current_user.has_any_role('PARENT') %}
-                    <a href="{{ url_for('assessment.parent_overview') }}">Children Results</a>
-                    <a href="{{ url_for('finance.parent_overview') }}">Children Finance</a>
+                    <div class="sidebar-section">والدین</div>
+                    <a href="{{ url_for('assessment.parent_overview') }}" class="sidebar-link {% if request.endpoint and 'assessment.parent' in request.endpoint %}active{% endif %}">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                        نتایج فرزندان
+                    </a>
+                    <a href="{{ url_for('finance.parent_overview') }}" class="sidebar-link {% if request.endpoint and 'finance.parent' in request.endpoint %}active{% endif %}">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+                        وضعیت مالی فرزندان
+                    </a>
                     {% endif %}
-                    <a href="{{ url_for('auth.logout') }}">Logout</a>
+
+                    <div class="sidebar-section">حساب کاربری</div>
+                    <a href="{{ url_for('auth.change_password_view') }}" class="sidebar-link {% if request.endpoint == 'auth.change_password_view' %}active{% endif %}">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                        تغییر رمز عبور
+                    </a>
+                    <a href="{{ url_for('auth.logout') }}" class="sidebar-link">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+                        خروج
+                    </a>
                 {% else %}
-                    <a href="{{ url_for('auth.login') }}">Login</a>
+                    <a href="{{ url_for('auth.login') }}" class="sidebar-link">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg>
+                        ورود
+                    </a>
+                {% endif %}
+            </nav>
+        </aside>
+
+        <!-- Sidebar Overlay -->
+        <div class="sidebar-overlay" id="sidebar-overlay"></div>
+
+        <!-- Header -->
+        <header class="header">
+            <div class="header-right">
+                <button class="menu-toggle" id="menu-toggle" aria-label="باز کردن منو">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+                </button>
+                {% block header_right %}{% endblock %}
+            </div>
+            <div class="header-left">
+                {% if current_user.is_authenticated %}
+                <div class="header-user">
+                    <span class="header-user-name">{{ current_user.login }}</span>
+                </div>
                 {% endif %}
             </div>
-        </div>
-    </nav>
+        </header>
 
-    <main class="container">
-        {% block content %}{% endblock %}
-    </main>
+        <!-- Main Content -->
+        <main class="main-content" id="main-content">
+            <div class="container">
+                {% include "components/flash.html" %}
+                {% block content %}{% endblock %}
+            </div>
+        </main>
+    </div>
+
+    <div class="toast-container" id="toast-container"></div>
 
     <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+    {% block extra_js %}{% endblock %}
 </body>
 </html>

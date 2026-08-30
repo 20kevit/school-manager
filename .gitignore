@@ -52,3 +52,4 @@ Thumbs.db
 
 # Ruff
 .ruff_cache/
+test_storage/
