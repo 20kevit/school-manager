@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% block title %}گزارش بدهکاران{% endblock %}
+{% block content %}
+<div class="page-header">
+    <h1>گزارش بدهکاران</h1>
+    <a href="{{ url_for('finance.admin_dashboard') }}" class="btn btn-outline">بازگشت</a>
+</div>
+
+{% if report %}
+<div class="table-container">
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th>دانش‌آموز</th>
+                <th>بدهی</th>
+                <th>عملیات</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in report %}
+            <tr>
+                <td>
+                    {% if item.student_user_id in students %}
+                        {{ students[item.student_user_id].login }}
+                    {% else %}
+                        #{{ item.student_user_id }}
+                    {% endif %}
+                </td>
+                <td class="negative">{{ "{:,.0f}".format(item.balance|abs) }} تومان</td>
+                <td>
+                    <a href="{{ url_for('finance.admin_student_statement', student_user_id=item.student_user_id) }}" class="btn btn-sm btn-outline">صورت حساب</a>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% else %}
+<p class="empty-state">بدهکاری وجود ندارد.</p>
+{% endif %}
+{% endblock %}

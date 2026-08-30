@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+{% block title %}وضعیت مالی من{% endblock %}
+{% block content %}
+<div class="page-header">
+    <h1>وضعیت مالی من</h1>
+</div>
+
+{% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+        {% for category, message in messages %}
+            <div class="alert alert-{{ category }}">{{ message }}</div>
+        {% endfor %}
+    {% endif %}
+{% endwith %}
+
+<div class="balance-card">
+    <h3>مانده حساب</h3>
+    <p class="balance-value {{ 'positive' if balance > 0 else ('negative' if balance < 0 else '') }}">
+        {{ "{:,.0f}".format(balance) }} تومان
+    </p>
+    <span class="balance-label">
+        {% if balance > 0 %}
+            اعتبار
+        {% elif balance < 0 %}
+            بدهی
+        {% else %}
+            تسویه
+        {% endif %}
+    </span>
+</div>
+
+{% if transactions %}
+<h2>تاریخچه تراکنش‌ها</h2>
+<div class="table-container">
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th>تاریخ</th>
+                <th>نوع</th>
+                <th>دسته</th>
+                <th>مبلغ</th>
+                <th>توضیحات</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for tx in transactions %}
+            <tr>
+                <td>{{ tx.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
+                <td><span class="status-badge status-{{ tx.transaction_type|lower }}">{{ tx.transaction_type }}</span></td>
+                <td>{{ tx.category }}</td>
+                <td class="{{ 'positive' if tx.transaction_type in ['PAYMENT', 'DISCOUNT'] else 'negative' }}">
+                    {{ '+' if tx.transaction_type in ['PAYMENT', 'DISCOUNT'] else '-' }}{{ "{:,.0f}".format(tx.amount) }} تومان
+                </td>
+                <td>{{ tx.description }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% else %}
+<p class="empty-state">تراکنشی ثبت نشده است.</p>
+{% endif %}
+{% endblock %}

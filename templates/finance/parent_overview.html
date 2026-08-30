@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% block title %}وضعیت مالی فرزندان{% endblock %}
+{% block content %}
+<div class="page-header">
+    <h1>وضعیت مالی فرزندان</h1>
+</div>
+
+{% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+        {% for category, message in messages %}
+            <div class="alert alert-{{ category }}">{{ message }}</div>
+        {% endfor %}
+    {% endif %}
+{% endwith %}
+
+{% if children_data %}
+<div class="children-list">
+    {% for child in children_data %}
+    <div class="child-card">
+        <div class="child-info">
+            <h3>{{ child.profile.first_name }} {{ child.profile.last_name }}</h3>
+            <p>کد ملی: {{ child.profile.national_id }}</p>
+        </div>
+        <div class="child-balance">
+            <p class="balance-value {{ 'positive' if child.balance > 0 else ('negative' if child.balance < 0 else '') }}">
+                {{ "{:,.0f}".format(child.balance) }} تومان
+            </p>
+            <span class="balance-label">
+                {% if child.balance > 0 %}
+                    اعتبار
+                {% elif child.balance < 0 %}
+                    بدهی
+                {% else %}
+                    تسویه
+                {% endif %}
+            </span>
+        </div>
+        <div class="child-actions">
+            <a href="{{ url_for('finance.parent_child_statement', child_user_id=child.user.id) }}" class="btn btn-sm btn-outline">صورت حساب</a>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% else %}
+<p class="empty-state">فرزندی یافت نشد.</p>
+{% endif %}
+{% endblock %}

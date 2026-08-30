@@ -10,6 +10,9 @@ from app.infrastructure.database.models import (
     UserModel,
 )
 
+# Finance integration imported lazily to avoid circular imports
+# at module level.  Calls use the full path when needed.
+
 
 class EnrollmentError(Exception):
     """Raised when an enrollment operation fails."""
@@ -63,7 +66,8 @@ def admin_enroll_student(
 ) -> EnrollmentModel:
     """Admin directly enrolls a student in a class.
 
-    If auto_approve is True, enrollment becomes APPROVED immediately.
+    If auto_approve is True, enrollment becomes APPROVED immediately
+    and tuition charge is created.
     """
     student = UserModel.query.get(student_user_id)
     if student is None:
@@ -99,6 +103,16 @@ def admin_enroll_student(
     )
     db.session.add(enrollment)
     db.session.commit()
+
+    # Finance integration: create tuition charge on auto-approve
+    if auto_approve:
+        from app.application.finance import finance_service
+
+        try:
+            finance_service.on_enrollment_approved(enrollment)
+        except finance_service.FinanceError:
+            pass  # Tuition charge may fail if class has no tuition set
+
     return enrollment
 
 
@@ -106,6 +120,7 @@ def approve_enrollment(enrollment: EnrollmentModel) -> EnrollmentModel:
     """Approve a pending enrollment request.
 
     Re-checks class availability, capacity, and duplicate enrollment.
+    Automatically creates tuition charge via finance service.
     """
     if enrollment.status != "PENDING":
         raise EnrollmentError("Only pending enrollments can be approved.")
@@ -130,6 +145,15 @@ def approve_enrollment(enrollment: EnrollmentModel) -> EnrollmentModel:
     enrollment.status = "APPROVED"
     enrollment.approved_at = datetime.now()
     db.session.commit()
+
+    # Finance integration: create tuition charge
+    from app.application.finance import finance_service
+
+    try:
+        finance_service.on_enrollment_approved(enrollment)
+    except finance_service.FinanceError:
+        pass  # Tuition charge may fail if class has no tuition set
+
     return enrollment
 
 
@@ -145,13 +169,27 @@ def reject_enrollment(enrollment: EnrollmentModel) -> EnrollmentModel:
 
 
 def cancel_enrollment(enrollment: EnrollmentModel) -> EnrollmentModel:
-    """Cancel an enrollment (approved or pending)."""
+    """Cancel an enrollment (approved or pending).
+
+    Creates financial reversal for approved enrollments.
+    """
     if enrollment.status not in ("PENDING", "APPROVED"):
         raise EnrollmentError("Only pending or approved enrollments can be cancelled.")
 
+    was_approved = enrollment.status == "APPROVED"
     enrollment.status = "CANCELLED"
     enrollment.cancelled_at = datetime.now()
     db.session.commit()
+
+    # Finance integration: create reversal for approved enrollments
+    if was_approved:
+        from app.application.finance import finance_service
+
+        try:
+            finance_service.on_enrollment_cancelled(enrollment)
+        except finance_service.FinanceError:
+            pass  # Reversal may fail if no tuition charge exists
+
     return enrollment
 
 

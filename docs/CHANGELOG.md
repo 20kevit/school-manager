@@ -167,3 +167,40 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 - RETURNED status supports teacher-student correction workflow
 - File validation checks extension, size, and MIME type server-side
 - Activity deactivation preserves all historical submissions
+
+## P6 — Finance & Tuition (2026-08-30)
+
+### Added
+
+- FinancialTransaction domain entity with enums (TransactionType, TransactionCategory, PaymentMethod, TransactionStatus)
+- FinancialTransaction database model with indexes and relationships
+- Tuition field added to AcademyClass model (Numeric 12,2)
+- Finance application service with charges, payments, refunds, discounts, adjustments, corrections, and reversals
+- Balance derived from transactions (transaction-based ledger, not mutable balance field)
+- Transaction history with signed amounts (PAYMENT/DISCOUNT positive, CHARGE/REFUND negated)
+- Correction mechanism (mark original as CORRECTED, create new corrected entry)
+- Reversal mechanism (keep original ACTIVE, create REVERSAL with opposite sign)
+- Enrollment integration (approval → automatic tuition charge, cancellation → reversal)
+- Idempotent tuition charge (duplicate prevention per enrollment)
+- Tuition snapshot preserved at enrollment time
+- Class financial summary (total tuition, enrolled count, collections, outstanding)
+- Student balance, balance by class, student statement, transaction reports
+- Debt report, credit report, revenue report, dashboard summary
+- Transaction report with filters (student, category, type, date range)
+- Admin web UI: finance dashboard, transactions list, create transaction, transaction detail, student statement, class financial, debt/credit/revenue reports
+- Parent web UI: finance overview, child statement (limited to linked children)
+- Student web UI: my-finance page (18+ age check enforced)
+- Role-based access control (Admin full, Parent limited to children, Student 18+)
+- ZarinPal payment gateway prepared architecturally (not implemented)
+- Database migration for finance models
+- 70 tests covering finance domain, services, enrollment integration, authorization, reports, and routes
+
+### Design Decisions
+
+- Transaction-based ledger (balance always derived, never stored)
+- Sign convention: PAYMENT/DISCOUNT positive, CHARGE/REFUND negated
+- Correction preserves original (CORRECTED status excluded from balance)
+- Reversal keeps original ACTIVE for history, creates opposite entry
+- Tuition snapshot at enrollment time preserves historical amounts
+- Student finance access restricted by age (18+)
+- Parent access limited to linked children via parent_student table

@@ -103,6 +103,7 @@ Separate configs per environment (development, testing, production) in `config/_
 | Enrollment | enrollment | enrollment/ | web/enrollment | enrollment_bp |
 | Attendance | attendance | attendance/ | web/attendance | attendance_bp |
 | Activity | activity, submission | activity/ | web/activity | activity_bp |
+| Finance | finance | finance/ | web/finance | finance_bp |
 
 ## Academy Structure (P2)
 
@@ -240,6 +241,54 @@ Submissions after the deadline are accepted but marked as LATE. No automatic pen
 - **Soft-disable**: Deactivating an activity preserves all historical submissions.
 - **File validation**: Server-side validation of file type, size, and MIME type (5 MB max, specific extensions only).
 - **Flexible activity types**: The Activity model uses a type field (initially HOMEWORK) designed to support future types (PROJECT, PRACTICE, QUIZ, EXAM) without schema changes.
+
+## Finance (P6)
+
+The finance system manages student accounts, tuition charges, payments, discounts, refunds, and financial history.
+
+```
+Student
+   ↓
+FinancialTransaction (ledger)
+   ↑
+Class.tuition (snapshot at enrollment)
+```
+
+### Transaction Types
+
+- **CHARGE** — tuition, fees, manual charges (negative signed amount)
+- **PAYMENT** — student payments (positive signed amount)
+- **DISCOUNT** — discounts applied (positive signed amount)
+- **REFUND** — refunds issued (negative signed amount)
+- **REVERSAL** — reverses a transaction (opposite sign of original)
+- **ADJUSTMENT** — manual corrections (signed amount stored directly)
+
+### Balance Calculation
+
+Balance is derived from transactions, not a mutable field:
+
+```
+balance = sum(signed_amounts) for all ACTIVE transactions
+```
+
+Sign convention: PAYMENT/DISCOUNT are positive (credit); CHARGE/REFUND are negative (debit); REVERSAL/ADJUSTMENT are signed.
+
+### Correction vs Reversal
+
+- **Correction**: marks original as CORRECTED (excluded from balance), creates new corrected entry
+- **Reversal**: keeps original ACTIVE (preserved for history), creates REVERSAL entry with opposite sign
+
+### Enrollment Integration
+
+- Approval → automatic tuition charge (idempotent)
+- Cancellation → REVERSAL entry (original preserved)
+- Tuition snapshot preserved from Class.tuition at enrollment time
+
+### Access Control
+
+- Admin: full access to all finance features
+- Parent: limited to linked children only
+- Student: only 18+ years old can access finance; blocked otherwise
 
 ## Payment Integration (Future)
 

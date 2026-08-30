@@ -19,6 +19,7 @@
                     <a href="{{ url_for('enrollment.admin_enrollment_list') }}">Enrollments</a>
                     <a href="{{ url_for('attendance.admin_attendance_list') }}">Attendance</a>
                     <a href="{{ url_for('activity.admin_activity_list') }}">Activities</a>
+                    <a href="{{ url_for('finance.admin_dashboard') }}">Finance</a>
                     {% endif %}
                     {% if current_user.has_any_role('TEACHER') %}
                     <a href="{{ url_for('attendance.teacher_my_classes') }}">My Classes</a>
@@ -29,6 +30,10 @@
                     <a href="{{ url_for('enrollment.student_my_enrollments') }}">My Enrollments</a>
                     <a href="{{ url_for('attendance.student_my_attendance') }}">My Attendance</a>
                     <a href="{{ url_for('activity.student_my_classes') }}">My Activities</a>
+                    <a href="{{ url_for('finance.student_my_finance') }}">My Finance</a>
+                    {% endif %}
+                    {% if current_user.has_any_role('PARENT') %}
+                    <a href="{{ url_for('finance.parent_overview') }}">Children Finance</a>
                     {% endif %}
                     <a href="{{ url_for('auth.logout') }}">Logout</a>
                 {% else %}

@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+{% block title %}وضعیت مالی کلاس - {{ academy_class.title }}{% endblock %}
+{% block content %}
+<div class="page-header">
+    <h1>وضعیت مالی کلاس: {{ academy_class.title }}</h1>
+    <a href="{{ url_for('finance.admin_transactions', class_id=academy_class.id) }}" class="btn btn-outline">لیست تراکنش‌ها</a>
+</div>
+
+<div class="dashboard-grid">
+    <div class="dashboard-card">
+        <h3>تعداد دانش‌آموزان</h3>
+        <p class="dashboard-value">{{ summary.enrolled_count }}</p>
+    </div>
+    <div class="dashboard-card">
+        <h3>کل شهریه</h3>
+        <p class="dashboard-value">{{ "{:,.0f}".format(summary.total_tuition) }} تومان</p>
+    </div>
+    <div class="dashboard-card">
+        <h3>کل پرداختی</h3>
+        <p class="dashboard-value positive">{{ "{:,.0f}".format(summary.total_paid) }} تومان</p>
+    </div>
+    <div class="dashboard-card">
+        <h3>تخفیف‌ها</h3>
+        <p class="dashboard-value">{{ "{:,.0f}".format(summary.total_discounts) }} تومان</p>
+    </div>
+    <div class="dashboard-card">
+        <h3>بازپرداخت‌ها</h3>
+        <p class="dashboard-value negative">{{ "{:,.0f}".format(summary.total_refunds) }} تومان</p>
+    </div>
+    <div class="dashboard-card">
+        <h3>باقی‌مانده</h3>
+        <p class="dashboard-value negative">{{ "{:,.0f}".format(summary.total_outstanding) }} تومان</p>
+    </div>
+</div>
+
+{% if summary.students %}
+<h2>وضعیت مالی دانش‌آموزان</h2>
+<div class="table-container">
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th>دانش‌آموز</th>
+                <th>مانده حساب</th>
+                <th>وضعیت</th>
+                <th>عملیات</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for s in summary.students %}
+            <tr>
+                <td>{{ s.student_user_id }}</td>
+                <td class="{{ 'positive' if s.balance > 0 else ('negative' if s.balance < 0 else '') }}">
+                    {{ "{:,.0f}".format(s.balance) }} تومان
+                </td>
+                <td><span class="status-badge status-{{ s.status|lower }}">{{ s.status }}</span></td>
+                <td>
+                    <a href="{{ url_for('finance.admin_student_statement', student_user_id=s.student_user_id) }}" class="btn btn-sm btn-outline">صورت حساب</a>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% else %}
+<p class="empty-state">دانش‌آموزی در این کلاس ثبت‌نام نکرده است.</p>
+{% endif %}
+{% endblock %}

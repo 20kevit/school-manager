@@ -64,13 +64,13 @@
 
 ## P6 — Finance
 
-- [ ] Financial ledger
-- [ ] Class tuition
-- [ ] Discounts
-- [ ] Partial payments
-- [ ] Credit / debt
-- [ ] Refunds
-- [ ] Payment history
+- [x] Financial ledger
+- [x] Class tuition
+- [x] Discounts
+- [x] Partial payments
+- [x] Credit / debt
+- [x] Refunds
+- [x] Payment history
 - [ ] Payment receipt upload
 - [ ] Future payment gateway integration
 

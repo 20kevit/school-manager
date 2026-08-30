@@ -1,0 +1,89 @@
+{% extends "base.html" %}
+{% block title %}ثبت تراکنش جدید{% endblock %}
+{% block content %}
+<div class="page-header">
+    <h1>ثبت تراکنش جدید</h1>
+    <a href="{{ url_for('finance.admin_transactions') }}" class="btn btn-outline">بازگشت</a>
+</div>
+
+{% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+        {% for category, message in messages %}
+            <div class="alert alert-{{ category }}">{{ message }}</div>
+        {% endfor %}
+    {% endif %}
+{% endwith %}
+
+<form method="POST" class="form-card">
+    <div class="form-group">
+        <label for="student_user_id">دانش‌آموز</label>
+        <select id="student_user_id" name="student_user_id" required>
+            <option value="">انتخاب کنید</option>
+            {% for student in students %}
+            <option value="{{ student.id }}">{{ student.login }}</option>
+            {% endfor %}
+        </select>
+    </div>
+
+    <div class="form-group">
+        <label for="transaction_type">نوع تراکنش</label>
+        <select id="transaction_type" name="transaction_type" required>
+            <option value="">انتخاب کنید</option>
+            <option value="PAYMENT">پرداخت</option>
+            <option value="CHARGE">شارژ</option>
+            <option value="REFUND">بازپرداخت</option>
+            <option value="DISCOUNT">تخفیف</option>
+            <option value="ADJUSTMENT">تعدیل</option>
+        </select>
+    </div>
+
+    <div class="form-group">
+        <label for="amount">مبلغ (تومان)</label>
+        <input type="number" id="amount" name="amount" step="0.01" min="0.01" required>
+    </div>
+
+    <div class="form-group">
+        <label for="category">دسته‌بندی</label>
+        <select id="category" name="category">
+            <option value="TUITION">شهریه</option>
+            <option value="BOOK">کتاب</option>
+            <option value="EQUIPMENT">تجهیزات</option>
+            <option value="EXAM">آزمون</option>
+            <option value="OTHER">سایر</option>
+        </select>
+    </div>
+
+    <div class="form-group">
+        <label for="payment_method">روش پرداخت</label>
+        <select id="payment_method" name="payment_method">
+            <option value="CASH">نقدی</option>
+            <option value="CARD">کارت</option>
+            <option value="BANK_TRANSFER">انتقال بانکی</option>
+            <option value="ONLINE">آنلاین</option>
+            <option value="OTHER">سایر</option>
+        </select>
+    </div>
+
+    <div class="form-group">
+        <label for="class_id">کلاس (اختیاری)</label>
+        <select id="class_id" name="class_id">
+            <option value="">بدون کلاس</option>
+            {% for cls in classes %}
+            <option value="{{ cls.id }}">{{ cls.title }}</option>
+            {% endfor %}
+        </select>
+    </div>
+
+    <div class="form-group">
+        <label for="description">توضیحات</label>
+        <textarea id="description" name="description" rows="3"></textarea>
+    </div>
+
+    <div class="form-group">
+        <label for="reference_number">شماره مرجع</label>
+        <input type="text" id="reference_number" name="reference_number">
+    </div>
+
+    <button type="submit" class="btn btn-primary">ثبت تراکنش</button>
+</form>
+{% endblock %}

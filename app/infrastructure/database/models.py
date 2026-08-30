@@ -251,6 +251,7 @@ class AcademyClassModel(db.Model):
     start_date = db.Column(db.Date, nullable=False)
     end_date = db.Column(db.Date, nullable=True)
     capacity = db.Column(db.Integer, nullable=False, default=30)
+    tuition = db.Column(db.Numeric(12, 2), nullable=False, default=0)
     num_sessions = db.Column(db.Integer, nullable=False, default=1)
     status = db.Column(db.String(20), nullable=False, default="PLANNED")
     teacher_user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=True)
@@ -646,4 +647,69 @@ class ActivityFileModel(db.Model):
         return (
             f"<ActivityFileModel id={self.id} submission={self.submission_id} "
             f"filename={self.original_filename!r}>"
+        )
+
+
+# ---------------------------------------------------------------------------
+# P6 — Finance & Tuition
+# ---------------------------------------------------------------------------
+
+
+class FinancialTransactionModel(db.Model):
+    """Financial transaction table — the source of truth for student balances.
+
+    Balance is derived: sum(signed_amount) for all ACTIVE transactions.
+    Currency: Toman (internal representation as Numeric(12,2)).
+    """
+
+    __tablename__ = "financial_transactions"
+
+    id = db.Column(db.Integer, primary_key=True)
+    student_user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)
+    amount = db.Column(db.Numeric(12, 2), nullable=False)
+    transaction_type = db.Column(db.String(20), nullable=False)
+    category = db.Column(db.String(20), nullable=False)
+    description = db.Column(db.Text, default="")
+    reference_number = db.Column(db.String(100), default="")
+    payment_method = db.Column(db.String(20), nullable=True)
+    enrollment_id = db.Column(
+        db.Integer, db.ForeignKey("enrollments.id"), nullable=True
+    )
+    class_id = db.Column(db.Integer, db.ForeignKey("academy_classes.id"), nullable=True)
+    related_transaction_id = db.Column(db.Integer, nullable=True)
+    status = db.Column(db.String(20), nullable=False, default="ACTIVE")
+    created_by = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=True)
+    created_at = db.Column(db.DateTime, server_default=db.func.now(), nullable=False)
+    updated_at = db.Column(
+        db.DateTime,
+        server_default=db.func.now(),
+        onupdate=db.func.now(),
+        nullable=False,
+    )
+
+    student = db.relationship("UserModel", foreign_keys=[student_user_id])
+    enrollment = db.relationship(
+        "EnrollmentModel", backref=db.backref("financial_transactions", lazy="select")
+    )
+    academy_class = db.relationship(
+        "AcademyClassModel", backref=db.backref("financial_transactions", lazy="select")
+    )
+    creator = db.relationship("UserModel", foreign_keys=[created_by])
+
+    __table_args__ = (
+        db.Index("ix_ft_student", "student_user_id"),
+        db.Index("ix_ft_type", "transaction_type"),
+        db.Index("ix_ft_category", "category"),
+        db.Index("ix_ft_status", "status"),
+        db.Index("ix_ft_enrollment", "enrollment_id"),
+        db.Index("ix_ft_class", "class_id"),
+        db.Index("ix_ft_created_at", "created_at"),
+    )
+
+    def __repr__(self) -> str:
+        return (
+            f"<FinancialTransactionModel id={self.id} "
+            f"student={self.student_user_id} "
+            f"type={self.transaction_type} "
+            f"amount={self.amount}>"
         )

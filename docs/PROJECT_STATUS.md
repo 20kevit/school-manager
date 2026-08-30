@@ -1,9 +1,9 @@
 # Project Status
 
-**Current Phase:** P5 — Learning Activities & Homework — Completed
-**Current Objective:** Complete P5 — Learning Activities & Homework.
+**Current Phase:** P6 — Finance & Tuition — Completed
+**Current Objective:** Complete P6 — Finance & Tuition.
 
-**Previous Phase:** P4 — Attendance
+**Previous Phase:** P5 — Learning Activities
 
 ## Status
 
@@ -115,3 +115,27 @@ P5 — Learning Activities & Homework is complete.
 - [x] File download with authorization
 - [x] Database migration for activity models
 - [x] 248 tests passing
+
+### P6 — Finance & Tuition
+- [x] FinancialTransaction domain entity with enums (TransactionType, TransactionCategory, PaymentMethod, TransactionStatus)
+- [x] FinancialTransaction database model with indexes and relationships
+- [x] Tuition field added to AcademyClass model (Numeric 12,2)
+- [x] Finance application service (charges, payments, refunds, discounts, adjustments, corrections, reversals)
+- [x] Balance derived from transactions (not mutable balance field)
+- [x] Transaction history with signed amounts (PAYMENT/DISCOUNT positive, CHARGE/REFUND negated)
+- [x] Correction mechanism (mark original as CORRECTED, create new corrected entry)
+- [x] Reversal mechanism (keep original ACTIVE, create REVERSAL with opposite sign)
+- [x] Enrollment integration (approval → tuition charge, cancellation → reversal)
+- [x] Idempotent tuition charge (duplicate prevention per enrollment)
+- [x] Tuition snapshot preserved at enrollment time
+- [x] Class financial summary (total tuition, enrolled count, collections, outstanding)
+- [x] Student balance, balance by class, statement, reports
+- [x] Debt report, credit report, revenue report, dashboard summary
+- [x] Transaction report with filters
+- [x] Admin web UI: dashboard, transactions, create, detail, student statement, class financial, reports
+- [x] Parent web UI: overview, child statement (limited to linked children)
+- [x] Student web UI: my-finance (18+ check enforced)
+- [x] Role-based access control (Admin full, Parent limited, Student 18+)
+- [x] ZarinPal prepared architecturally (not implemented)
+- [x] Database migration for finance models
+- [x] 70 tests covering finance domain, services, enrollment integration, authorization, reports, and routes

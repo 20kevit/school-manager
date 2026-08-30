@@ -1,0 +1,102 @@
+{% extends "base.html" %}
+{% block title %}لیست تراکنش‌ها{% endblock %}
+{% block content %}
+<div class="page-header">
+    <h1>لیست تراکنش‌ها</h1>
+    <a href="{{ url_for('finance.admin_create_transaction') }}" class="btn btn-primary">ثبت تراکنش جدید</a>
+</div>
+
+<div class="filter-bar">
+    <form method="GET" class="filter-form">
+        <div class="form-group">
+            <label for="student_id">دانش‌آموز</label>
+            <select id="student_id" name="student_id" onchange="this.form.submit()">
+                <option value="">همه</option>
+                {% for student in students %}
+                <option value="{{ student.id }}" {{ 'selected' if filters.student_id == student.id }}>{{ student.login }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="form-group">
+            <label for="class_id">کلاس</label>
+            <select id="class_id" name="class_id" onchange="this.form.submit()">
+                <option value="">همه</option>
+                {% for cls in classes %}
+                <option value="{{ cls.id }}" {{ 'selected' if filters.class_id == cls.id }}>{{ cls.title }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="form-group">
+            <label for="transaction_type">نوع تراکنش</label>
+            <select id="transaction_type" name="transaction_type" onchange="this.form.submit()">
+                <option value="">همه</option>
+                <option value="CHARGE" {{ 'selected' if filters.transaction_type == 'CHARGE' }}>شارژ</option>
+                <option value="PAYMENT" {{ 'selected' if filters.transaction_type == 'PAYMENT' }}>پرداخت</option>
+                <option value="REFUND" {{ 'selected' if filters.transaction_type == 'REFUND' }}>بازپرداخت</option>
+                <option value="DISCOUNT" {{ 'selected' if filters.transaction_type == 'DISCOUNT' }}>تخفیف</option>
+                <option value="ADJUSTMENT" {{ 'selected' if filters.transaction_type == 'ADJUSTMENT' }}>تعدیل</option>
+                <option value="REVERSAL" {{ 'selected' if filters.transaction_type == 'REVERSAL' }}>معکوس</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label for="category">دسته‌بندی</label>
+            <select id="category" name="category" onchange="this.form.submit()">
+                <option value="">همه</option>
+                <option value="TUITION" {{ 'selected' if filters.category == 'TUITION' }}>شهریه</option>
+                <option value="BOOK" {{ 'selected' if filters.category == 'BOOK' }}>کتاب</option>
+                <option value="EQUIPMENT" {{ 'selected' if filters.category == 'EQUIPMENT' }}>تجهیزات</option>
+                <option value="EXAM" {{ 'selected' if filters.category == 'EXAM' }}>آزمون</option>
+                <option value="OTHER" {{ 'selected' if filters.category == 'OTHER' }}>سایر</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label for="start_date">از تاریخ</label>
+            <input type="date" id="start_date" name="start_date" value="{{ filters.start_date }}">
+        </div>
+        <div class="form-group">
+            <label for="end_date">تا تاریخ</label>
+            <input type="date" id="end_date" name="end_date" value="{{ filters.end_date }}">
+        </div>
+        <button type="submit" class="btn btn-sm btn-primary">فیلتر</button>
+    </form>
+</div>
+
+{% if transactions %}
+<div class="table-container">
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th>تاریخ</th>
+                <th>دانش‌آموز</th>
+                <th>نوع</th>
+                <th>دسته</th>
+                <th>مبلغ</th>
+                <th>روش پرداخت</th>
+                <th>توضیحات</th>
+                <th>عملیات</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for tx in transactions %}
+            <tr>
+                <td>{{ tx.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
+                <td>{{ tx.student.login }}</td>
+                <td><span class="status-badge status-{{ tx.transaction_type|lower }}">{{ tx.transaction_type }}</span></td>
+                <td>{{ tx.category }}</td>
+                <td class="{{ 'positive' if tx.transaction_type in ['PAYMENT', 'DISCOUNT'] else 'negative' }}">
+                    {{ "{:,.0f}".format(tx.amount) }} تومان
+                </td>
+                <td>{{ tx.payment_method or '-' }}</td>
+                <td>{{ tx.description[:50] }}{{ '...' if tx.description|length > 50 }}</td>
+                <td>
+                    <a href="{{ url_for('finance.admin_transaction_detail', transaction_id=tx.id) }}" class="btn btn-sm btn-outline">جزئیات</a>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% else %}
+<p class="empty-state">تراکنشی یافت نشد.</p>
+{% endif %}
+{% endblock %}
