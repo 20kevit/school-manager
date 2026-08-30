@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% block title %}{% if template %}ویرایش قالب{% else %}ایجاد قالب جدید{% endif %}{% endblock %}
+{% block content %}
+<h1>{% if template %}ویرایش قالب{% else %}ایجاد قالب جدید{% endif %}</h1>
+<form method="post">
+    <div><label>نام:</label><input type="text" name="name" value="{{ template.name if template else '' }}" required></div>
+    {% if not template %}
+    <div><label>نوع:</label><select name="notification_type" required>
+        {% for t in ["ENROLLMENT_SUBMITTED","ENROLLMENT_APPROVED","ENROLLMENT_REJECTED","SESSION_CREATED","SESSION_CANCELLED","ACTIVITY_CREATED","ACTIVITY_GRADED","ASSESSMENT_CREATED","RESULT_PUBLISHED","TUITION_CHARGED","PAYMENT_RECEIVED","ANNOUNCEMENT","WELCOME","PASSWORD_CHANGED"] %}
+        <option value="{{ t }}">{{ t }}</option>{% endfor %}</select></div>
+    <div><label>کانال:</label><select name="channel" required>
+        <option value="IN_APP">درون‌برنامه‌ای</option><option value="SMS">پیامک</option>
+        <option value="TELEGRAM">تلگرام</option><option value="BALE">بله</option><option value="EMAIL">ایمیل</option></select></div>
+    {% endif %}
+    <div><label>موضوع:</label><input type="text" name="subject" value="{{ template.subject if template else '' }}"></div>
+    <div><label>متن:</label><textarea name="body" rows="6" required>{{ template.body if template else '' }}</textarea></div>
+    <button type="submit" class="btn">ذخیره</button><a href="{{ url_for('notification.admin_templates') }}">لغو</a>
+</form>
+{% endblock %}

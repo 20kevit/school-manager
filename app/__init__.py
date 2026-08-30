@@ -37,6 +37,10 @@ def _register_extensions(app):
     def load_user(user_id: str):
         return UserModel.query.get(int(user_id))
 
+    from app.infrastructure.notification.registry import init_default_providers
+
+    init_default_providers()
+
 
 def _register_blueprints(app):
     """Register Flask blueprints."""
@@ -48,6 +52,7 @@ def _register_blueprints(app):
     from app.interface.web.auth import auth_bp
     from app.interface.web.enrollment.routes import enrollment_bp
     from app.interface.web.finance.routes import finance_bp
+    from app.interface.web.notification.routes import notification_bp
     from app.interface.web.portal.routes import portal_bp
 
     app.register_blueprint(web_bp)
@@ -59,6 +64,7 @@ def _register_blueprints(app):
     app.register_blueprint(finance_bp)
     app.register_blueprint(assessment_bp)
     app.register_blueprint(portal_bp)
+    app.register_blueprint(notification_bp)
 
 
 def _register_routes(app):

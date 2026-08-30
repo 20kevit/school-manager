@@ -1,13 +1,13 @@
 # Project Status
 
-**Current Phase:** P8 — Portals (Dashboards) — Completed
-**Current Objective:** P8 — Portals (Dashboards) complete.
+**Current Phase:** P9 — Notifications — Completed
+**Current Objective:** P9 — Notifications complete.
 
-**Previous Phase:** P7 — Exams, Assessments & Grades
+**Previous Phase:** P8 — Portals (Dashboards)
 
 ## Status
 
-P8 — Portals (Dashboards) is complete.
+P9 — Notifications is complete.
 
 ## Completed
 
@@ -185,3 +185,35 @@ P8 — Portals (Dashboards) is complete.
 - [x] Main dashboard redirect to role-specific portal
 - [x] 4 role-specific templates with Persian RTL UI
 - [x] 394 total tests passing (P1-P8)
+
+### P9 — Notifications
+- [x] Notification domain with enums (Channel, Status, Priority, Type, DeliveryStatus, ReadStatus)
+- [x] NotificationTemplate domain with variable rendering
+- [x] NotificationPreference domain for per-user settings
+- [x] NotificationDelivery domain for multi-channel tracking
+- [x] InAppNotification domain for internal notifications
+- [x] Provider abstraction (NotificationProvider ABC)
+- [x] SMS provider (generic, environment-configured)
+- [x] Telegram Bot API provider
+- [x] Bale Bot API provider
+- [x] Email/SMTP provider
+- [x] Provider registry with health status
+- [x] Graceful handling of missing provider credentials
+- [x] Notification application service (create, send, cancel, retry, list, count)
+- [x] Multi-channel delivery (IN_APP, SMS, TELEGRAM, BALE, EMAIL)
+- [x] Manual notification sending by admin
+- [x] Announcement system (multi-user, multi-channel)
+- [x] Template system (CRUD, rendering, active/inactive)
+- [x] User notification preferences (enable/disable per type per channel)
+- [x] Mandatory notification bypass (WELCOME, PASSWORD_CHANGED)
+- [x] In-app notifications (unread/read, mark as read, mark all as read)
+- [x] Event handlers for enrollment, session, activity, assessment, finance, account events
+- [x] Admin notification dashboard with filters and pagination
+- [x] Admin notification detail with delivery records
+- [x] Admin manual notification and announcement interfaces
+- [x] Admin template management (create, edit, delete)
+- [x] Student/Parent/Teacher notification list and preferences
+- [x] Navigation links for notifications
+- [x] Database migration for notification models
+- [x] 68 new tests covering domain, providers, templates, services, in-app, preferences, events, multi-channel, authorization, and routes
+- [x] 462 total tests passing (P1-P9)

@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block title %}اعلان‌های من{% endblock %}
+{% block content %}
+<h1>اعلان‌های من</h1>
+{% if unread_count > 0 %}
+<form method="post" action="{{ url_for('notification.my_mark_all_read') }}" style="margin:10px 0;">
+    <button type="submit">خواندن همه ({{ unread_count }})</button>
+</form>
+{% endif %}
+<table>
+    <thead><tr><th>عنوان</th><th>پیام</th><th>نوع</th><th>وضعیت</th><th>تاریخ</th><th>عملیات</th></tr></thead>
+    <tbody>
+    {% for n in notifications %}
+    <tr style="{{ 'font-weight:bold' if n.read_status == 'UNREAD' else '' }}">
+        <td>{{ n.title }}</td><td>{{ n.message }}</td><td>{{ n.notification_type }}</td>
+        <td>{{ 'خوانده نشده' if n.read_status == 'UNREAD' else 'خوانده شده' }}</td>
+        <td>{{ n.created_at.strftime('%Y-%m-%d %H:%M') if n.created_at else '' }}</td>
+        <td>{% if n.read_status == 'UNREAD' %}
+            <form method="post" action="{{ url_for('notification.my_mark_read', in_app_id=n.id) }}" style="display:inline;"><button type="submit">خواندم</button></form>
+            {% endif %}</td>
+    </tr>
+    {% endfor %}
+    </tbody>
+</table>
+{% if not notifications %}<p>اعلانی وجود ندارد.</p>{% endif %}
+{% endblock %}

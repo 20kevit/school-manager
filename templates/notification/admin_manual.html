@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% block title %}ارسال دستی اعلان{% endblock %}
+{% block content %}
+<h1>ارسال دستی اعلان</h1>
+
+<form method="post">
+    <div>
+        <label for="title">عنوان:</label>
+        <input type="text" id="title" name="title" required>
+    </div>
+    <div>
+        <label for="message">پیام:</label>
+        <textarea id="message" name="message" rows="4" required></textarea>
+    </div>
+    <div>
+        <label for="channel">کانال:</label>
+        <select id="channel" name="channel" required>
+            <option value="IN_APP">درون‌برنامه‌ای</option>
+            <option value="SMS">پیامک</option>
+            <option value="TELEGRAM">تلگرام</option>
+            <option value="BALE">بله</option>
+            <option value="EMAIL">ایمیل</option>
+        </select>
+    </div>
+    <div>
+        <label>گیرندگان:</label>
+        <div>
+            {% for user in users %}
+            <label>
+                <input type="checkbox" name="recipients" value="{{ user.id }}">
+                {{ user.login }}
+            </label>
+            {% endfor %}
+        </div>
+    </div>
+    <button type="submit" class="btn">ارسال</button>
+    <a href="{{ url_for('notification.admin_dashboard') }}">لغو</a>
+</form>
+{% endblock %}

@@ -271,4 +271,53 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 - Student financial balance only shown for adults (18+)
 - Portal service reuses existing service functions for data access
 
-## P9 — Notifications
+## P9 — Notifications (2026-08-30)
+
+### Added
+
+- Notification domain entity with enums (NotificationChannel, NotificationStatus, NotificationPriority, NotificationType, DeliveryStatus, ReadStatus)
+- NotificationTemplate domain entity with variable rendering
+- NotificationPreference domain entity for per-user channel/type preferences
+- NotificationDelivery domain entity for multi-channel delivery tracking
+- InAppNotification domain entity for internal notifications
+- Notification database model with indexes and relationships
+- NotificationDelivery database model with unique constraint (notification_id, channel)
+- NotificationTemplate database model with active/inactive support
+- NotificationPreference database model with unique constraint (user_id, type, channel)
+- InAppNotification database model with read/unread status
+- Provider abstraction (NotificationProvider ABC with send, validate_recipient, is_available)
+- SMS provider with environment-based configuration
+- Telegram Bot API provider with environment-based configuration
+- Bale Bot API provider with environment-based configuration
+- Email/SMTP provider with environment-based configuration
+- Provider registry for channel-to-provider resolution
+- Graceful handling of missing provider credentials (application does not fail at startup)
+- Notification application service (create, send, cancel, retry, list, count)
+- Multi-channel notification delivery (IN_APP, SMS, TELEGRAM, BALE, EMAIL)
+- Manual notification sending by admin
+- Announcement system (multi-user, multi-channel)
+- Notification template system (CRUD, rendering with variables, active/inactive)
+- User notification preferences (enable/disable per type per channel)
+- Mandatory notification bypass (WELCOME, PASSWORD_CHANGED ignore preferences)
+- In-app notification system (unread/read, mark as read, mark all as read)
+- Event handlers for enrollment, session, activity, assessment, finance, and account events
+- Admin notification dashboard with filters, pagination, and provider health status
+- Admin notification detail with delivery records
+- Admin manual notification interface
+- Admin announcement interface
+- Admin template management (create, edit, delete)
+- Student notification list with read/unread status
+- User notification preferences UI
+- Navigation links for notifications across all roles
+- 68 tests covering domain entities, providers, templates, services, in-app, preferences, event handlers, multi-channel, authorization, and routes
+
+### Design Decisions
+
+- Notification domain is independent of any specific delivery provider
+- Provider-specific code is isolated in infrastructure layer
+- Multi-channel delivery uses independent delivery records per channel
+- In-app notifications do not require external provider configuration
+- Mandatory notifications (WELCOME, PASSWORD_CHANGED) bypass user preferences
+- Event-driven architecture for loose coupling with existing services
+- Missing provider credentials do not break application startup
+- Provider abstraction allows future provider additions without domain changes

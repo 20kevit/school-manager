@@ -1,0 +1,124 @@
+{% extends "base.html" %}
+{% block title %}مدیریت اعلان‌ها - پنل مدیریت{% endblock %}
+{% block content %}
+<h1>مدیریت اعلان‌ها</h1>
+
+<div style="display:flex;gap:10px;margin:15px 0;">
+    <a href="{{ url_for('notification.admin_manual') }}" class="btn">ارسال دستی</a>
+    <a href="{{ url_for('notification.admin_announcement') }}" class="btn">ارسال اطلاع‌رسانی</a>
+    <a href="{{ url_for('notification.admin_templates') }}" class="btn">قالب‌ها</a>
+</div>
+
+<h2>وضعیت ارائه‌دهندگان</h2>
+<table>
+    <thead>
+        <tr>
+            <th>ارائه‌دهنده</th>
+            <th>کانال</th>
+            <th>وضعیت</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for p in provider_health %}
+        <tr>
+            <td>{{ p.name }}</td>
+            <td>{{ p.channel }}</td>
+            <td>{{ "فعال" if p.available else "غیرفعال" }}</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+<h2>اعلان‌های ناموفق</h2>
+{% if failed %}
+<table>
+    <thead>
+        <tr>
+            <th>شناسه</th>
+            <th>نوع</th>
+            <th>گیرنده</th>
+            <th>وضعیت</th>
+            <th>عملیات</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for n in failed %}
+        <tr>
+            <td>{{ n.id }}</td>
+            <td>{{ n.notification_type }}</td>
+            <td>{{ n.recipient_user_id }}</td>
+            <td>{{ n.status }}</td>
+            <td>
+                <a href="{{ url_for('notification.admin_detail', notification_id=n.id) }}">جزئیات</a>
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% else %}
+<p>اعلان ناموفقی وجود ندارد.</p>
+{% endif %}
+
+<h2>تاریخچه اعلان‌ها ({{ total }} مورد)</h2>
+
+<form method="get" style="margin:15px 0;">
+    <select name="status">
+        <option value="">همه وضعیت‌ها</option>
+        <option value="PENDING" {{ "selected" if selected_status == "PENDING" }}>در انتظار</option>
+        <option value="SENDING" {{ "selected" if selected_status == "SENDING" }}>در حال ارسال</option>
+        <option value="SENT" {{ "selected" if selected_status == "SENT" }}>ارسال شده</option>
+        <option value="FAILED" {{ "selected" if selected_status == "FAILED" }}>ناموفق</option>
+        <option value="CANCELLED" {{ "selected" if selected_status == "CANCELLED" }}>لغو شده</option>
+    </select>
+    <select name="type">
+        <option value="">همه انواع</option>
+        {% for t in ["ENROLLMENT_SUBMITTED","ENROLLMENT_APPROVED","ENROLLMENT_REJECTED","SESSION_CREATED","SESSION_CANCELLED","ACTIVITY_CREATED","ACTIVITY_GRADED","ASSESSMENT_CREATED","RESULT_PUBLISHED","TUITION_CHARGED","PAYMENT_RECEIVED","ANNOUNCEMENT"] %}
+        <option value="{{ t }}" {{ "selected" if selected_type == t }}>{{ t }}</option>
+        {% endfor %}
+    </select>
+    <button type="submit" class="btn">فیلتر</button>
+</form>
+
+<table>
+    <thead>
+        <tr>
+            <th>شناسه</th>
+            <th>نوع</th>
+            <th>عنوان</th>
+            <th>گیرنده</th>
+            <th>اولویت</th>
+            <th>وضعیت</th>
+            <th>تاریخ ایجاد</th>
+            <th>عملیات</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for n in notifications %}
+        <tr>
+            <td>{{ n.id }}</td>
+            <td>{{ n.notification_type }}</td>
+            <td>{{ n.title }}</td>
+            <td>{{ n.recipient_user_id }}</td>
+            <td>{{ n.priority }}</td>
+            <td>{{ n.status }}</td>
+            <td>{{ n.created_at.strftime('%Y-%m-%d %H:%M') if n.created_at else '' }}</td>
+            <td>
+                <a href="{{ url_for('notification.admin_detail', notification_id=n.id) }}">جزئیات</a>
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+{% if total_pages > 1 %}
+<div style="margin:15px 0;">
+    {% if page > 1 %}
+    <a href="?page={{ page-1 }}&status={{ selected_status }}&type={{ selected_type }}">قبلی</a>
+    {% endif %}
+    <span>صفحه {{ page }} از {{ total_pages }}</span>
+    {% if page < total_pages %}
+    <a href="?page={{ page+1 }}&status={{ selected_status }}&type={{ selected_type }}">بعدی</a>
+    {% endif %}
+</div>
+{% endif %}
+{% endblock %}

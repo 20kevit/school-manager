@@ -85,6 +85,99 @@ Separate configs per environment (development, testing, production) in `config/_
 - Separate blueprint (`api_bp`) for API routes.
 - Same backend serves web and future mobile clients.
 
+## Notifications (P9)
+
+The notification system provides centralized multi-channel delivery with provider abstraction and event-driven integration.
+
+```
+Notification
+  ├── NotificationDelivery (per-channel tracking)
+  ├── NotificationTemplate (message templates)
+  ├── NotificationPreference (per-user settings)
+  └── InAppNotification (internal notifications)
+```
+
+### Notification Channels
+
+- **IN_APP** — internal browser notifications (always available)
+- **SMS** — text messages via HTTP API
+- **TELEGRAM** — Telegram Bot API
+- **BALE** — Bale Bot API
+- **EMAIL** — SMTP with TLS
+
+### Provider Architecture
+
+```
+Domain (notification entities, enums)
+    ↓
+Application (notification service, template service, preference service, event handlers)
+    ↓
+Infrastructure (providers: SMS, Telegram, Bale, Email, registry)
+    ↓
+Interface (admin dashboard, user notifications, preferences)
+```
+
+### Provider Abstraction
+
+```python
+class NotificationProvider(ABC):
+    @abstractmethod
+    def send(self, notification, recipient) -> ProviderResult: ...
+    def validate_recipient(self, recipient) -> bool: ...
+    def is_available(self) -> bool: ...
+```
+
+Each provider is registered in the provider registry. Missing credentials result in `NullProvider` (graceful degradation).
+
+### Notification Lifecycle
+
+```
+PENDING → SENDING → SENT → DELIVERED
+PENDING → SENDING → FAILED → RETRYING → SENDING
+PENDING → CANCELLED
+FAILED → RETRYING
+```
+
+### Per-Channel Delivery Tracking
+
+Each notification can be sent to multiple channels. Each channel delivery is tracked independently:
+
+```
+Notification (id, type, priority, status)
+  ├── Delivery: IN_APP → DELIVERED
+  ├── Delivery: SMS → SENT
+  ├── Delivery: TELEGRAM → PENDING
+  └── Delivery: EMAIL → FAILED
+```
+
+### Event-Driven Integration
+
+Existing modules trigger notifications via event handlers:
+
+| Event | Notification |
+|-------|-------------|
+| Enrollment approved | ENROLLMENT_APPROVED |
+| Enrollment rejected | ENROLLMENT_REJECTED |
+| Session rescheduled | SESSION_RESCHEDULED |
+| Session cancelled | SESSION_CANCELLED |
+| Assessment graded | ASSESSMENT_GRADED |
+| Payment received | PAYMENT_RECEIVED |
+| Account created | WELCOME (mandatory) |
+| Password changed | PASSWORD_CHANGED (mandatory) |
+
+### User Preferences
+
+Users can enable/disable notification types per channel. Mandatory notifications (WELCOME, PASSWORD_CHANGED) bypass preferences.
+
+### Key Design Decisions
+
+- **Infrastructure isolation**: Provider-specific code stays in `app/infrastructure/notification/`
+- **Domain independence**: Domain layer contains only entities and enums
+- **Graceful degradation**: Missing credentials don't break application startup
+- **Independent delivery tracking**: Each channel delivery is tracked separately
+- **Mandatory bypass**: System-critical notifications ignore user preferences
+- **In-app always available**: Internal notifications don't require external providers
+
 ## Adding New Modules
 
 1. Create domain entities in `app/domain/<module>/`.
@@ -106,6 +199,7 @@ Separate configs per environment (development, testing, production) in `config/_
 | Finance | finance | finance/ | web/finance | finance_bp |
 | Assessment | assessment, result | assessment/ | web/assessment | assessment_bp |
 | Portal | — (aggregation layer) | portal/ | web/portal | portal_bp |
+| Notification | notification, delivery, template, preference | notification/ | web/notification | notification_bp |
 
 ## Academy Structure (P2)
 
@@ -369,7 +463,3 @@ Portal
 - **Main dashboard redirect**: `auth.dashboard` redirects to role-specific portal routes
 - **Finance visibility**: Student financial data restricted by age (18+) via existing profile
 - **Authorization**: Role-based access enforced at route level
-
-## Notification Integration (Future)
-
-External communication providers (SMS, Telegram, Bale, Email) belong in `app/infrastructure/`. The domain defines notification interfaces; infrastructure implements them per provider.

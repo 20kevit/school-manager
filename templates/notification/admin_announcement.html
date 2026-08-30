@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% block title %}ارسال اطلاع‌رسانی{% endblock %}
+{% block content %}
+<h1>ارسال اطلاع‌رسانی</h1>
+
+<form method="post">
+    <div>
+        <label for="title">عنوان:</label>
+        <input type="text" id="title" name="title" required>
+    </div>
+    <div>
+        <label for="message">پیام:</label>
+        <textarea id="message" name="message" rows="4" required></textarea>
+    </div>
+    <div>
+        <label>کانال‌ها:</label>
+        <div>
+            <label><input type="checkbox" name="channels" value="IN_APP"> درون‌برنامه‌ای</label>
+            <label><input type="checkbox" name="channels" value="SMS"> پیامک</label>
+            <label><input type="checkbox" name="channels" value="TELEGRAM"> تلگرام</label>
+            <label><input type="checkbox" name="channels" value="BALE"> بله</label>
+            <label><input type="checkbox" name="channels" value="EMAIL"> ایمیل</label>
+        </div>
+    </div>
+    <div>
+        <label>گیرندگان:</label>
+        <div>
+            {% for user in users %}
+            <label>
+                <input type="checkbox" name="recipients" value="{{ user.id }}">
+                {{ user.login }}
+            </label>
+            {% endfor %}
+        </div>
+    </div>
+    <button type="submit" class="btn">ارسال</button>
+    <a href="{{ url_for('notification.admin_dashboard') }}">لغو</a>
+</form>
+{% endblock %}

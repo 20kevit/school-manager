@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+{% block title %}جزئیات اعلان {{ notification.id }}{% endblock %}
+{% block content %}
+<h1>جزئیات اعلان</h1>
+
+<table>
+    <tr><th>شناسه</th><td>{{ notification.id }}</td></tr>
+    <tr><th>نوع</th><td>{{ notification.notification_type }}</td></tr>
+    <tr><th>عنوان</th><td>{{ notification.title }}</td></tr>
+    <tr><th>پیام</th><td>{{ notification.message }}</td></tr>
+    <tr><th>گیرنده</th><td>{{ recipient.login if recipient else notification.recipient_user_id }}</td></tr>
+    <tr><th>اولویت</th><td>{{ notification.priority }}</td></tr>
+    <tr><th>وضعیت</th><td>{{ notification.status }}</td></tr>
+    <tr><th>تعداد تلاش</th><td>{{ notification.retry_count }}</td></tr>
+    <tr><th>دلیل خطا</th><td>{{ notification.failure_reason or '-' }}</td></tr>
+    <tr><th>تاریخ ایجاد</th><td>{{ notification.created_at.strftime('%Y-%m-%d %H:%M') if notification.created_at else '' }}</td></tr>
+    <tr><th>تاریخ ارسال</th><td>{{ notification.sent_at.strftime('%Y-%m-%d %H:%M') if notification.sent_at else '-' }}</td></tr>
+</table>
+
+<h2>وضعیت ارسال</h2>
+<table>
+    <thead>
+        <tr>
+            <th>کانال</th>
+            <th>وضعیت</th>
+            <th>ارائه‌دهنده</th>
+            <th>شناسه پیام</th>
+            <th>تعداد تلاش</th>
+            <th>خطا</th>
+            <th>تاریخ ارسال</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for d in deliveries %}
+        <tr>
+            <td>{{ d.channel }}</td>
+            <td>{{ d.status }}</td>
+            <td>{{ d.provider_name or '-' }}</td>
+            <td>{{ d.provider_message_id or '-' }}</td>
+            <td>{{ d.attempt_count }}</td>
+            <td>{{ d.failure_reason or '-' }}</td>
+            <td>{{ d.sent_at.strftime('%Y-%m-%d %H:%M') if d.sent_at else '-' }}</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+<div style="margin-top:15px;">
+    {% if notification.status == "FAILED" %}
+    <form method="post" action="{{ url_for('notification.admin_retry', notification_id=notification.id) }}" style="display:inline;">
+        <button type="submit" class="btn">تلاش مجدد</button>
+    </form>
+    {% endif %}
+    {% if notification.status in ["PENDING", "SENDING"] %}
+    <form method="post" action="{{ url_for('notification.admin_cancel', notification_id=notification.id) }}" style="display:inline;">
+        <button type="submit" class="btn">لغو</button>
+    </form>
+    {% endif %}
+    <a href="{{ url_for('notification.admin_dashboard') }}">بازگشت</a>
+</div>
+{% endblock %}

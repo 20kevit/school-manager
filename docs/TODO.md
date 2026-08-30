@@ -110,12 +110,36 @@
 
 ## P9 — Notifications
 
-- [ ] Notification core
-- [ ] SMS
-- [ ] Telegram
-- [ ] Bale
-- [ ] Email
-- [ ] In-app notifications
+- [x] Notification domain (entities, enums)
+- [x] Provider abstraction (NotificationProvider ABC)
+- [x] SMS provider implementation
+- [x] Telegram Bot API provider
+- [x] Bale Bot API provider
+- [x] Email/SMTP provider
+- [x] Provider registry and health status
+- [x] Graceful missing credential handling
+- [x] Notification application service
+- [x] Multi-channel delivery
+- [x] Manual notification sending
+- [x] Announcement system
+- [x] Template system (CRUD, rendering)
+- [x] User notification preferences
+- [x] Mandatory notification bypass
+- [x] In-app notifications
+- [x] Event handlers (enrollment, session, activity, assessment, finance, account)
+- [x] Admin notification dashboard
+- [x] Admin notification detail
+- [x] Admin manual notification interface
+- [x] Admin announcement interface
+- [x] Admin template management
+- [x] Student notification list
+- [x] Teacher notification list
+- [x] Parent notification list
+- [x] User notification preferences UI
+- [x] Navigation links
+- [x] Database migration
+- [x] 68 notification tests
+- [x] Final lint, format, and verification
 
 ## P10 — Reports & Analytics
 

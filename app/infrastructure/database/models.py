@@ -872,3 +872,215 @@ class GradeHistoryModel(db.Model):
             f"<GradeHistoryModel id={self.id} result={self.result_id} "
             f"prev={self.previous_score} new={self.new_score}>"
         )
+
+
+# ---------------------------------------------------------------------------
+# P9 — Notification System
+# ---------------------------------------------------------------------------
+
+
+class NotificationModel(db.Model):
+    """Notification table — a single notification record."""
+
+    __tablename__ = "notifications"
+
+    id = db.Column(db.Integer, primary_key=True)
+    notification_type = db.Column(db.String(40), nullable=False)
+    title = db.Column(db.String(200), nullable=False)
+    message = db.Column(db.Text, nullable=False)
+    recipient_user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)
+    priority = db.Column(db.String(10), nullable=False, default="NORMAL")
+    template_id = db.Column(
+        db.Integer, db.ForeignKey("notification_templates.id"), nullable=True
+    )
+    event_key = db.Column(db.String(200), nullable=True)
+    status = db.Column(db.String(20), nullable=False, default="PENDING")
+    scheduled_at = db.Column(db.DateTime, nullable=True)
+    sent_at = db.Column(db.DateTime, nullable=True)
+    failed_at = db.Column(db.DateTime, nullable=True)
+    failure_reason = db.Column(db.Text, default="")
+    retry_count = db.Column(db.Integer, nullable=False, default=0)
+    created_at = db.Column(db.DateTime, server_default=db.func.now(), nullable=False)
+    updated_at = db.Column(
+        db.DateTime,
+        server_default=db.func.now(),
+        onupdate=db.func.now(),
+        nullable=False,
+    )
+
+    recipient = db.relationship("UserModel", foreign_keys=[recipient_user_id])
+    template = db.relationship("NotificationTemplateModel")
+
+    __table_args__ = (
+        db.Index("ix_notification_recipient", "recipient_user_id"),
+        db.Index("ix_notification_status", "status"),
+        db.Index("ix_notification_type", "notification_type"),
+        db.Index("ix_notification_created_at", "created_at"),
+        db.Index("ix_notification_event_key", "event_key"),
+    )
+
+    def __repr__(self) -> str:
+        return (
+            f"<NotificationModel id={self.id} type={self.notification_type} "
+            f"recipient={self.recipient_user_id} status={self.status}>"
+        )
+
+
+class NotificationDeliveryModel(db.Model):
+    """Notification delivery table — tracks delivery per channel per notification."""
+
+    __tablename__ = "notification_deliveries"
+
+    id = db.Column(db.Integer, primary_key=True)
+    notification_id = db.Column(
+        db.Integer, db.ForeignKey("notifications.id"), nullable=False
+    )
+    channel = db.Column(db.String(20), nullable=False)
+    status = db.Column(db.String(20), nullable=False, default="PENDING")
+    provider_name = db.Column(db.String(50), default="")
+    provider_message_id = db.Column(db.String(200), default="")
+    failure_reason = db.Column(db.Text, default="")
+    attempt_count = db.Column(db.Integer, nullable=False, default=0)
+    sent_at = db.Column(db.DateTime, nullable=True)
+    failed_at = db.Column(db.DateTime, nullable=True)
+    created_at = db.Column(db.DateTime, server_default=db.func.now(), nullable=False)
+    updated_at = db.Column(
+        db.DateTime,
+        server_default=db.func.now(),
+        onupdate=db.func.now(),
+        nullable=False,
+    )
+
+    notification = db.relationship(
+        "NotificationModel",
+        backref=db.backref("deliveries", lazy="select", cascade="all, delete-orphan"),
+    )
+
+    __table_args__ = (
+        db.UniqueConstraint(
+            "notification_id",
+            "channel",
+            name="uq_delivery_notification_channel",
+        ),
+        db.Index("ix_delivery_notification", "notification_id"),
+        db.Index("ix_delivery_channel", "channel"),
+        db.Index("ix_delivery_status", "status"),
+    )
+
+    def __repr__(self) -> str:
+        return (
+            f"<NotificationDeliveryModel id={self.id} "
+            f"notification={self.notification_id} "
+            f"channel={self.channel} status={self.status}>"
+        )
+
+
+class NotificationTemplateModel(db.Model):
+    """Notification template table — reusable notification templates."""
+
+    __tablename__ = "notification_templates"
+
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(100), nullable=False, unique=True)
+    notification_type = db.Column(db.String(40), nullable=False)
+    channel = db.Column(db.String(20), nullable=False)
+    subject = db.Column(db.String(200), default="")
+    body = db.Column(db.Text, nullable=False)
+    is_active = db.Column(db.Boolean, nullable=False, default=True)
+    created_at = db.Column(db.DateTime, server_default=db.func.now(), nullable=False)
+    updated_at = db.Column(
+        db.DateTime,
+        server_default=db.func.now(),
+        onupdate=db.func.now(),
+        nullable=False,
+    )
+
+    __table_args__ = (
+        db.Index("ix_template_type", "notification_type"),
+        db.Index("ix_template_channel", "channel"),
+        db.Index("ix_template_active", "is_active"),
+    )
+
+    def __repr__(self) -> str:
+        return (
+            f"<NotificationTemplateModel id={self.id} name={self.name!r} "
+            f"type={self.notification_type} channel={self.channel}>"
+        )
+
+
+class NotificationPreferenceModel(db.Model):
+    """Notification preference table — per-user channel/type preferences."""
+
+    __tablename__ = "notification_preferences"
+
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)
+    notification_type = db.Column(db.String(40), nullable=False)
+    channel = db.Column(db.String(20), nullable=False)
+    enabled = db.Column(db.Boolean, nullable=False, default=True)
+    created_at = db.Column(db.DateTime, server_default=db.func.now(), nullable=False)
+    updated_at = db.Column(
+        db.DateTime,
+        server_default=db.func.now(),
+        onupdate=db.func.now(),
+        nullable=False,
+    )
+
+    user = db.relationship(
+        "UserModel", backref=db.backref("notification_preferences", lazy="select")
+    )
+
+    __table_args__ = (
+        db.UniqueConstraint(
+            "user_id",
+            "notification_type",
+            "channel",
+            name="uq_preference_user_type_channel",
+        ),
+        db.Index("ix_preference_user", "user_id"),
+    )
+
+    def __repr__(self) -> str:
+        return (
+            f"<NotificationPreferenceModel id={self.id} user={self.user_id} "
+            f"type={self.notification_type} channel={self.channel} "
+            f"enabled={self.enabled}>"
+        )
+
+
+class InAppNotificationModel(db.Model):
+    """In-app notification table — internal notifications visible in the portal."""
+
+    __tablename__ = "in_app_notifications"
+
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)
+    notification_id = db.Column(
+        db.Integer, db.ForeignKey("notifications.id"), nullable=True
+    )
+    title = db.Column(db.String(200), nullable=False)
+    message = db.Column(db.Text, nullable=False)
+    notification_type = db.Column(
+        db.String(40), nullable=False, default="IN_APP_MESSAGE"
+    )
+    link = db.Column(db.String(500), default="")
+    read_status = db.Column(db.String(10), nullable=False, default="UNREAD")
+    read_at = db.Column(db.DateTime, nullable=True)
+    created_at = db.Column(db.DateTime, server_default=db.func.now(), nullable=False)
+
+    user = db.relationship(
+        "UserModel", backref=db.backref("in_app_notifications", lazy="select")
+    )
+    notification = db.relationship("NotificationModel")
+
+    __table_args__ = (
+        db.Index("ix_inapp_user", "user_id"),
+        db.Index("ix_inapp_read_status", "read_status"),
+        db.Index("ix_inapp_created_at", "created_at"),
+    )
+
+    def __repr__(self) -> str:
+        return (
+            f"<InAppNotificationModel id={self.id} user={self.user_id} "
+            f"read={self.read_status}>"
+        )
