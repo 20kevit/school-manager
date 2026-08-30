@@ -1084,3 +1084,79 @@ class InAppNotificationModel(db.Model):
             f"<InAppNotificationModel id={self.id} user={self.user_id} "
             f"read={self.read_status}>"
         )
+
+
+# ---------------------------------------------------------------------------
+# File Management
+# ---------------------------------------------------------------------------
+
+# Allowed file extensions for general uploads
+ALLOWED_UPLOAD_EXTENSIONS = frozenset(
+    {"jpg", "jpeg", "png", "webp", "pdf", "txt", "csv"}
+)
+
+# Allowed MIME types for general uploads
+ALLOWED_UPLOAD_MIMETYPES = frozenset(
+    {
+        "image/jpeg",
+        "image/png",
+        "image/webp",
+        "application/pdf",
+        "text/plain",
+        "text/csv",
+    }
+)
+
+# Max upload size: 5 MB (configurable via FILE_MAX_UPLOAD_SIZE)
+MAX_UPLOAD_SIZE_BYTES = 5 * 1024 * 1024
+
+
+class StoredFileModel(db.Model):
+    """Stored file table — metadata for uploaded files."""
+
+    __tablename__ = "stored_files"
+
+    id = db.Column(db.Integer, primary_key=True)
+    original_filename = db.Column(db.String(255), nullable=False)
+    stored_filename = db.Column(db.String(255), nullable=False)
+    extension = db.Column(db.String(20), nullable=False, default="")
+    mime_type = db.Column(
+        db.String(150), nullable=False, default="application/octet-stream"
+    )
+    file_size = db.Column(db.Integer, nullable=False, default=0)
+    storage_backend = db.Column(db.String(20), nullable=False, default="local")
+    storage_key = db.Column(db.String(500), nullable=False)
+    status = db.Column(db.String(20), nullable=False, default="ACTIVE")
+    visibility = db.Column(db.String(20), nullable=False, default="PRIVATE")
+    category = db.Column(db.String(40), nullable=False, default="OTHER")
+    uploader_user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=True)
+    # Generic association
+    entity_type = db.Column(db.String(50), nullable=False, default="")
+    entity_id = db.Column(db.Integer, nullable=True)
+    created_at = db.Column(db.DateTime, server_default=db.func.now(), nullable=False)
+    updated_at = db.Column(
+        db.DateTime,
+        server_default=db.func.now(),
+        onupdate=db.func.now(),
+        nullable=False,
+    )
+    deleted_at = db.Column(db.DateTime, nullable=True)
+
+    uploader = db.relationship(
+        "UserModel", backref=db.backref("uploaded_files", lazy="select")
+    )
+
+    __table_args__ = (
+        db.Index("ix_storedfile_uploader", "uploader_user_id"),
+        db.Index("ix_storedfile_category", "category"),
+        db.Index("ix_storedfile_status", "status"),
+        db.Index("ix_storedfile_entity", "entity_type", "entity_id"),
+        db.Index("ix_storedfile_created_at", "created_at"),
+    )
+
+    def __repr__(self) -> str:
+        return (
+            f"<StoredFileModel id={self.id} "
+            f"original={self.original_filename!r} "
+            f"category={self.category}>"
+        )

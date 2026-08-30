@@ -1,0 +1,27 @@
+{# Reusable file upload component #}
+{# Usage: {% include 'file_management/_upload_component.html' with context %} #}
+{# Parameters: upload_url, category, entity_type, entity_id, multiple (default true), accept #}
+
+{% set upload_url = upload_url|default(url_for('file_management.upload')) %}
+{% set category = category|default('OTHER') %}
+{% set entity_type = entity_type|default('') %}
+{% set entity_id = entity_id|default('') %}
+{% set multiple = multiple|default(true) %}
+{% set accept = accept|default('') %}
+
+<form method="POST" action="{{ upload_url }}" enctype="multipart/form-data" class="file-upload-form">
+    <input type="hidden" name="category" value="{{ category }}">
+    {% if entity_type %}<input type="hidden" name="entity_type" value="{{ entity_type }}">{% endif %}
+    {% if entity_id %}<input type="hidden" name="entity_id" value="{{ entity_id }}">{% endif %}
+
+    <div class="mb-2">
+        <input type="file" name="files" class="form-control form-control-sm"
+               {{ 'multiple' if multiple }}
+               {% if accept %}accept="{{ accept }}"{% endif %}
+               required>
+    </div>
+    <div class="d-flex align-items-center gap-2">
+        <button type="submit" class="btn btn-primary btn-sm">آپلود فایل</button>
+        <small class="text-muted">حداکثر اندازه: 5 مگابایت</small>
+    </div>
+</form>

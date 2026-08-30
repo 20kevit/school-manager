@@ -491,3 +491,45 @@ ReportingService
 - **Role-based access**: Admin sees all data; Teacher sees own classes; Student sees own data; Parent sees linked children
 - **CSV export**: Available for attendance, assessment, and finance data
 - **No new domain entities**: Reports are read-only views of existing data
+
+## File & Document Management (P11)
+
+Centralized file management with storage abstraction and multi-module association.
+
+```
+File Management
+  ├── Domain: StoredFile, FileStatus, FileVisibility, FileCategory
+  ├── Application: FileService (upload, download, delete, replace, metadata)
+  ├── Infrastructure: StorageBackend (ABC) → LocalStorageBackend
+  └── Interface: File routes (admin, upload, download, API)
+```
+
+### Storage Layout
+
+```
+storage/
+  files/
+    2026/
+      08/
+        <uuid>.<ext>
+```
+
+### Association Strategy
+
+Files are associated with domain objects via generic `entity_type` + `entity_id` fields.
+This avoids separate file tables per module while supporting multiple files per entity.
+
+Examples:
+- Student profile photo: `entity_type="student_profile", entity_id=<id>`
+- Activity attachment: `entity_type="activity", entity_id=<id>`
+- Submission file: `entity_type="submission", entity_id=<id>`
+- Finance document: `entity_type="finance", entity_id=<id>`
+
+### Key Design Decisions
+
+- **Storage abstraction**: `StorageBackend` ABC allows replacing local storage with S3/object storage without changing application code
+- **Soft deletion**: Files are marked DELETED in metadata; physical cleanup is optional
+- **Secure naming**: UUID-based storage keys prevent path traversal and filename collisions
+- **Existing ActivityFileModel preserved**: Backward compatible with P5 file handling
+- **Extensible categories**: String-based categories (PROFILE_PHOTO, STUDENT_DOCUMENT, etc.) do not require migrations for new categories
+- **Authorization**: Admin full access; owner access; PUBLIC visibility; entity-specific checks at caller level

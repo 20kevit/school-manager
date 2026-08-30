@@ -1,13 +1,13 @@
 # Project Status
 
-**Current Phase:** P10 — Reporting & Analytics — Completed
-**Current Objective:** P10 — Reporting & Analytics complete.
+**Current Phase:** P11 — File & Document Management — Completed
+**Current Objective:** P11 — File & Document Management complete.
 
-**Previous Phase:** P9 — Notifications
+**Previous Phase:** P10 — Reporting & Analytics
 
 ## Status
 
-P10 — Reporting & Analytics is complete.
+P11 — File & Document Management is complete.
 
 ## Completed
 
@@ -239,3 +239,19 @@ P10 — Reporting & Analytics is complete.
 - [x] Navigation links for all roles
 - [x] 35 tests covering reporting services, authorization, filters, and edge cases
 - [x] 532 total tests passing (P1-P10)
+
+### P11 — File & Document Management
+- [x] Centralized file management module with domain entities
+- [x] Storage abstraction (StorageBackend ABC) with LocalStorageBackend
+- [x] File validation (extension allowlist, MIME type, size limits)
+- [x] Secure filename generation (path traversal prevention, UUID-based keys)
+- [x] File upload, download, delete (soft/hard), replace services
+- [x] Generic entity association (entity_type + entity_id for multi-module use)
+- [x] Authorization enforcement (Admin full, Owner access, Public visibility)
+- [x] Admin file management (list, search, filter, detail, delete, orphan detection)
+- [x] File upload UI component (reusable)
+- [x] API endpoints (metadata, delete)
+- [x] Configuration (FILE_STORAGE_BACKEND, FILE_STORAGE_PATH, FILE_MAX_UPLOAD_SIZE)
+- [x] .env.example updated
+- [x] 80 file management tests (domain, storage, validation, service, authorization, routes, security)
+- [x] 577 total tests passing (P1-P11)

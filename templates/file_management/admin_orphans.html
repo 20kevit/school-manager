@@ -1,0 +1,52 @@
+{% extends "file_management/base_file.html" %}
+
+{% block page_title %}فایل‌های یتیم{% endblock %}
+
+{% block page_content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h4>فایل‌های یتیم</h4>
+    <a href="{{ url_for('file_management.admin_file_list') }}" class="btn btn-outline-secondary btn-sm">بازگشت به لیست</a>
+</div>
+
+<p class="text-muted">
+    فایل‌هایی که بدون اتصال به موجودیت یا بدون فایل ذخیره شده در دیسک هستند.
+</p>
+
+{% if orphans %}
+<div class="table-responsive">
+    <table class="table table-hover table-sm">
+        <thead>
+            <tr>
+                <th>#</th>
+                <th>نام فایل</th>
+                <th>نوع</th>
+                <th>اندازه</th>
+                <th>دسته</th>
+                <th>موجودیت</th>
+                <th>عملیات</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for f in orphans %}
+            <tr>
+                <td>{{ f.id }}</td>
+                <td>{{ f.original_filename[:30] }}{% if f.original_filename|length > 30 %}...{% endif %}</td>
+                <td><code>{{ f.extension }}</code></td>
+                <td>{{ f.file_size }}</td>
+                <td><span class="badge bg-secondary">{{ f.category }}</span></td>
+                <td>{{ f.entity_type or 'ندارد' }} {{ f.entity_id or '' }}</td>
+                <td>
+                    <a href="{{ url_for('file_management.admin_file_detail', file_id=f.id) }}" class="btn btn-outline-info btn-xs">جزئیات</a>
+                    <form method="POST" action="{{ url_for('file_management.admin_delete_file', file_id=f.id) }}" style="display:inline" onsubmit="return confirm('حذف این فایل یتیم؟')">
+                        <button type="submit" class="btn btn-outline-danger btn-xs">حذف</button>
+                    </form>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% else %}
+<div class="alert alert-success">فایل یتیمی یافت نشد.</div>
+{% endif %}
+{% endblock %}

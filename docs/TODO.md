@@ -162,13 +162,29 @@
 - [x] Navigation links for all roles
 - [x] 35 reporting tests
 
-## P11 — Administration
+## P11 — File & Document Management
 
-- [ ] System settings
-- [ ] Profile management
-- [ ] Data management
-- [ ] Audit logs
-- [ ] Backup / restore
+- [x] Centralized file management module
+- [x] Domain entities (StoredFile, FileStatus, FileVisibility, FileCategory)
+- [x] Storage abstraction (StorageBackend ABC)
+- [x] LocalStorageBackend implementation
+- [x] File validation (extension, MIME type, size)
+- [x] Secure filename generation (path traversal prevention)
+- [x] File upload service
+- [x] File download with authorization
+- [x] File soft/hard deletion
+- [x] File replacement
+- [x] File metadata and listing with pagination
+- [x] Generic entity association (entity_type + entity_id)
+- [x] Authorization enforcement (Admin, Owner, Public)
+- [x] Admin file management interface (list, search, filter, detail, delete)
+- [x] Orphan file detection
+- [x] File upload component (reusable)
+- [x] API endpoints (metadata, delete)
+- [x] Configuration (FILE_STORAGE_*, FILE_MAX_UPLOAD_SIZE)
+- [x] .env.example updated
+- [x] 80 file management tests
+- [x] Documentation updated
 
 ## P12 — Future
 

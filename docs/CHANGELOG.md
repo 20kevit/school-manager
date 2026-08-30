@@ -352,3 +352,32 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 - Report routes organized by domain area (admin, student, class, course, attendance, assessment, activity, finance, enrollment, teacher, operational, notification)
 - CSV export available for attendance, assessment, and finance data
 - Reports use existing domain services for data access (no direct queries bypassing business logic)
+
+## P11 — File & Document Management (2026-08-30)
+
+### Added
+
+- Centralized file management module with clean architecture
+- Domain entities: StoredFile, FileStatus, FileVisibility, FileCategory
+- Storage abstraction (StorageBackend ABC) with LocalStorageBackend
+- File validation (extension allowlist, MIME type, configurable size limits)
+- Secure filename generation (UUID-based keys, path traversal prevention)
+- File upload, download, soft/hard delete, replace services
+- Generic entity association (entity_type + entity_id) for multi-module use
+- Authorization enforcement (Admin full access, Owner access, Public visibility)
+- Admin file management (list, search, filter by category/status/uploader, detail, delete)
+- Orphan file detection (files without entity or storage)
+- Reusable file upload UI component
+- API endpoints for file metadata and deletion
+- Configuration (FILE_STORAGE_BACKEND, FILE_STORAGE_PATH, FILE_MAX_UPLOAD_SIZE)
+- .env.example updated with file management configuration
+- 80 tests covering domain, storage, validation, service, authorization, routes, and security
+
+### Design Decisions
+
+- Storage abstraction allows future S3/object storage replacement without changing application code
+- Generic entity association (entity_type + entity_id) avoids separate file tables per module
+- Soft deletion preserves metadata history while preventing access to deleted files
+- UUID-based storage keys prevent filename collisions and path traversal attacks
+- Existing ActivityFileModel preserved for backward compatibility
+- File categories are string-based for extensibility without migrations

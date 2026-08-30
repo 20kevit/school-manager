@@ -32,6 +32,11 @@ class Config:
     MAIL_USE_SSL = os.getenv("MAIL_USE_SSL", "false").lower() == "true"
     MAIL_DEFAULT_SENDER = os.getenv("MAIL_DEFAULT_SENDER", "")
 
+    # File Management
+    FILE_STORAGE_BACKEND = os.getenv("FILE_STORAGE_BACKEND", "local")
+    FILE_STORAGE_PATH = os.getenv("FILE_STORAGE_PATH", "")
+    FILE_MAX_UPLOAD_SIZE = int(os.getenv("FILE_MAX_UPLOAD_SIZE", str(5 * 1024 * 1024)))
+
     @staticmethod
     def init_app(app):
         pass
@@ -54,6 +59,9 @@ class TestingConfig(Config):
     SQLALCHEMY_DATABASE_URI = os.getenv(
         "TEST_DATABASE_URL",
         "sqlite:///:memory:",
+    )
+    FILE_STORAGE_PATH = os.path.join(
+        os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "test_storage"
     )
 
 
