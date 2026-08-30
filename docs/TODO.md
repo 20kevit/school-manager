@@ -1,40 +1,104 @@
 # Roadmap
 
-## P0 — Critical / Foundation
+## P0 — Foundation
 
 - [x] Project bootstrap
-- [x] Architecture foundation
-- [x] Database setup (SQLAlchemy + Migrate)
-- [ ] First migration
+- [x] Git repository
+- [x] Documentation foundation
+- [x] Testing foundation
+
+## P1 — Identity & Access
+
+- [ ] User
+- [ ] Roles
+- [ ] Student Profile
+- [ ] Teacher Profile
+- [ ] Parent Profile
 - [ ] Authentication
-- [ ] Authorization / roles
-- [ ] CSRF protection
+- [ ] Authorization
+- [ ] Password management
 
-## P1 — Core
+## P2 — Academy Structure
 
-- [ ] Student management
-- [ ] Teacher management
-- [ ] Course management
-- [ ] Class management
+- [ ] Course
+- [ ] Course syllabus
+- [ ] Class
+- [ ] Class schedule
+- [ ] Session generation
+- [ ] Session rescheduling
+- [ ] Session cancellation
+
+## P3 — Enrollment
+
 - [ ] Enrollment
-- [ ] Attendance
-- [ ] Finance / payments
+- [ ] Enrollment requests
+- [ ] Admin approval
+- [ ] Enrollment lifecycle
 
-## P2 — Important
+## P4 — Attendance
+
+- [ ] Attendance
+- [ ] Teacher attendance management
+- [ ] Attendance history
+- [ ] Attendance reports
+
+## P5 — Learning
 
 - [ ] Homework
-- [ ] Exams
+- [ ] Homework submission
+- [ ] Educational resources
 - [ ] Grades
-- [ ] Notifications (SMS, Email, Telegram, Bale)
-- [ ] Reporting
-- [ ] Parent portal
-- [ ] Persian/RTL UI
-- [ ] Jalali date support
+- [ ] Final examination
 
-## P3 — Future
+## P6 — Finance
 
-- [ ] Mobile client (API-driven)
+- [ ] Financial ledger
+- [ ] Class tuition
+- [ ] Discounts
+- [ ] Partial payments
+- [ ] Credit / debt
+- [ ] Refunds
+- [ ] Payment history
+- [ ] Payment receipt upload
+- [ ] Future payment gateway integration
+
+## P7 — Portals
+
+- [ ] Student dashboard
+- [ ] Parent dashboard
+- [ ] Teacher dashboard
+- [ ] Admin dashboard
+
+## P8 — Notifications
+
+- [ ] Notification core
+- [ ] SMS
+- [ ] Telegram
+- [ ] Bale
+- [ ] Email
+- [ ] In-app notifications
+
+## P9 — Reports & Analytics
+
+- [ ] Financial reports
+- [ ] Student reports
+- [ ] Attendance reports
+- [ ] Teacher reports
+- [ ] Class reports
 - [ ] Advanced analytics
-- [ ] Multi-branch support
-- [ ] Payment gateway integration (ZarinPal, etc.)
+
+## P10 — Administration
+
+- [ ] System settings
+- [ ] Profile management
+- [ ] Data management
+- [ ] Audit logs
+- [ ] Backup / restore
+
+## P11 — Future
+
+- [ ] Mobile application
+- [ ] Advanced permissions
+- [ ] Advanced analytics
 - [ ] AI features
+- [ ] Multi-branch support
