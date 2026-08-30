@@ -1,0 +1,106 @@
+{# === Form Field Macros === #}
+
+{# Text/Password/Number/Date/Time Input
+   {{ form_field("name", "نام", type="text", value=form.name, required=true, placeholder="نام را وارد کنید", hint="اختیاری", error=errors.get("name")) }}
+#}
+{% macro form_field(name, label, type="text", value="", required=false, placeholder="", hint="", error="", id=none, autocomplete=none, min=none, max=none, step=none, readonly=false) %}
+{% set field_id = id or name %}
+<div class="form-group {% if error %}has-error{% endif %}">
+    <label class="form-label" for="{{ field_id }}">
+        {{ label }}
+        {% if required %}<span class="required">*</span>{% endif %}
+    </label>
+    <input
+        type="{{ type }}"
+        id="{{ field_id }}"
+        name="{{ name }}"
+        value="{{ value if value is not none else '' }}"
+        class="form-input"
+        {% if required %}required{% endif %}
+        {% if placeholder %}placeholder="{{ placeholder }}"{% endif %}
+        {% if autocomplete %}autocomplete="{{ autocomplete }}"{% endif %}
+        {% if min is not none %}min="{{ min }}"{% endif %}
+        {% if max is not none %}max="{{ max }}"{% endif %}
+        {% if step is not none %}step="{{ step }}"{% endif %}
+        {% if readonly %}readonly{% endif %}
+    >
+    {% if hint and not error %}
+    <span class="form-hint">{{ hint }}</span>
+    {% endif %}
+    {% if error %}
+    <span class="form-error">{{ error }}</span>
+    {% endif %}
+</div>
+{% endmacro %}
+
+{# Select Dropdown
+   {{ form_select("status", "وضعیت", [("ACTIVE", "فعال"), ("INACTIVE", "غیرفعال")], selected=form.status) }}
+#}
+{% macro form_select(name, label, options, selected=none, required=false, id=none, hint="", error="") %}
+{% set field_id = id or name %}
+<div class="form-group {% if error %}has-error{% endif %}">
+    <label class="form-label" for="{{ field_id }}">
+        {{ label }}
+        {% if required %}<span class="required">*</span>{% endif %}
+    </label>
+    <select id="{{ field_id }}" name="{{ name }}" class="form-select" {% if required %}required{% endif %}>
+        <option value="">— انتخاب کنید —</option>
+        {% for value, display in options %}
+        <option value="{{ value }}" {% if selected == value %}selected{% endif %}>{{ display }}</option>
+        {% endfor %}
+    </select>
+    {% if hint and not error %}
+    <span class="form-hint">{{ hint }}</span>
+    {% endif %}
+    {% if error %}
+    <span class="form-error">{{ error }}</span>
+    {% endif %}
+</div>
+{% endmacro %}
+
+{# Textarea
+   {{ form_textarea("description", "توضیحات", value=form.description, rows=4) }}
+#}
+{% macro form_textarea(name, label, value="", required=false, placeholder="", rows=4, id=none, hint="", error="") %}
+{% set field_id = id or name %}
+<div class="form-group {% if error %}has-error{% endif %}">
+    <label class="form-label" for="{{ field_id }}">
+        {{ label }}
+        {% if required %}<span class="required">*</span>{% endif %}
+    </label>
+    <textarea
+        id="{{ field_id }}"
+        name="{{ name }}"
+        class="form-textarea"
+        rows="{{ rows }}"
+        {% if required %}required{% endif %}
+        {% if placeholder %}placeholder="{{ placeholder }}"{% endif %}
+    >{{ value if value is not none else '' }}</textarea>
+    {% if hint and not error %}
+    <span class="form-hint">{{ hint }}</span>
+    {% endif %}
+    {% if error %}
+    <span class="form-error">{{ error }}</span>
+    {% endif %}
+</div>
+{% endmacro %}
+
+{# Checkbox
+   {{ form_checkbox("remember", "مرا به خاطر بسپار", checked=form.remember) }}
+#}
+{% macro form_checkbox(name, label, checked=false, id=none) %}
+{% set field_id = id or name %}
+<div class="form-group">
+    <label class="form-check">
+        <input type="checkbox" id="{{ field_id }}" name="{{ name }}" value="1" {% if checked %}checked{% endif %}>
+        <span>{{ label }}</span>
+    </label>
+</div>
+{% endmacro %}
+
+{# Form Section Header
+   {{ form_section("اطلاعات شخصی") }}
+#}
+{% macro form_section(title) %}
+<div class="form-card-title" style="margin-top: var(--space-4);">{{ title }}</div>
+{% endmacro %}

@@ -1,116 +1,101 @@
 {% extends "base.html" %}
 
-{% block title %}داشبورد مدیر - Academy{% endblock %}
+{% block title %}داشبورد مدیر - آکادمی{% endblock %}
 
 {% block content %}
-<div class="dashboard-container">
-    <div class="dashboard-header">
-        <h1>داشبورد مدیریت</h1>
-        <div class="user-info">
-            <span class="user-name">{{ current_user.login }}</span>
-            <span class="role-badge">مدیر</span>
-        </div>
-    </div>
+{% from "macros/utils.html" import page_header, stat_card %}
 
-    {% with messages = get_flashed_messages(with_categories=true) %}
-        {% if messages %}
-            {% for category, message in messages %}
-                <div class="alert alert-{{ category }}">{{ message }}</div>
-            {% endfor %}
-        {% endif %}
-    {% endwith %}
+<div style="margin-bottom: var(--space-6);">
+    <h1 style="font-size: var(--font-size-2xl); font-weight: var(--font-weight-bold);">سلام، مدیر 👋</h1>
+    <p class="text-muted">خلاصه‌ای از وضعیت آکادمی</p>
+</div>
 
-    <div class="dashboard-grid">
-        <div class="dashboard-card">
-            <h3>دانش‌آموزان</h3>
-            <div class="stat-value">{{ data.total_students }}</div>
-            <p>دانش‌آموز فعال</p>
-        </div>
+<div class="dashboard-grid dashboard-grid-4">
+    {{ stat_card("دانش‌آموزان", data.total_students, "users", "primary", url_for('enrollment.admin_enrollment_list'), "مشاهده") }}
+    {{ stat_card("کلاس‌های فعال", data.total_classes, "class", "success", url_for('academy.class_list'), "مشاهده همه") }}
+    {{ stat_card("ثبت‌نام‌ها", data.total_enrollments, "check", "info") }}
+    {{ stat_card("آزمون‌ها", data.total_assessments, "alert", "warning") }}
+</div>
 
-        <div class="dashboard-card">
-            <h3>معلمان</h3>
-            <div class="stat-value">{{ data.total_teachers }}</div>
-            <p>معلم فعال</p>
-        </div>
-
-        <div class="dashboard-card">
-            <h3>کلاس‌ها</h3>
-            <div class="stat-value">{{ data.total_classes }}</div>
-            <p>کلاس</p>
-            <a href="{{ url_for('academy.class_list') }}" class="btn btn-sm">مشاهده همه</a>
-        </div>
-
-        <div class="dashboard-card">
-            <h3>ثبت‌نام‌ها</h3>
-            <div class="stat-value">{{ data.total_enrollments }}</div>
-            <p>ثبت‌نام تایید شده</p>
-            {% if data.pending_enrollments > 0 %}
-            <p class="text-warning">{{ data.pending_enrollments }} درخواست در انتظار</p>
-            {% endif %}
-            <a href="{{ url_for('enrollment.admin_enrollment_list') }}" class="btn btn-sm">مشاهده</a>
-        </div>
-
-        <div class="dashboard-card">
-            <h3>آزمون‌ها</h3>
-            <div class="stat-value">{{ data.total_assessments }}</div>
-            <p>آزمون</p>
-            {% if data.open_assessments > 0 %}
-            <p class="text-info">{{ data.open_assessments }} آزمون فعال</p>
-            {% endif %}
-            <a href="{{ url_for('assessment.admin_assessment_list') }}" class="btn btn-sm">مشاهده</a>
-        </div>
-
-        <div class="dashboard-card">
-            <h3>وضعیت مالی</h3>
-            {% if data.finance_summary %}
-            <div class="stat-row">
-                <span class="stat-label">کل پرداختی:</span>
-                <span class="stat-value">{{ "{:,.0f}".format(data.finance_summary.total_payments|int) }} تومان</span>
+{% if data.finance_summary %}
+<div class="dashboard-grid dashboard-grid-3" style="margin-bottom: var(--space-6);">
+    <div class="stat-card">
+        <div class="stat-card-header">
+            <span class="stat-card-label">کل پرداختی</span>
+            <div class="stat-card-icon success">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
             </div>
-            <div class="stat-row">
-                <span class="stat-label">بدهکار:</span>
-                <span class="stat-value text-danger">{{ data.finance_summary.debtors_count }} نفر</span>
+        </div>
+        <div class="stat-card-value">{{ "{:,.0f}".format(data.finance_summary.total_payments|int) }} <span class="text-sm font-medium text-muted">تومان</span></div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-card-header">
+            <span class="stat-card-label">بدهکار</span>
+            <div class="stat-card-icon danger">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
             </div>
-            {% endif %}
-            <a href="{{ url_for('finance.admin_dashboard') }}" class="btn btn-sm">مشاهده مالی</a>
+        </div>
+        <div class="stat-card-value text-danger">{{ data.finance_summary.debtors_count }} <span class="text-sm font-medium text-muted">نفر</span></div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-card-header">
+            <span class="stat-card-label">معلمان</span>
+            <div class="stat-card-icon primary">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+            </div>
+        </div>
+        <div class="stat-card-value">{{ data.total_teachers }} <span class="text-sm font-medium text-muted">نفر</span></div>
+    </div>
+</div>
+{% endif %}
+
+{% if data.pending_enrollments and data.pending_enrollments > 0 %}
+<div class="dashboard-section">
+    <div class="dashboard-section-title">کارهای نیازمند توجه</div>
+    <div class="alert alert-warning">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+        <span><strong>{{ data.pending_enrollments }}</strong> درخواست ثبت‌نام در انتظار تأیید</span>
+        <a href="{{ url_for('enrollment.admin_pending_list') }}" class="btn btn-sm btn-warning">مشاهده</a>
+    </div>
+</div>
+{% endif %}
+
+{% if data.recent_enrollments %}
+<div class="dashboard-section">
+    <div class="dashboard-section-title">درخواست‌های ثبت‌نام در انتظار</div>
+    <div class="table-container">
+        <div class="table-scroll">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>دانش‌آموز</th>
+                        <th>کلاس</th>
+                        <th>تاریخ</th>
+                        <th>عملیات</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for enrollment in data.recent_enrollments %}
+                    <tr>
+                        <td>{{ enrollment.student.student_profile.first_name }} {{ enrollment.student.student_profile.last_name }}</td>
+                        <td>{{ enrollment.class_obj.title if enrollment.class_obj else '—' }}</td>
+                        <td>{{ enrollment.enrolled_at.strftime('%Y-%m-%d') }}</td>
+                        <td>
+                            <a href="{{ url_for('enrollment.admin_enrollment_detail', enrollment_id=enrollment.id) }}" class="btn btn-sm btn-outline">مشاهده</a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
         </div>
     </div>
+</div>
+{% endif %}
 
-    {% if data.recent_enrollments %}
-    <div class="dashboard-section">
-        <h2>درخواست‌های ثبت‌نام در انتظار</h2>
-        <table class="table">
-            <thead>
-                <tr>
-                    <th>دانش‌آموز</th>
-                    <th>کلاس</th>
-                    <th>تاریخ</th>
-                    <th>عملیات</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for enrollment in data.recent_enrollments %}
-                <tr>
-                    <td>{{ enrollment.student.login }}</td>
-                    <td>{{ enrollment.class_obj.title if enrollment.class_obj else '—' }}</td>
-                    <td>{{ enrollment.enrolled_at.strftime('%Y-%m-%d') }}</td>
-                    <td>
-                        <a href="{{ url_for('enrollment.admin_enrollment_detail', enrollment_id=enrollment.id) }}" class="btn btn-sm">مشاهده</a>
-                    </td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    </div>
-    {% endif %}
-
-    <div class="dashboard-actions">
-        <a href="{{ url_for('academy.course_list') }}" class="btn">مدیریت دوره‌ها</a>
-        <a href="{{ url_for('academy.class_list') }}" class="btn">مدیریت کلاس‌ها</a>
-        <a href="{{ url_for('enrollment.admin_pending_list') }}" class="btn">ثبت‌نام‌های در انتظار</a>
-        <a href="{{ url_for('finance.admin_dashboard') }}" class="btn">داشبورد مالی</a>
-        <a href="{{ url_for('auth.change_password_view') }}" class="btn btn-secondary">تغییر رمز عبور</a>
-        <a href="{{ url_for('auth.logout') }}" class="btn btn-outline">خروج</a>
-    </div>
+<div class="action-links">
+    <a href="{{ url_for('academy.course_list') }}" class="btn btn-secondary">مدیریت دوره‌ها</a>
+    <a href="{{ url_for('academy.class_list') }}" class="btn btn-secondary">مدیریت کلاس‌ها</a>
+    <a href="{{ url_for('enrollment.admin_pending_list') }}" class="btn btn-secondary">ثبت‌نام‌های در انتظار</a>
+    <a href="{{ url_for('finance.admin_dashboard') }}" class="btn btn-secondary">داشبورد مالی</a>
 </div>
 {% endblock %}

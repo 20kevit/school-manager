@@ -1,88 +1,65 @@
 {% extends "base.html" %}
 
-{% block title %}داشبورد معلم - Academy{% endblock %}
+{% block title %}داشبورد معلم - آکادمی{% endblock %}
 
 {% block content %}
-<div class="dashboard-container">
-    <div class="dashboard-header">
-        <h1>داشبورد</h1>
-        <div class="user-info">
-            <span class="user-name">{{ current_user.login }}</span>
-            <span class="role-badge">معلم</span>
-        </div>
-    </div>
+{% from "macros/utils.html" import stat_card %}
 
-    {% with messages = get_flashed_messages(with_categories=true) %}
-        {% if messages %}
-            {% for category, message in messages %}
-                <div class="alert alert-{{ category }}">{{ message }}</div>
-            {% endfor %}
-        {% endif %}
-    {% endwith %}
+<div style="margin-bottom: var(--space-6);">
+    <h1 style="font-size: var(--font-size-2xl); font-weight: var(--font-weight-bold);">سلام، معلم 👋</h1>
+    <p class="text-muted">خلاصه‌ای از کلاس‌های شما</p>
+</div>
 
+<div class="dashboard-grid dashboard-grid-3" style="margin-bottom: var(--space-6);">
+    {{ stat_card("کلاس‌های فعال", data.total_classes, "class", "primary") }}
+    {{ stat_card("دانش‌آموزان", data.total_students, "users", "success") }}
+    {{ stat_card("آزمون‌های ثبت شده", data.pending_grades_count, "alert", "info") }}
+</div>
+
+{% if data.class_summaries %}
+<div class="dashboard-section">
+    <div class="dashboard-section-title">خلاصه کلاس‌ها</div>
     <div class="dashboard-grid">
-        <div class="dashboard-card">
-            <h3>کلاس‌های من</h3>
-            <div class="stat-value">{{ data.total_classes }}</div>
-            <p>کلاس فعال</p>
-            <p>دانش‌آموز: {{ data.total_students }}</p>
-        </div>
-
-        <div class="dashboard-card">
-            <h3>آزمون‌ها</h3>
-            <div class="stat-value">{{ data.pending_grades_count }}</div>
-            <p>آزمون ثبت شده</p>
-            <a href="{{ url_for('assessment.teacher_my_classes') }}" class="btn btn-sm">مشاهده آزمون‌ها</a>
-        </div>
-    </div>
-
-    {% if data.class_summaries %}
-    <div class="dashboard-section">
-        <h2>خلاصه کلاس‌ها</h2>
         {% for summary in data.class_summaries %}
-        <div class="dashboard-card">
-            <h3>{{ summary.class.title }}</h3>
-            <div class="dashboard-grid">
-                <div class="stat-block">
-                    <h4>اطلاعات کلی</h4>
-                    <div class="stat-row">
-                        <span class="stat-label">دانش‌آموز:</span>
-                        <span class="stat-value">{{ summary.enrolled_count or 0 }}</span>
+        <div class="card">
+            <div class="card-header">
+                <h3>{{ summary.class.title }}</h3>
+            </div>
+            <div class="card-body">
+                <div class="dashboard-grid dashboard-grid-2" style="gap: var(--space-3);">
+                    <div>
+                        <div class="text-muted text-sm">دانش‌آموز</div>
+                        <div class="stat-card-value" style="font-size: var(--font-size-xl);">{{ summary.enrolled_count or 0 }}</div>
                     </div>
-                    <div class="stat-row">
-                        <span class="stat-label">آزمون:</span>
-                        <span class="stat-value">{{ summary.total_assessments or 0 }}</span>
+                    <div>
+                        <div class="text-muted text-sm">میانگین</div>
+                        <div class="stat-card-value" style="font-size: var(--font-size-xl);">{{ "%.1f"|format(summary.average or 0) }}</div>
                     </div>
-                </div>
-
-                <div class="stat-block">
-                    <h4>عملکرد</h4>
-                    <div class="stat-row">
-                        <span class="stat-label">میانگین:</span>
-                        <span class="stat-value">{{ "%.1f"|format(summary.average or 0) }}</span>
+                    <div>
+                        <div class="text-muted text-sm">آزمون</div>
+                        <div class="stat-card-value" style="font-size: var(--font-size-xl);">{{ summary.total_assessments or 0 }}</div>
                     </div>
-                    <div class="stat-row">
-                        <span class="stat-label">نرخ قبولی:</span>
-                        <span class="stat-value">{{ "%.0f"|format(summary.pass_rate or 0) }}%</span>
+                    <div>
+                        <div class="text-muted text-sm">نرخ قبولی</div>
+                        <div class="stat-card-value" style="font-size: var(--font-size-xl);">{{ "%.0f"|format(summary.pass_rate or 0) }}٪</div>
                     </div>
                 </div>
             </div>
-            <div class="card-actions">
-                <a href="{{ url_for('assessment.teacher_class_assessments', class_id=summary.class.id) }}" class="btn btn-sm">آزمون‌ها</a>
-                <a href="{{ url_for('attendance.teacher_class_sessions', class_id=summary.class.id) }}" class="btn btn-sm">حضور و غیاب</a>
+            <div class="card-footer">
+                <div class="card-actions" style="border-top: none; padding-top: 0; margin-top: 0;">
+                    <a href="{{ url_for('assessment.teacher_class_assessments', class_id=summary.class.id) }}" class="btn btn-sm btn-outline">آزمون‌ها</a>
+                    <a href="{{ url_for('attendance.teacher_class_sessions', class_id=summary.class.id) }}" class="btn btn-sm btn-outline">حضور و غیاب</a>
+                </div>
             </div>
         </div>
         {% endfor %}
     </div>
-    {% else %}
-    <div class="dashboard-card">
-        <p>هنوز کلاسی به شما اختصاص داده نشده است.</p>
-    </div>
-    {% endif %}
-
-    <div class="dashboard-actions">
-        <a href="{{ url_for('auth.change_password_view') }}" class="btn btn-secondary">تغییر رمز عبور</a>
-        <a href="{{ url_for('auth.logout') }}" class="btn btn-outline">خروج</a>
-    </div>
 </div>
+{% else %}
+<div class="empty-state">
+    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+    <h3>هنوز کلاسی به شما اختصاص داده نشده است</h3>
+    <p>پس از تخصیص کلاس، اطلاعات آن در اینجا نمایش داده خواهد شد.</p>
+</div>
+{% endif %}
 {% endblock %}

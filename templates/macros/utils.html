@@ -1,0 +1,249 @@
+{# === Reusable Jinja Macros === #}
+
+{# Page Header
+   {% from "macros/utils.html" import page_header %}
+   {{ page_header("عنوان صفحه", description="توضیح", action_url=url_for(...), action_label="ایجاد") }}
+#}
+{% macro page_header(title, description=none, action_url=none, action_label=none) %}
+<div class="page-header">
+    <div class="page-header-content">
+        <h1>{{ title }}</h1>
+        {% if description %}
+        <p>{{ description }}</p>
+        {% endif %}
+    </div>
+    <div class="page-header-actions">
+        {% if action_url and action_label %}
+        <a href="{{ action_url }}" class="btn btn-primary">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            {{ action_label }}
+        </a>
+        {% endif %}
+    </div>
+</div>
+{% endmacro %}
+
+{# Empty State
+   {{ empty_state("هنوز کلاسی ایجاد نشده", "برای شروع اولین کلاس خود را ایجاد کنید", url_for(...), "ایجاد کلاس") }}
+#}
+{% macro empty_state(title, message=none, action_url=none, action_label=none) %}
+<div class="empty-state">
+    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><polyline points="13 2 13 9 20 9"/></svg>
+    <h3>{{ title }}</h3>
+    {% if message %}
+    <p>{{ message }}</p>
+    {% endif %}
+    {% if action_url and action_label %}
+    <a href="{{ action_url }}" class="btn btn-primary">{{ action_label }}</a>
+    {% endif %}
+</div>
+{% endmacro %}
+
+{# Status Badge
+   {{ status_badge("ACTIVE") }}
+   {{ status_badge("PENDING", "در انتظار") }}
+#}
+{% macro status_badge(status, label=none) %}
+{% set labels = {
+    'PENDING': 'در انتظار',
+    'APPROVED': 'تأیید شده',
+    'ACTIVE': 'فعال',
+    'REJECTED': 'رد شده',
+    'CANCELLED': 'لغو شده',
+    'COMPLETED': 'تکمیل شده',
+    'PLANNED': 'برنامه‌ریزی شده',
+    'SCHEDULED': 'برنامه‌ریزی شده',
+    'DRAFT': 'پیش‌نویس',
+    'OPEN': 'باز',
+    'CLOSED': 'بسته شده',
+    'GRADED': 'نمره‌گذاری شده',
+    'PRESENT': 'حاضر',
+    'ABSENT': 'غایب',
+    'LATE': 'تاخیر',
+    'EXCUSED': 'معذور',
+    'REQUIRED': 'الزامی',
+    'OPTIONAL': 'اختیاری',
+    'SUBMITTED': 'ارسال شده',
+    'GRADED': 'نمره‌گذاری شده',
+    'RETURNED': 'برگشت داده شده',
+    'PASS': 'قبول',
+    'FAIL': 'مردود',
+    'PAYMENT': 'پرداخت',
+    'CHARGE': 'هزینه',
+    'DISCOUNT': 'تخفیف',
+    'REFUND': 'بازپرداخت',
+    'ADJUSTMENT': 'اصلاح حساب',
+    'CORRECTION': 'تصحیح',
+    'CORRECTED': 'تصحیح شده',
+    'REVERSAL': 'ابطال',
+    'ACTIVE': 'فعال',
+    'DELETED': 'حذف شده',
+    'UNREAD': 'خوانده نشده',
+    'READ': 'خوانده شده',
+    'SENT': 'ارسال شده',
+    'FAILED': 'ناموفق',
+    'HOMEWORK': 'تکلیف',
+    'QUIZ': 'آزمون کلاسی',
+    'PROJECT': 'پروژه',
+    'FINAL_EXAM': 'آزمون پایانی',
+    'MIDTERM': 'آزمون میان‌ترم',
+    'PRACTICAL': 'عملی',
+    'ORAL': 'شفاهی',
+    'OTHER': 'سایر'
+}%}
+{% set display = label or labels.get(status, status) %}
+{% set color_map = {
+    'PENDING': 'warning',
+    'APPROVED': 'success',
+    'ACTIVE': 'success',
+    'REJECTED': 'danger',
+    'CANCELLED': 'danger',
+    'COMPLETED': 'primary',
+    'PLANNED': 'info',
+    'SCHEDULED': 'info',
+    'DRAFT': 'info',
+    'OPEN': 'primary',
+    'CLOSED': 'secondary',
+    'GRADED': 'primary',
+    'PRESENT': 'success',
+    'ABSENT': 'danger',
+    'LATE': 'warning',
+    'EXCUSED': 'secondary',
+    'SUBMITTED': 'info',
+    'RETURNED': 'warning',
+    'PASS': 'success',
+    'FAIL': 'danger',
+    'PAYMENT': 'success',
+    'CHARGE': 'danger',
+    'DISCOUNT': 'info',
+    'REFUND': 'warning',
+    'CORRECTED': 'warning',
+    'REVERSAL': 'danger',
+    'DELETED': 'danger',
+    'UNREAD': 'info',
+    'READ': 'secondary',
+    'SENT': 'success',
+    'FAILED': 'danger',
+    'HOMEWORK': 'primary',
+    'QUIZ': 'info',
+    'PROJECT': 'info',
+    'FINAL_EXAM': 'danger',
+    'MIDTERM': 'warning',
+    'DEBTOR': 'danger',
+    'CREDIT': 'info',
+    'PAID': 'success',
+    'UNPAID': 'danger'
+}%}
+{% set badge_color = color_map.get(status, 'secondary') %}
+<span class="badge badge-{{ badge_color }}">{{ display }}</span>
+{% endmacro %}
+
+{# Stat Card
+   {{ stat_card("دانش‌آموزان", 42, icon="users", color="primary", url=url_for(...), url_label="مشاهده") }}
+#}
+{% macro stat_card(label, value, icon="none", color="primary", url=none, url_label=none) %}
+<div class="stat-card">
+    <div class="stat-card-header">
+        <span class="stat-card-label">{{ label }}</span>
+        {% if icon != "none" %}
+        <div class="stat-card-icon {{ color }}">
+            {% if icon == "users" %}
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+            {% elif icon == "class" %}
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+            {% elif icon == "money" %}
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+            {% elif icon == "alert" %}
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+            {% elif icon == "check" %}
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+            {% elif icon == "bell" %}
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+            {% endif %}
+        </div>
+        {% endif %}
+    </div>
+    <div class="stat-card-value">{{ value }}</div>
+    {% if url and url_label %}
+    <div class="stat-card-footer">
+        <a href="{{ url }}">{{ url_label }}</a>
+    </div>
+    {% endif %}
+</div>
+{% endmacro %}
+
+{# Pagination
+   {{ pagination(page, total_pages, request.full_path) }}
+#}
+{% macro pagination(page, total_pages, base_url) %}
+{% if total_pages > 1 %}
+<nav class="pagination" aria-label="صفحه‌بندی">
+    {% if page > 1 %}
+    <a href="{{ base_url }}&page={{ page - 1 }}" class="pagination-item" aria-label="صفحه قبل">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+    </a>
+    {% endif %}
+
+    {% for p in range(1, total_pages + 1) %}
+        {% if p == page %}
+        <span class="pagination-item active" aria-current="page">{{ p }}</span>
+        {% elif p <= 3 or p > total_pages - 3 or (p >= page - 2 and p <= page + 2) %}
+        <a href="{{ base_url }}&page={{ p }}" class="pagination-item">{{ p }}</a>
+        {% elif p == 4 or p == total_pages - 3 %}
+        <span class="pagination-ellipsis">...</span>
+        {% endif %}
+    {% endfor %}
+
+    {% if page < total_pages %}
+    <a href="{{ base_url }}&page={{ page + 1 }}" class="pagination-item" aria-label="صفحه بعد">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+    </a>
+    {% endif %}
+</nav>
+{% endif %}
+{% endmacro %}
+
+{# Breadcrumbs
+   {{ breadcrumbs([
+       (url_for('auth.dashboard'), 'داشبورد'),
+       (url_for('academy.class_list'), 'کلاس‌ها'),
+       (none, 'نام کلاس')
+   ]) }}
+#}
+{% macro breadcrumbs(items) %}
+<nav class="breadcrumbs" aria-label="مسیر ناوبری">
+    {% for url, label in items %}
+        {% if loop.last %}
+        <span class="breadcrumbs-current">{{ label }}</span>
+        {% else %}
+        <a href="{{ url }}" class="breadcrumbs-item">{{ label }}</a>
+        <span class="breadcrumbs-separator">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+        </span>
+        {% endif %}
+    {% endfor %}
+</nav>
+{% endmacro %}
+
+{# Confirm Dialog
+   {{ confirm_dialog("delete-confirm", "حذف آیتم", "آیا از حذف این آیتم اطمینان دارید؟ این عمل قابل بازگشت نیست.", url_for(...), "حذف") }}
+#}
+{% macro confirm_dialog(dialog_id, title, message, confirm_url, confirm_label="تأیید", danger=true) %}
+<div class="modal-overlay" id="{{ dialog_id }}">
+    <div class="modal">
+        <div class="modal-header">
+            <h3>{{ title }}</h3>
+            <button class="modal-close" onclick="document.getElementById('{{ dialog_id }}').classList.remove('active')" aria-label="بستن">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </button>
+        </div>
+        <div class="modal-body">
+            <p>{{ message }}</p>
+        </div>
+        <div class="modal-footer">
+            <a href="{{ confirm_url }}" class="btn {{ 'btn-danger' if danger else 'btn-primary' }}">{{ confirm_label }}</a>
+            <button class="btn btn-secondary" onclick="document.getElementById('{{ dialog_id }}').classList.remove('active')">انصراف</button>
+        </div>
+    </div>
+</div>
+{% endmacro %}

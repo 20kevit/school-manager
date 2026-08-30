@@ -77,3 +77,19 @@ def _register_routes(app):
     @app.route("/health")
     def health():
         return jsonify({"status": "ok"})
+
+    @app.errorhandler(400)
+    def bad_request(e):
+        return "errors/400.html", 400
+
+    @app.errorhandler(403)
+    def forbidden(e):
+        return "errors/403.html", 403
+
+    @app.errorhandler(404)
+    def not_found(e):
+        return "errors/404.html", 404
+
+    @app.errorhandler(500)
+    def internal_error(e):
+        return "errors/500.html", 500
