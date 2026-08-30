@@ -128,3 +128,42 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 - Updating existing attendance modifies in-place rather than creating new records
 - Cancelled enrollments preserve historical attendance records
 - Teachers authorized server-side via class assignment, not just UI hiding
+
+## P5 — Learning Activities & Homework (2026-08-30)
+
+### Added
+
+- Activity domain entity with enums (ActivityType, ActivityRequirement, SubmissionStatus)
+- Activity database model with multi-level scope (Course, Class, Session)
+- ActivitySubmission database model with versioned submission history
+- ActivityFile database model for file upload tracking
+- Activity application service with CRUD, submission, grading, and file management
+- Course → Class activity copying (persisted, not inherited)
+- Class-level activity customization independent of Course defaults
+- Multiple activities per Session support
+- Independent activities (no session required)
+- Student submission with text content and file uploads
+- Versioned submission history (each submission creates a new version)
+- Late submission detection (accepts submission, marks as LATE)
+- Teacher/Admin grading with score, feedback, and timestamps
+- RETURNED workflow for resubmission
+- File upload validation (type, size, MIME type)
+- Activity deactivation (soft-disable, preserves submissions)
+- Admin web UI: activity list, create/edit, detail, submissions, grading
+- Teacher web UI: my classes, class activities, submissions, grading
+- Student web UI: my classes, class activities, submit, history, feedback
+- File download with authorization checks
+- Navigation links for activity management
+- Database migration for activity models
+- 74 tests covering activity CRUD, types, relationships, copying, submission, grading, return/resubmission, queries, file validation, domain entities, and enrollment integration
+
+### Design Decisions
+
+- Activity model supports Course/Class/Session scope without complex inheritance
+- Course defaults are copied to Class (persisted), not runtime-inherited
+- Class customization does not modify Course defaults
+- Submission versioning preserves all historical attempts
+- Late submissions accepted but marked (no auto-penalty)
+- RETURNED status supports teacher-student correction workflow
+- File validation checks extension, size, and MIME type server-side
+- Activity deactivation preserves all historical submissions

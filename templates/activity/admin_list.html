@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+{% block title %} مدیریت فعالیت‌ها {% endblock %}
+{% block content %}
+<h1>مدیریت فعالیت‌ها</h1>
+
+<div style="margin-bottom: 1rem;">
+    <a href="{{ url_for('activity.admin_create_activity') }}" class="btn btn-primary">ایجاد فعالیت جدید</a>
+</div>
+
+<form method="GET" style="margin-bottom: 1rem;">
+    <label>کلاس:</label>
+    <select name="class_id" onchange="this.form.submit()">
+        <option value="">همه کلاس‌ها</option>
+        {% for c in classes %}
+        <option value="{{ c.id }}" {% if selected_class_id == c.id %}selected{% endif %}>{{ c.title }}</option>
+        {% endfor %}
+    </select>
+
+    <label>دوره:</label>
+    <select name="course_id" onchange="this.form.submit()">
+        <option value="">همه دوره‌ها</option>
+        {% for c in courses %}
+        <option value="{{ c.id }}" {% if selected_course_id == c.id %}selected{% endif %}>{{ c.title }}</option>
+        {% endfor %}
+    </select>
+</form>
+
+{% if activities %}
+<table>
+    <thead>
+        <tr>
+            <th>عنوان</th>
+            <th>نوع</th>
+            <th>الزامی</th>
+            <th>مهلت</th>
+            <th>وضعیت</th>
+            <th>عملیات</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for a in activities %}
+        <tr>
+            <td><a href="{{ url_for('activity.admin_activity_detail', activity_id=a.id) }}">{{ a.title }}</a></td>
+            <td>{{ a.type }}</td>
+            <td>{% if a.requirement == 'REQUIRED' %}الزامی{% else %}اختیاری{% endif %}</td>
+            <td>{% if a.deadline %}{{ a.deadline.strftime('%Y-%m-%d %H:%M') }}{% else %}-{% endif %}</td>
+            <td>{% if a.is_active %}فعال{% else %}غیرفعال{% endif %}</td>
+            <td>
+                <a href="{{ url_for('activity.admin_edit_activity', activity_id=a.id) }}">ویرایش</a>
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% else %}
+<p>فعالیتی یافت نشد.</p>
+{% endif %}
+{% endblock %}

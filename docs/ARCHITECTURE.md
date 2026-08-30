@@ -102,6 +102,7 @@ Separate configs per environment (development, testing, production) in `config/_
 | Academy | course, class_, session | academy/ | web/academy | academy_bp |
 | Enrollment | enrollment | enrollment/ | web/enrollment | enrollment_bp |
 | Attendance | attendance | attendance/ | web/attendance | attendance_bp |
+| Activity | activity, submission | activity/ | web/activity | activity_bp |
 
 ## Academy Structure (P2)
 
@@ -186,6 +187,59 @@ Attendance
 - **Historical preservation**: Cancelling an enrollment does not delete existing attendance records.
 - **Bulk recording**: Teachers can record attendance for an entire session in a single operation.
 - **Server-side authorization**: Teachers can only manage attendance for classes they are assigned to.
+
+## Learning Activities (P5)
+
+The activity system manages homework, projects, quizzes, and other learning activities with student submissions and teacher grading.
+
+```
+Course (default activities)
+   ↓
+Class (class-level activities, copied from Course)
+   ↓
+Session (session-level activities)
+   ↓
+Activity
+   ↓
+Student Submission (versioned)
+   ↓
+Teacher Review / Grade / Feedback
+```
+
+### Activity Scope
+
+Activities support three levels:
+- **Course-level**: Default activities that serve as templates
+- **Class-level**: Class-specific activities (may be copied from Course defaults)
+- **Session-level**: Activities tied to a specific session
+
+Activities may also exist independently (e.g., Final Project) without a Session.
+
+### Submission Versioning
+
+Each submission attempt creates a new historical record (version). Previous submissions are never overwritten. The latest submission is identified by the highest version number.
+
+### Grading Workflow
+
+```
+SUBMITTED → GRADED (teacher scores)
+SUBMITTED → RETURNED (teacher returns for correction)
+RETURNED → RESUBMITTED (student resubmits)
+RESUBMITTED → GRADED
+```
+
+### Late Submission
+
+Submissions after the deadline are accepted but marked as LATE. No automatic penalty is applied.
+
+### Key Design Decisions
+
+- **Persisted copying**: Course default activities are copied to Class (new DB records), not runtime-inherited.
+- **Class isolation**: Class customization does not modify Course defaults; Course changes do not affect existing Classes.
+- **Versioned history**: Each submission creates a new record, preserving full submission history.
+- **Soft-disable**: Deactivating an activity preserves all historical submissions.
+- **File validation**: Server-side validation of file type, size, and MIME type (5 MB max, specific extensions only).
+- **Flexible activity types**: The Activity model uses a type field (initially HOMEWORK) designed to support future types (PROJECT, PRACTICE, QUIZ, EXAM) without schema changes.
 
 ## Payment Integration (Future)
 

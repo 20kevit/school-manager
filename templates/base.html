@@ -18,14 +18,17 @@
                     <a href="{{ url_for('academy.class_list') }}">Classes</a>
                     <a href="{{ url_for('enrollment.admin_enrollment_list') }}">Enrollments</a>
                     <a href="{{ url_for('attendance.admin_attendance_list') }}">Attendance</a>
+                    <a href="{{ url_for('activity.admin_activity_list') }}">Activities</a>
                     {% endif %}
                     {% if current_user.has_any_role('TEACHER') %}
                     <a href="{{ url_for('attendance.teacher_my_classes') }}">My Classes</a>
+                    <a href="{{ url_for('activity.teacher_my_classes') }}">Activities</a>
                     {% endif %}
                     {% if current_user.has_any_role('STUDENT') %}
                     <a href="{{ url_for('enrollment.student_available_classes') }}">Classes</a>
                     <a href="{{ url_for('enrollment.student_my_enrollments') }}">My Enrollments</a>
                     <a href="{{ url_for('attendance.student_my_attendance') }}">My Attendance</a>
+                    <a href="{{ url_for('activity.student_my_classes') }}">My Activities</a>
                     {% endif %}
                     <a href="{{ url_for('auth.logout') }}">Logout</a>
                 {% else %}

@@ -487,3 +487,163 @@ class AttendanceModel(db.Model):
             f"<AttendanceModel id={self.id} enrollment={self.enrollment_id} "
             f"session={self.session_id} status={self.status}>"
         )
+
+
+# ---------------------------------------------------------------------------
+# P5 — Learning Activities & Homework
+# ---------------------------------------------------------------------------
+
+ALLOWED_ACTIVITY_EXTENSIONS = {
+    "pdf",
+    "doc",
+    "docx",
+    "xls",
+    "xlsx",
+    "ppt",
+    "pptx",
+    "jpg",
+    "jpeg",
+    "png",
+    "zip",
+}
+
+ALLOWED_ACTIVITY_MIMETYPES = {
+    "application/pdf",
+    "application/msword",
+    "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    "application/vnd.ms-excel",
+    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    "application/vnd.ms-powerpoint",
+    "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+    "image/jpeg",
+    "image/png",
+    "application/zip",
+}
+
+MAX_FILE_SIZE_BYTES = 5 * 1024 * 1024  # 5 MB
+
+
+class ActivityModel(db.Model):
+    """Activity table — a learning activity (homework, project, quiz, etc.)."""
+
+    __tablename__ = "activities"
+
+    id = db.Column(db.Integer, primary_key=True)
+    type = db.Column(db.String(20), nullable=False)
+    title = db.Column(db.String(200), nullable=False)
+    description = db.Column(db.Text, default="")
+    requirement = db.Column(db.String(20), nullable=False, default="REQUIRED")
+    deadline = db.Column(db.DateTime, nullable=True)
+    max_score = db.Column(db.Numeric(10, 2), nullable=False, default=100)
+    is_active = db.Column(db.Boolean, nullable=False, default=True)
+    sort_order = db.Column(db.Integer, nullable=False, default=0)
+    course_id = db.Column(db.Integer, db.ForeignKey("courses.id"), nullable=True)
+    class_id = db.Column(db.Integer, db.ForeignKey("academy_classes.id"), nullable=True)
+    session_id = db.Column(db.Integer, db.ForeignKey("sessions.id"), nullable=True)
+    created_at = db.Column(db.DateTime, server_default=db.func.now(), nullable=False)
+    updated_at = db.Column(
+        db.DateTime,
+        server_default=db.func.now(),
+        onupdate=db.func.now(),
+        nullable=False,
+    )
+
+    course = db.relationship(
+        "CourseModel", backref=db.backref("activities", lazy="select")
+    )
+    academy_class = db.relationship(
+        "AcademyClassModel", backref=db.backref("activities", lazy="select")
+    )
+    session = db.relationship(
+        "SessionModel", backref=db.backref("activities", lazy="select")
+    )
+
+    __table_args__ = (
+        db.Index("ix_activity_course", "course_id"),
+        db.Index("ix_activity_class", "class_id"),
+        db.Index("ix_activity_session", "session_id"),
+        db.Index("ix_activity_type", "type"),
+        db.Index("ix_activity_active", "is_active"),
+    )
+
+    def __repr__(self) -> str:
+        return f"<ActivityModel id={self.id} type={self.type} title={self.title!r}>"
+
+
+class ActivitySubmissionModel(db.Model):
+    """Activity submission table — a student's submission attempt for an activity."""
+
+    __tablename__ = "activity_submissions"
+
+    id = db.Column(db.Integer, primary_key=True)
+    activity_id = db.Column(db.Integer, db.ForeignKey("activities.id"), nullable=False)
+    student_user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)
+    enrollment_id = db.Column(
+        db.Integer, db.ForeignKey("enrollments.id"), nullable=False
+    )
+    text_content = db.Column(db.Text, default="")
+    submitted_at = db.Column(db.DateTime, nullable=True)
+    status = db.Column(db.String(20), nullable=False, default="NOT_SUBMITTED")
+    score = db.Column(db.Numeric(10, 2), nullable=True)
+    feedback = db.Column(db.Text, default="")
+    graded_at = db.Column(db.DateTime, nullable=True)
+    graded_by = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=True)
+    version = db.Column(db.Integer, nullable=False, default=1)
+    created_at = db.Column(db.DateTime, server_default=db.func.now(), nullable=False)
+    updated_at = db.Column(
+        db.DateTime,
+        server_default=db.func.now(),
+        onupdate=db.func.now(),
+        nullable=False,
+    )
+
+    activity = db.relationship(
+        "ActivityModel", backref=db.backref("submissions", lazy="select")
+    )
+    student = db.relationship("UserModel", foreign_keys=[student_user_id])
+    enrollment = db.relationship(
+        "EnrollmentModel", backref=db.backref("submissions", lazy="select")
+    )
+    grader = db.relationship("UserModel", foreign_keys=[graded_by])
+
+    __table_args__ = (
+        db.Index("ix_submission_activity", "activity_id"),
+        db.Index("ix_submission_student", "student_user_id"),
+        db.Index("ix_submission_enrollment", "enrollment_id"),
+        db.Index("ix_submission_status", "status"),
+    )
+
+    def __repr__(self) -> str:
+        return (
+            f"<ActivitySubmissionModel id={self.id} activity={self.activity_id} "
+            f"student={self.student_user_id} version={self.version}>"
+        )
+
+
+class ActivityFileModel(db.Model):
+    """Activity file table — files attached to a submission."""
+
+    __tablename__ = "activity_files"
+
+    id = db.Column(db.Integer, primary_key=True)
+    submission_id = db.Column(
+        db.Integer, db.ForeignKey("activity_submissions.id"), nullable=False
+    )
+    filename = db.Column(db.String(255), nullable=False)
+    original_filename = db.Column(db.String(255), nullable=False)
+    file_size = db.Column(db.Integer, nullable=False)
+    mime_type = db.Column(db.String(100), nullable=False)
+    created_at = db.Column(db.DateTime, server_default=db.func.now(), nullable=False)
+
+    submission = db.relationship(
+        "ActivitySubmissionModel",
+        backref=db.backref("files", lazy="select", cascade="all, delete-orphan"),
+    )
+
+    __table_args__ = (db.Index("ix_activityfile_submission", "submission_id"),)
+
+    def __repr__(self) -> str:
+        return (
+            f"<ActivityFileModel id={self.id} submission={self.submission_id} "
+            f"filename={self.original_filename!r}>"
+        )

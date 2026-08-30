@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block title %}فعالیت‌های {{ academy_class.title }}{% endblock %}
+{% block content %}
+<h1>فعالیت‌های {{ academy_class.title }}</h1>
+
+{% if activities %}
+<table>
+    <thead>
+        <tr>
+            <th>عنوان</th>
+            <th>نوع</th>
+            <th>الزامی</th>
+            <th>مهلت</th>
+            <th>عملیات</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for a in activities %}
+        <tr>
+            <td><a href="{{ url_for('activity.student_activity_detail', activity_id=a.id) }}">{{ a.title }}</a></td>
+            <td>{{ a.type }}</td>
+            <td>{% if a.requirement == 'REQUIRED' %}الزامی{% else %}اختیاری{% endif %}</td>
+            <td>{% if a.deadline %}{{ a.deadline.strftime('%Y-%m-%d %H:%M') }}{% else %}-{% endif %}</td>
+            <td><a href="{{ url_for('activity.student_activity_detail', activity_id=a.id) }}">مشاهده</a></td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% else %}
+<p>فعالیتی تعریف نشده است.</p>
+{% endif %}
+
+<div>
+    <a href="{{ url_for('activity.student_my_classes') }}">بازگشت</a>
+</div>
+{% endblock %}

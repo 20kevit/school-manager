@@ -42,13 +42,25 @@
 - [x] Attendance history
 - [ ] Attendance reports
 
-## P5 — Learning
+## P5 — Learning Activities
 
-- [ ] Homework
-- [ ] Homework submission
-- [ ] Educational resources
-- [ ] Grades
-- [ ] Final examination
+- [x] General Activity model
+- [x] HOMEWORK as first activity type
+- [x] Multiple activities per Session
+- [x] Independent activities
+- [x] Course default activities
+- [x] Class-specific customization
+- [x] Student submissions (text + files)
+- [x] Submission history with versioning
+- [x] Resubmission
+- [x] Late submission handling
+- [x] Required/optional activities
+- [x] Teacher/Admin grading
+- [x] Teacher feedback
+- [x] RETURNED workflow
+- [x] Activity deactivation preserves history
+- [x] Admin, Teacher, Student authorization
+- [x] Educational resources
 
 ## P6 — Finance
 

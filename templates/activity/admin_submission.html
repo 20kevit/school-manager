@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+{% block title %}مشاهده ارسال{% endblock %}
+{% block content %}
+<h1>جزئیات ارسال</h1>
+
+<div>
+    <p><strong>فعالیت:</strong> <a href="{{ url_for('activity.admin_activity_detail', activity_id=activity.id) }}">{{ activity.title }}</a></p>
+    <p><strong>دانش‌آموز:</strong> {{ student.login }}</p>
+    <p><strong>نسخه:</strong> {{ submission.version }}</p>
+    <p><strong>وضعیت:</strong> {{ submission.status }}</p>
+    <p><strong>تاریخ ارسال:</strong> {% if submission.submitted_at %}{{ submission.submitted_at.strftime('%Y-%m-%d %H:%M') }}{% else %}-{% endif %}</p>
+    {% if submission.score is not none %}
+    <p><strong>امتیاز:</strong> {{ submission.score }} / {{ activity.max_score }}</p>
+    {% endif %}
+    {% if submission.feedback %}
+    <p><strong>بازخورد:</strong></p>
+    <div>{{ submission.feedback }}</div>
+    {% endif %}
+    {% if submission.graded_at %}
+    <p><strong>تاریخ نمره‌دهی:</strong> {{ submission.graded_at.strftime('%Y-%m-%d %H:%M') }}</p>
+    {% endif %}
+</div>
+
+{% if submission.text_content %}
+<h2>متن ارسالی</h2>
+<div>{{ submission.text_content }}</div>
+{% endif %}
+
+{% if files %}
+<h2>فایل‌های پیوست</h2>
+<ul>
+    {% for f in files %}
+    <li>
+        <a href="{{ url_for('activity.download_file', file_id=f.id) }}">{{ f.original_filename }}</a>
+        <span>({{ f.file_size }} بایت)</span>
+    </li>
+    {% endfor %}
+</ul>
+{% endif %}
+
+<h2>نمره‌دهی</h2>
+<form method="POST" action="{{ url_for('activity.admin_grade_submission', submission_id=submission.id) }}">
+    <div>
+        <label>امتیاز:</label>
+        <input type="number" name="score" value="{{ submission.score if submission.score is not none else '' }}" min="0" max="{{ activity.max_score }}" step="0.5" required>
+    </div>
+    <div>
+        <label>بازخورد:</label>
+        <textarea name="feedback" rows="4">{{ submission.feedback or '' }}</textarea>
+    </div>
+    <button type="submit">نمره‌دهی</button>
+</form>
+
+<h2>برگرداندن برای اصلاح</h2>
+<form method="POST" action="{{ url_for('activity.admin_return_submission', submission_id=submission.id) }}">
+    <div>
+        <label>بازخورد:</label>
+        <textarea name="feedback" rows="4" required>{{ submission.feedback or '' }}</textarea>
+    </div>
+    <button type="submit">برگرداندن</button>
+</form>
+
+<div>
+    <a href="{{ url_for('activity.admin_activity_detail', activity_id=activity.id) }}">بازگشت</a>
+</div>
+{% endblock %}

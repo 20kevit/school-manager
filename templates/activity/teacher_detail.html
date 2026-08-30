@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+{% block title %}{{ activity.title }} - جزئیات{% endblock %}
+{% block content %}
+<h1>{{ activity.title }}</h1>
+
+<div>
+    <p><strong>نوع:</strong> {{ activity.type }}</p>
+    <p><strong>الزامی/اختیاری:</strong> {% if activity.requirement == 'REQUIRED' %}الزامی{% else %}اختیاری{% endif %}</p>
+    <p><strong>حداکثر امتیاز:</strong> {{ activity.max_score }}</p>
+    {% if activity.deadline %}
+    <p><strong>مهلت:</strong> {{ activity.deadline.strftime('%Y-%m-%d %H:%M') }}</p>
+    {% else %}
+    <p><strong>مهلت:</strong> ندارد</p>
+    {% endif %}
+    <p><strong>وضعیت:</strong> {% if activity.is_active %}فعال{% else %}غیرفعال{% endif %}</p>
+    {% if activity.description %}
+    <p><strong>توضیحات:</strong></p>
+    <div>{{ activity.description }}</div>
+    {% endif %}
+</div>
+
+<h2>خلاصه ارسال‌ها</h2>
+<div>
+    <p>تعداد کل دانش‌آموزان: {{ summary.total }}</p>
+    <p>ارسال شده: {{ summary.submitted }}</p>
+    <p>ارسال دیر: {{ summary.late }}</p>
+    <p>نمره‌دهی شده: {{ summary.graded }}</p>
+    <p>ارسال نشده: {{ summary.not_submitted }}</p>
+</div>
+
+<h2>ارسال‌ها</h2>
+{% if submissions %}
+<table>
+    <thead>
+        <tr>
+            <th>دانش‌آموز</th>
+            <th>نسخه</th>
+            <th>وضعیت</th>
+            <th>امتیاز</th>
+            <th>تاریخ ارسال</th>
+            <th>عملیات</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for s in submissions %}
+        <tr>
+            <td>{{ students_map[s.student_user_id].login if students_map.get(s.student_user_id) else '-' }}</td>
+            <td>{{ s.version }}</td>
+            <td>{{ s.status }}</td>
+            <td>{% if s.score is not none %}{{ s.score }}{% else %}-{% endif %}</td>
+            <td>{% if s.submitted_at %}{{ s.submitted_at.strftime('%Y-%m-%d %H:%M') }}{% else %}-{% endif %}</td>
+            <td><a href="{{ url_for('activity.teacher_submission_detail', submission_id=s.id) }}">مشاهده</a></td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% else %}
+<p>ارسالی ثبت نشده است.</p>
+{% endif %}
+
+<div>
+    <a href="{{ url_for('activity.teacher_class_activities', class_id=academy_class.id) }}">بازگشت</a>
+</div>
+{% endblock %}

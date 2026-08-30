@@ -2,9 +2,11 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 
+from app.domain.activity import Activity
 from app.domain.enrollment import Enrollment
 from app.domain.profiles import ParentProfile, StudentProfile, TeacherProfile
 from app.domain.role import Role
+from app.domain.submission import ActivitySubmission
 from app.domain.user import User
 
 
@@ -108,3 +110,55 @@ class EnrollmentRepository(ABC):
 
     @abstractmethod
     def count_approved_by_class(self, class_id: int) -> int: ...
+
+
+class ActivityRepository(ABC):
+    """Abstract repository for Activity persistence."""
+
+    @abstractmethod
+    def get_by_id(self, activity_id: int) -> Activity | None: ...
+
+    @abstractmethod
+    def create(self, activity: Activity) -> Activity: ...
+
+    @abstractmethod
+    def update(self, activity: Activity) -> Activity: ...
+
+    @abstractmethod
+    def list_by_course(self, course_id: int) -> list[Activity]: ...
+
+    @abstractmethod
+    def list_by_class(self, class_id: int) -> list[Activity]: ...
+
+    @abstractmethod
+    def list_by_session(self, session_id: int) -> list[Activity]: ...
+
+    @abstractmethod
+    def count_by_class(self, class_id: int) -> int: ...
+
+
+class ActivitySubmissionRepository(ABC):
+    """Abstract repository for ActivitySubmission persistence."""
+
+    @abstractmethod
+    def get_by_id(self, submission_id: int) -> ActivitySubmission | None: ...
+
+    @abstractmethod
+    def create(self, submission: ActivitySubmission) -> ActivitySubmission: ...
+
+    @abstractmethod
+    def update(self, submission: ActivitySubmission) -> ActivitySubmission: ...
+
+    @abstractmethod
+    def get_latest(
+        self, activity_id: int, student_user_id: int
+    ) -> ActivitySubmission | None: ...
+
+    @abstractmethod
+    def list_by_activity(self, activity_id: int) -> list[ActivitySubmission]: ...
+
+    @abstractmethod
+    def list_by_student(self, student_user_id: int) -> list[ActivitySubmission]: ...
+
+    @abstractmethod
+    def count_by_activity(self, activity_id: int) -> int: ...

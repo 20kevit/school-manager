@@ -1,13 +1,13 @@
 # Project Status
 
-**Current Phase:** P4 — Attendance — Completed
-**Current Objective:** Complete P4 — Attendance.
+**Current Phase:** P5 — Learning Activities & Homework — Completed
+**Current Objective:** Complete P5 — Learning Activities & Homework.
 
-**Previous Phase:** P3 — Enrollment
+**Previous Phase:** P4 — Attendance
 
 ## Status
 
-P3 — Enrollment is in progress.
+P5 — Learning Activities & Homework is complete.
 
 ## Completed
 
@@ -91,3 +91,27 @@ P3 — Enrollment is in progress.
 - [x] Historical attendance preservation (cancelled enrollment)
 - [x] Database migration for attendance model
 - [x] 174 tests passing
+
+### P5 — Learning Activities & Homework
+- [x] Activity domain entity with enums (ActivityType, ActivityRequirement, SubmissionStatus)
+- [x] Activity database model with multi-level scope (Course, Class, Session)
+- [x] ActivitySubmission model with versioned submission history
+- [x] ActivityFile model for file upload tracking
+- [x] Activity application service (CRUD, submission, grading, files)
+- [x] Course → Class activity copying (persisted, not inherited)
+- [x] Class-level activity customization independent of Course defaults
+- [x] Multiple activities per Session
+- [x] Independent activities (no session required)
+- [x] Student submission with text content and file uploads
+- [x] Versioned submission history (each attempt creates new version)
+- [x] Late submission detection (accepts, marks as LATE)
+- [x] Teacher/Admin grading with score, feedback, timestamps
+- [x] RETURNED workflow for resubmission
+- [x] File upload validation (type, size, MIME type)
+- [x] Activity deactivation (soft-disable, preserves submissions)
+- [x] Admin web UI: activity management, submissions, grading
+- [x] Teacher web UI: my classes, activities, submissions, grading
+- [x] Student web UI: my classes, activities, submit, history, feedback
+- [x] File download with authorization
+- [x] Database migration for activity models
+- [x] 248 tests passing
