@@ -1,13 +1,13 @@
 # Project Status
 
-**Current Phase:** P1 — Identity & Access
-**Current Objective:** Implement the identity, user, profile, authentication, and basic role-based authorization foundation.
+**Current Phase:** P1 — Identity & Access — Complete
+**Current Objective:** P1 complete. Ready for P2 — Academy Structure.
 
 **Previous Phase:** P0 — Foundation / Bootstrap
 
 ## Status
 
-Bootstrap complete. Ready to begin P1.
+P1 — Identity & Access is complete.
 
 ## Completed
 
@@ -24,6 +24,19 @@ Bootstrap complete. Ready to begin P1.
 - [x] Documentation (README, ARCHITECTURE, DEVELOPMENT, PROJECT_STATUS, TODO, CHANGELOG)
 - [x] Architecture Decision Records
 - [x] Project roadmap established
+- [x] User model with password hashing (Werkzeug)
+- [x] Role-based access control (ADMIN, TEACHER, STUDENT, PARENT)
+- [x] StudentProfile with national_id, birth_date, gender
+- [x] TeacherProfile
+- [x] ParentProfile with parent-student many-to-many
+- [x] Flask-Login session management
+- [x] Authentication (login, logout, session)
+- [x] Authorization (role_required decorator)
+- [x] Password change
+- [x] Student initial login (national_id as login/password)
+- [x] Persian RTL UI templates
+- [x] Database migration (initial schema)
+- [x] 44 tests passing
 
 ## In Progress
 
@@ -35,7 +48,7 @@ Bootstrap complete. Ready to begin P1.
 
 ## Next Steps
 
-- Implement User model and roles
-- Implement authentication (login, logout, registration)
-- Implement password hashing
-- Create initial migration
+- Implement Course model
+- Implement Class model
+- Implement Class schedule
+- Session generation

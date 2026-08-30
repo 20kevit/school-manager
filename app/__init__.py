@@ -1,13 +1,22 @@
+import os
+
 from flask import Flask, jsonify
+from flask_login import LoginManager
 
 from app.extensions import db as db  # noqa: F401
 from app.extensions import init_db
 from config import config
 
+login_manager = LoginManager()
+login_manager.login_view = "auth.login"
+login_manager.login_message_category = "error"
+
+PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
 
 def create_app(config_name="development"):
     """Application factory."""
-    app = Flask(__name__)
+    app = Flask(__name__, template_folder=os.path.join(PROJECT_ROOT, "templates"))
     app.config.from_object(config[config_name])
 
     _register_extensions(app)
@@ -20,13 +29,22 @@ def create_app(config_name="development"):
 def _register_extensions(app):
     """Register Flask extensions."""
     init_db(app)
+    login_manager.init_app(app)
+
+    from app.infrastructure.database.models import UserModel
+
+    @login_manager.user_loader
+    def load_user(user_id: str):
+        return UserModel.query.get(int(user_id))
 
 
 def _register_blueprints(app):
     """Register Flask blueprints."""
     from app.interface.web import web_bp
+    from app.interface.web.auth import auth_bp
 
     app.register_blueprint(web_bp)
+    app.register_blueprint(auth_bp)
 
 
 def _register_routes(app):

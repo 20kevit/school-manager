@@ -23,3 +23,20 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 ### Changed
 
 - Established project roadmap (P0 through P11) and updated project status to P1 — Identity & Access
+
+## P1 — Identity & Access (2026-08-30)
+
+### Added
+
+- User model with password hashing (Werkzeug)
+- Role-based access control (ADMIN, TEACHER, STUDENT, PARENT)
+- StudentProfile with national_id, birth_date, gender
+- TeacherProfile
+- ParentProfile with parent-student many-to-many relationship
+- Flask-Login session management
+- Authentication blueprint (login, logout, dashboard, change-password)
+- Authorization decorator (`role_required`)
+- Persian RTL UI templates (login, dashboard, change-password)
+- Student initial login (national_id as login and initial password)
+- Database migration for identity and access models
+- 44 tests covering User, Roles, Profiles, Authentication, Authorization

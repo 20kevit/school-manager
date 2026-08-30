@@ -22,7 +22,7 @@ class DevelopmentConfig(Config):
     DEBUG = True
     SQLALCHEMY_DATABASE_URI = os.getenv(
         "DATABASE_URL",
-        "postgresql://localhost:5432/school_manager_dev",
+        "sqlite:///school_manager_dev.db",
     )
 
 
@@ -31,8 +31,8 @@ class TestingConfig(Config):
 
     TESTING = True
     SQLALCHEMY_DATABASE_URI = os.getenv(
-        "DATABASE_URL",
-        "postgresql://localhost:5432/school_manager_test",
+        "TEST_DATABASE_URL",
+        "sqlite:///:memory:",
     )
 
 

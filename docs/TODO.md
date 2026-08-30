@@ -9,14 +9,14 @@
 
 ## P1 — Identity & Access
 
-- [ ] User
-- [ ] Roles
-- [ ] Student Profile
-- [ ] Teacher Profile
-- [ ] Parent Profile
-- [ ] Authentication
-- [ ] Authorization
-- [ ] Password management
+- [x] User
+- [x] Roles
+- [x] Student Profile
+- [x] Teacher Profile
+- [x] Parent Profile
+- [x] Authentication
+- [x] Authorization
+- [x] Password management
 
 ## P2 — Academy Structure
 

@@ -1,3 +1,6 @@
+"""Tests for application factory and basic endpoints."""
+
+
 def test_app_creation(app):
     """Test that the application can be created."""
     assert app is not None

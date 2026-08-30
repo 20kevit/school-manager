@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard{% endblock %}
+
+{% block content %}
+<div class="dashboard-container">
+    <div class="dashboard-header">
+        <h1>Dashboard</h1>
+        <div class="user-info">
+            <span class="user-name">{{ current_user.login }}</span>
+            <span class="user-roles">
+                {% for role in current_user.roles %}
+                    <span class="role-badge">{{ role.name }}</span>
+                {% endfor %}
+            </span>
+        </div>
+    </div>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="alert alert-{{ category }}">{{ message }}</div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+
+    <div class="dashboard-actions">
+        <a href="{{ url_for('auth.change_password_view') }}" class="btn btn-secondary">
+            Change Password
+        </a>
+        <a href="{{ url_for('auth.logout') }}" class="btn btn-outline">
+            Logout
+        </a>
+    </div>
+</div>
+{% endblock %}

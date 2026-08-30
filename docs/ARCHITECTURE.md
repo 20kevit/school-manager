@@ -50,7 +50,7 @@ Domain / Application contracts (repository interfaces, service interfaces)
 `app/__init__.py` exposes `create_app(config_name)` which:
 
 1. Loads configuration.
-2. Initializes extensions (SQLAlchemy, Migrate).
+2. Initializes extensions (SQLAlchemy, Migrate, LoginManager).
 3. Registers blueprints.
 4. Registers error handlers.
 
@@ -60,16 +60,24 @@ Separate configs per environment (development, testing, production) in `config/_
 
 ## Database
 
-- PostgreSQL in production.
+- PostgreSQL in production, SQLite for development/testing.
 - SQLAlchemy ORM for models.
 - Flask-Migrate (Alembic) for schema migrations.
 - Migration workflow: Model change -> Migration -> Test -> Commit.
+
+## Authentication & Authorization
+
+- Flask-Login for session management.
+- Werkzeug for password hashing.
+- Role-based access control with `role_required` decorator.
+- Initial roles: ADMIN, TEACHER, STUDENT, PARENT.
+- User model supports multiple roles per user.
 
 ## Frontend
 
 - Jinja2 templates with a base layout.
 - Vanilla CSS/JS, mobile-first responsive design.
-- RTL-ready: HTML `dir` attribute and CSS logical properties when Persian is added.
+- RTL-ready: Persian language support with `dir="rtl"`.
 
 ## API Strategy
 
