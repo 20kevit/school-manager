@@ -1,59 +1,55 @@
 {% extends "base.html" %}
+{% from "macros/utils.html" import page_header, status_badge %}
 {% block title %}جلسات — {{ class_obj.title }}{% endblock %}
 {% block content %}
-<div class="page-header">
-    <h1>جلسات — {{ class_obj.title }}</h1>
+{{ page_header('جلسات — ' ~ class_obj.title) }}
+
+<div class="page-header-actions" style="margin-bottom: 1.5rem;">
     <a href="{{ url_for('academy.class_detail', class_id=class_obj.id) }}" class="btn btn-outline">بازگشت به کلاس</a>
 </div>
 
-{% with messages = get_flashed_messages(with_categories=true) %}
-    {% if messages %}
-        {% for category, message in messages %}
-            <div class="alert alert-{{ category }}">{{ message }}</div>
-        {% endfor %}
-    {% endif %}
-{% endwith %}
-
 {% if sessions %}
 <div class="table-container">
-    <table class="data-table">
-        <thead>
-            <tr>
-                <th>شماره</th>
-                <th>تاریخ</th>
-                <th>ساعت</th>
-                <th>عنوان</th>
-                <th>وضعیت</th>
-                <th>عملیات</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for session in sessions %}
-            <tr>
-                <td>{{ session.session_number }}</td>
-                <td>{{ session.scheduled_date }}</td>
-                <td>{{ session.start_time.strftime('%H:%M') }} — {{ session.end_time.strftime('%H:%M') }}</td>
-                <td>{{ session.title or '—' }}</td>
-                <td>
-                    <span class="status-badge status-{{ session.status|lower }}">{{ session.status }}</span>
-                </td>
-                <td>
-                    <a href="{{ url_for('academy.session_detail', session_id=session.id) }}" class="btn btn-sm btn-outline">جزئیات</a>
-                    {% if session.status == 'SCHEDULED' %}
-                    <form method="POST" action="{{ url_for('academy.session_complete', session_id=session.id) }}" style="display:inline;">
-                        <button type="submit" class="btn btn-sm btn-primary">تکمیل</button>
-                    </form>
-                    <form method="POST" action="{{ url_for('academy.session_cancel', session_id=session.id) }}" style="display:inline;">
-                        <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('آیا مطمئن هستید؟')">لغو</button>
-                    </form>
-                    {% endif %}
-                </td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
+    <div class="table-scroll">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>شماره</th>
+                    <th>تاریخ</th>
+                    <th>ساعت</th>
+                    <th>عنوان</th>
+                    <th>وضعیت</th>
+                    <th>عملیات</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for session in sessions %}
+                <tr>
+                    <td>{{ session.session_number }}</td>
+                    <td>{{ session.scheduled_date }}</td>
+                    <td>{{ session.start_time.strftime('%H:%M') }} — {{ session.end_time.strftime('%H:%M') }}</td>
+                    <td>{{ session.title or '—' }}</td>
+                    <td>{{ status_badge(session.status) }}</td>
+                    <td>
+                        <a href="{{ url_for('academy.session_detail', session_id=session.id) }}" class="btn btn-sm btn-outline">جزئیات</a>
+                        {% if session.status == 'SCHEDULED' %}
+                        <form method="POST" action="{{ url_for('academy.session_complete', session_id=session.id) }}" style="display:inline;">
+                            <button type="submit" class="btn btn-sm btn-primary">تکمیل</button>
+                        </form>
+                        <form method="POST" action="{{ url_for('academy.session_cancel', session_id=session.id) }}" style="display:inline;">
+                            <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('آیا مطمئن هستید؟')">لغو</button>
+                        </form>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
 </div>
 {% else %}
-<p class="empty-state">جلسه‌ای تولید نشده است.</p>
+<div class="empty-state">
+    <h3>جلسه‌ای تولید نشده است.</h3>
+</div>
 {% endif %}
 {% endblock %}

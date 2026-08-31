@@ -1,6 +1,6 @@
 {% extends "reporting/base_report.html" %}
 
-{% block title %}گزارش دانش‌آموز - Academy{% endblock %}
+{% block title %}گزارش دانش‌آموز - آکادمی{% endblock %}
 
 {% block report_title %}گزارش جامع دانش‌آموز{% endblock %}
 
@@ -9,166 +9,158 @@
 {% endblock %}
 
 {% block report_content %}
-<div class="report-card">
-    <h2>مشخصات فردی</h2>
-    <div class="report-stats">
-        <div class="stat-item">
-            <span class="stat-value">{{ report.student.profile.first_name }} {{ report.student.profile.last_name }}</span>
-            <span class="stat-label">نام و نام خانوادگی</span>
-        </div>
-        <div class="stat-item">
-            <span class="stat-value">{{ report.student.profile.national_id }}</span>
-            <span class="stat-label">کد ملی</span>
-        </div>
-        <div class="stat-item">
-            <span class="stat-value">{{ report.student.profile.gender }}</span>
-            <span class="stat-label">جنسیت</span>
-        </div>
+<div class="detail-card">
+    <div class="detail-header"><h3>مشخصات فردی</h3></div>
+    <div class="detail-row">
+        <span class="detail-row-label">نام و نام خانوادگی</span>
+        <span class="detail-row-value">{{ report.student.profile.first_name }} {{ report.student.profile.last_name }}</span>
+    </div>
+    <div class="detail-row">
+        <span class="detail-row-label">کد ملی</span>
+        <span class="detail-row-value">{{ report.student.profile.national_id }}</span>
+    </div>
+    <div class="detail-row">
+        <span class="detail-row-label">جنسیت</span>
+        <span class="detail-row-value">{{ report.student.profile.gender }}</span>
     </div>
 </div>
 
-<div class="report-card">
-    <h2>ثبت‌نام‌ها</h2>
-    <div class="report-stats">
-        <div class="stat-item">
-            <span class="stat-value">{{ report.enrollments.total }}</span>
-            <span class="stat-label">کل ثبت‌نام‌ها</span>
-        </div>
-        <div class="stat-item">
-            <span class="stat-value">{{ report.enrollments.approved }}</span>
-            <span class="stat-label">تأیید شده</span>
-        </div>
-        <div class="stat-item">
-            <span class="stat-value">{{ report.enrollments.pending }}</span>
-            <span class="stat-label">در انتظار</span>
-        </div>
-        <div class="stat-item">
-            <span class="stat-value">{{ report.enrollments.cancelled }}</span>
-            <span class="stat-label">لغو شده</span>
-        </div>
+<div class="detail-card">
+    <div class="detail-header"><h3>ثبت‌نام‌ها</h3></div>
+    <div class="detail-row">
+        <span class="detail-row-label">کل ثبت‌نام‌ها</span>
+        <span class="detail-row-value">{{ report.enrollments.total }}</span>
+    </div>
+    <div class="detail-row">
+        <span class="detail-row-label">تأیید شده</span>
+        <span class="detail-row-value">{{ report.enrollments.approved }}</span>
+    </div>
+    <div class="detail-row">
+        <span class="detail-row-label">در انتظار</span>
+        <span class="detail-row-value">{{ report.enrollments.pending }}</span>
+    </div>
+    <div class="detail-row">
+        <span class="detail-row-label">لغو شده</span>
+        <span class="detail-row-value">{{ report.enrollments.cancelled }}</span>
     </div>
 </div>
 
-<div class="report-card">
-    <h2>حضور و غیاب</h2>
-    <div class="report-stats">
-        <div class="stat-item">
-            <span class="stat-value">{{ report.attendance.percentage }}%</span>
-            <span class="stat-label">درصد حضور</span>
-        </div>
-        <div class="stat-item">
-            <span class="stat-value">{{ report.attendance.total }}</span>
-            <span class="stat-label">کل جلسات</span>
-        </div>
-        <div class="stat-item">
-            <span class="stat-value">{{ report.attendance.present }}</span>
-            <span class="stat-label">حضور</span>
-        </div>
-        <div class="stat-item">
-            <span class="stat-value">{{ report.attendance.absent }}</span>
-            <span class="stat-label">غیبت</span>
-        </div>
-        <div class="stat-item">
-            <span class="stat-value">{{ report.attendance.late }}</span>
-            <span class="stat-label">تاخیر</span>
-        </div>
+<div class="detail-card">
+    <div class="detail-header"><h3>حضور و غیاب</h3></div>
+    <div class="detail-row">
+        <span class="detail-row-label">درصد حضور</span>
+        <span class="detail-row-value">{{ report.attendance.percentage }}%</span>
+    </div>
+    <div class="detail-row">
+        <span class="detail-row-label">کل جلسات</span>
+        <span class="detail-row-value">{{ report.attendance.total }}</span>
+    </div>
+    <div class="detail-row">
+        <span class="detail-row-label">حضور</span>
+        <span class="detail-row-value">{{ report.attendance.present }}</span>
+    </div>
+    <div class="detail-row">
+        <span class="detail-row-label">غیبت</span>
+        <span class="detail-row-value">{{ report.attendance.absent }}</span>
+    </div>
+    <div class="detail-row">
+        <span class="detail-row-label">تاخیر</span>
+        <span class="detail-row-value">{{ report.attendance.late }}</span>
     </div>
     <div class="progress-bar">
         <div class="progress-fill" style="width: {{ report.attendance.percentage }}%"></div>
     </div>
 </div>
 
-<div class="report-card">
-    <h2>فعالیت‌ها و تکالیف</h2>
-    <div class="report-stats">
-        <div class="stat-item">
-            <span class="stat-value">{{ report.activities.total_submitted }}</span>
-            <span class="stat-label">تکالیف تحویل شده</span>
-        </div>
-        <div class="stat-item">
-            <span class="stat-value">{{ report.activities.graded }}</span>
-            <span class="stat-label">نمره‌گذاری شده</span>
-        </div>
-        <div class="stat-item">
-            <span class="stat-value">{{ report.activities.pending }}</span>
-            <span class="stat-label">در انتظار نمره</span>
-        </div>
-        <div class="stat-item">
-            <span class="stat-value">{{ report.activities.late }}</span>
-            <span class="stat-label">دیر تحویل شده</span>
-        </div>
+<div class="detail-card">
+    <div class="detail-header"><h3>فعالیت‌ها و تکالیف</h3></div>
+    <div class="detail-row">
+        <span class="detail-row-label">تکالیف تحویل شده</span>
+        <span class="detail-row-value">{{ report.activities.total_submitted }}</span>
+    </div>
+    <div class="detail-row">
+        <span class="detail-row-label">نمره‌گذاری شده</span>
+        <span class="detail-row-value">{{ report.activities.graded }}</span>
+    </div>
+    <div class="detail-row">
+        <span class="detail-row-label">در انتظار نمره</span>
+        <span class="detail-row-value">{{ report.activities.pending }}</span>
+    </div>
+    <div class="detail-row">
+        <span class="detail-row-label">دیر تحویل شده</span>
+        <span class="detail-row-value">{{ report.activities.late }}</span>
     </div>
 </div>
 
-<div class="report-card">
-    <h2>امتحانات</h2>
-    <div class="report-stats">
-        <div class="stat-item">
-            <span class="stat-value">{{ report.assessments.total }}</span>
-            <span class="stat-label">کل امتحانات</span>
-        </div>
-        <div class="stat-item">
-            <span class="stat-value">{{ report.assessments.passed }}</span>
-            <span class="stat-label">قبول شده</span>
-        </div>
-        <div class="stat-item">
-            <span class="stat-value">{{ report.assessments.failed }}</span>
-            <span class="stat-label">مردود شده</span>
-        </div>
-        <div class="stat-item">
-            <span class="stat-value">{{ report.assessments.average_score }}</span>
-            <span class="stat-label">میانگین نمره</span>
-        </div>
-        <div class="stat-item">
-            <span class="stat-value">{{ report.assessments.pass_rate }}%</span>
-            <span class="stat-label">نرخ قبولی</span>
-        </div>
+<div class="detail-card">
+    <div class="detail-header"><h3>امتحانات</h3></div>
+    <div class="detail-row">
+        <span class="detail-row-label">کل امتحانات</span>
+        <span class="detail-row-value">{{ report.assessments.total }}</span>
+    </div>
+    <div class="detail-row">
+        <span class="detail-row-label">قبول شده</span>
+        <span class="detail-row-value">{{ report.assessments.passed }}</span>
+    </div>
+    <div class="detail-row">
+        <span class="detail-row-label">مردود شده</span>
+        <span class="detail-row-value">{{ report.assessments.failed }}</span>
+    </div>
+    <div class="detail-row">
+        <span class="detail-row-label">میانگین نمره</span>
+        <span class="detail-row-value">{{ report.assessments.average_score }}</span>
+    </div>
+    <div class="detail-row">
+        <span class="detail-row-label">نرخ قبولی</span>
+        <span class="detail-row-value">{{ report.assessments.pass_rate }}%</span>
     </div>
 </div>
 
-<div class="report-card">
-    <h2>وضعیت مالی</h2>
-    <div class="report-stats">
-        <div class="stat-item">
-            <span class="stat-value">{{ "{:,.0f}".format(report.finance.balance) }}</span>
-            <span class="stat-label">مانده حساب (تومان)</span>
-        </div>
-        <div class="stat-item">
-            <span class="stat-value">{{ "{:,.0f}".format(report.finance.total_payments) }}</span>
-            <span class="stat-label">پرداختی‌ها</span>
-        </div>
-        <div class="stat-item">
-            <span class="stat-value">{{ "{:,.0f}".format(report.finance.total_charges) }}</span>
-            <span class="stat-label">هزینه‌ها</span>
-        </div>
-        <div class="stat-item">
-            <span class="stat-value">{{ "{:,.0f}".format(report.finance.total_discounts) }}</span>
-            <span class="stat-label">تخفیف‌ها</span>
-        </div>
+<div class="detail-card">
+    <div class="detail-header"><h3>وضعیت مالی</h3></div>
+    <div class="detail-row">
+        <span class="detail-row-label">مانده حساب (تومان)</span>
+        <span class="detail-row-value">{{ "{:,.0f}".format(report.finance.balance) }}</span>
+    </div>
+    <div class="detail-row">
+        <span class="detail-row-label">پرداختی‌ها</span>
+        <span class="detail-row-value">{{ "{:,.0f}".format(report.finance.total_payments) }}</span>
+    </div>
+    <div class="detail-row">
+        <span class="detail-row-label">هزینه‌ها</span>
+        <span class="detail-row-value">{{ "{:,.0f}".format(report.finance.total_charges) }}</span>
+    </div>
+    <div class="detail-row">
+        <span class="detail-row-label">تخفیف‌ها</span>
+        <span class="detail-row-value">{{ "{:,.0f}".format(report.finance.total_discounts) }}</span>
     </div>
 </div>
 
 {% if report.current_classes %}
-<div class="report-card">
-    <h2>کلاس‌های فعلی</h2>
-    <table class="report-table">
-        <thead>
-            <tr>
-                <th>عنوان کلاس</th>
-                <th>دوره</th>
-                <th>وضعیت</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for class in report.current_classes %}
-            <tr>
-                <td>{{ class.title }}</td>
-                <td>{{ class.course.title }}</td>
-                <td>{{ class.status }}</td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
+<div class="detail-card">
+    <div class="detail-header"><h3>کلاس‌های فعلی</h3></div>
+    <div class="table-container">
+        <div class="table-scroll">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>عنوان کلاس</th>
+                        <th>دوره</th>
+                        <th>وضعیت</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for class in report.current_classes %}
+                    <tr>
+                        <td>{{ class.title }}</td>
+                        <td>{{ class.course.title }}</td>
+                        <td>{{ status_badge(class.status) }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
 </div>
 {% endif %}
 {% endblock %}

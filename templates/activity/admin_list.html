@@ -1,58 +1,75 @@
 {% extends "base.html" %}
-{% block title %} مدیریت فعالیت‌ها {% endblock %}
+{% block title %}مدیریت فعالیت‌ها - آکادمی{% endblock %}
 {% block content %}
-<h1>مدیریت فعالیت‌ها</h1>
+{% from "macros/utils.html" import page_header, status_badge %}
+{{ page_header("مدیریت فعالیت‌ها", action_url=url_for('activity.admin_create_activity'), action_label="ایجاد فعالیت جدید") }}
 
-<div style="margin-bottom: 1rem;">
-    <a href="{{ url_for('activity.admin_create_activity') }}" class="btn btn-primary">ایجاد فعالیت جدید</a>
+<div class="filter-bar">
+    <form method="GET" class="filter-form">
+        <div class="form-group">
+            <label class="form-label" for="class_id">کلاس</label>
+            <select id="class_id" name="class_id" class="form-select" onchange="this.form.submit()">
+                <option value="">همه کلاس‌ها</option>
+                {% for c in classes %}
+                <option value="{{ c.id }}" {% if selected_class_id == c.id %}selected{% endif %}>{{ c.title }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="form-group">
+            <label class="form-label" for="course_id">دوره</label>
+            <select id="course_id" name="course_id" class="form-select" onchange="this.form.submit()">
+                <option value="">همه دوره‌ها</option>
+                {% for c in courses %}
+                <option value="{{ c.id }}" {% if selected_course_id == c.id %}selected{% endif %}>{{ c.title }}</option>
+                {% endfor %}
+            </select>
+        </div>
+    </form>
 </div>
 
-<form method="GET" style="margin-bottom: 1rem;">
-    <label>کلاس:</label>
-    <select name="class_id" onchange="this.form.submit()">
-        <option value="">همه کلاس‌ها</option>
-        {% for c in classes %}
-        <option value="{{ c.id }}" {% if selected_class_id == c.id %}selected{% endif %}>{{ c.title }}</option>
-        {% endfor %}
-    </select>
-
-    <label>دوره:</label>
-    <select name="course_id" onchange="this.form.submit()">
-        <option value="">همه دوره‌ها</option>
-        {% for c in courses %}
-        <option value="{{ c.id }}" {% if selected_course_id == c.id %}selected{% endif %}>{{ c.title }}</option>
-        {% endfor %}
-    </select>
-</form>
-
 {% if activities %}
-<table>
-    <thead>
-        <tr>
-            <th>عنوان</th>
-            <th>نوع</th>
-            <th>الزامی</th>
-            <th>مهلت</th>
-            <th>وضعیت</th>
-            <th>عملیات</th>
-        </tr>
-    </thead>
-    <tbody>
-        {% for a in activities %}
-        <tr>
-            <td><a href="{{ url_for('activity.admin_activity_detail', activity_id=a.id) }}">{{ a.title }}</a></td>
-            <td>{{ a.type }}</td>
-            <td>{% if a.requirement == 'REQUIRED' %}الزامی{% else %}اختیاری{% endif %}</td>
-            <td>{% if a.deadline %}{{ a.deadline.strftime('%Y-%m-%d %H:%M') }}{% else %}-{% endif %}</td>
-            <td>{% if a.is_active %}فعال{% else %}غیرفعال{% endif %}</td>
-            <td>
-                <a href="{{ url_for('activity.admin_edit_activity', activity_id=a.id) }}">ویرایش</a>
-            </td>
-        </tr>
-        {% endfor %}
-    </tbody>
-</table>
+<div class="table-container">
+    <div class="table-scroll">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>عنوان</th>
+                    <th>نوع</th>
+                    <th>الزامی</th>
+                    <th>مهلت</th>
+                    <th>وضعیت</th>
+                    <th>عملیات</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for a in activities %}
+                <tr>
+                    <td><a href="{{ url_for('activity.admin_activity_detail', activity_id=a.id) }}">{{ a.title }}</a></td>
+                    <td><span class="badge badge-secondary">{{ a.type }}</span></td>
+                    <td>{{ status_badge(a.requirement.value if a.requirement else 'OPTIONAL') }}</td>
+                    <td>{{ a.deadline.strftime('%Y-%m-%d %H:%M') if a.deadline else '—' }}</td>
+                    <td>
+                        {% if a.is_active %}
+                        <span class="badge badge-success">فعال</span>
+                        {% else %}
+                        <span class="badge badge-danger">غیرفعال</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <a href="{{ url_for('activity.admin_edit_activity', activity_id=a.id) }}" class="btn btn-sm btn-outline">ویرایش</a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
 {% else %}
-<p>فعالیتی یافت نشد.</p>
+<div class="empty-state">
+    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+    <h3>فعالیتی یافت نشد</h3>
+    <p>هنوز فعالیتی ایجاد نشده است.</p>
+    <a href="{{ url_for('activity.admin_create_activity') }}" class="btn btn-primary">ایجاد فعالیت</a>
+</div>
 {% endif %}
 {% endblock %}

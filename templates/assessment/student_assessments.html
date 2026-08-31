@@ -1,68 +1,96 @@
 {% extends "base.html" %}
-{% block title %}My Assessments{% endblock %}
+{% block title %}ارزیابی‌های من{% endblock %}
 {% block content %}
-<h1>My Assessments</h1>
+{% from "macros/utils.html" import page_header, stat_card %}
+{{ page_header("ارزیابی‌های من") }}
 
-<div class="card">
-    <p><strong>Total Assessments:</strong> {{ summary.total_assessments }}</p>
-    <p><strong>Graded:</strong> {{ summary.graded }}</p>
-    <p><strong>Passed:</strong> {{ summary.passed }}</p>
-    <p><strong>Failed:</strong> {{ summary.failed }}</p>
-    <p><strong>Absent:</strong> {{ summary.absent }}</p>
-    <p><strong>Average:</strong> {{ summary.average if summary.average is not None else '-' }}</p>
+<div class="dashboard-grid">
+    {{ stat_card("کل ارزیابی‌ها", summary.total_assessments, icon="class", color="primary") }}
+    {{ stat_card("نمره‌گذاری شده", summary.graded, icon="check", color="success") }}
+    {{ stat_card("قبول شده", summary.passed, icon="check", color="success") }}
+    {{ stat_card("مردود شده", summary.failed, icon="alert", color="danger") }}
+    {{ stat_card("غایب", summary.absent, icon="alert", color="warning") }}
+</div>
+
+<div class="detail-card" style="margin-top: 1rem;">
+    <div class="detail-row">
+        <span class="detail-row-label">میانگین نمرات</span>
+        <span class="detail-row-value">{{ summary.average if summary.average is not None else '—' }}</span>
+    </div>
 </div>
 
 <div style="margin: 1rem 0;">
-    <a href="{{ url_for('assessment.student_export_csv') }}" class="btn">Export My Results (CSV)</a>
+    <a href="{{ url_for('assessment.student_export_csv') }}" class="btn btn-sm btn-outline">خروجی نتایج من (CSV)</a>
 </div>
 
 {% if classes %}
-<h2>My Classes</h2>
-<table>
-    <thead>
-        <tr>
-            <th>Class</th>
-            <th>Actions</th>
-        </tr>
-    </thead>
-    <tbody>
-        {% for c in classes %}
-        <tr>
-            <td>{{ c.title }}</td>
-            <td><a href="{{ url_for('assessment.student_class_results', class_id=c.id) }}">View Results</a></td>
-        </tr>
-        {% endfor %}
-    </tbody>
-</table>
+<div class="page-header" style="margin-top: 2rem;">
+    <div class="page-header-content">
+        <h2>کلاس‌های من</h2>
+    </div>
+</div>
+
+<div class="table-container">
+    <div class="table-scroll">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>کلاس</th>
+                    <th>عملیات</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for c in classes %}
+                <tr>
+                    <td>{{ c.title }}</td>
+                    <td><a href="{{ url_for('assessment.student_class_results', class_id=c.id) }}" class="btn btn-sm btn-outline btn-primary">مشاهده نتایج</a></td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
 {% endif %}
 
 {% if summary.results %}
-<h2>All My Results</h2>
-<table>
-    <thead>
-        <tr>
-            <th>Assessment</th>
-            <th>Score</th>
-            <th>Max</th>
-            <th>%</th>
-            <th>Pass/Fail</th>
-            <th>Presence</th>
-        </tr>
-    </thead>
-    <tbody>
-        {% for r in summary.results %}
-        <tr>
-            <td><a href="{{ url_for('assessment.student_result_detail', result_id=r.id) }}">{{ r.assessment.title }}</a></td>
-            <td>{{ r.score if r.score is not None else '-' }}</td>
-            <td>{{ r.max_score }}</td>
-            <td>{{ r.percentage if r.percentage is not None else '-' }}</td>
-            <td>{{ r.pass_fail }}</td>
-            <td>{{ r.presence_status }}</td>
-        </tr>
-        {% endfor %}
-    </tbody>
-</table>
+<div class="page-header" style="margin-top: 2rem;">
+    <div class="page-header-content">
+        <h2>تمام نتایج من</h2>
+    </div>
+</div>
+
+<div class="table-container">
+    <div class="table-scroll">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>ارزیابی</th>
+                    <th>نمره</th>
+                    <th>حداکثر</th>
+                    <th>درصد</th>
+                    <th>قبول/مردود</th>
+                    <th>وضعیت حضور</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for r in summary.results %}
+                <tr>
+                    <td><a href="{{ url_for('assessment.student_result_detail', result_id=r.id) }}">{{ r.assessment.title }}</a></td>
+                    <td>{{ r.score if r.score is not None else '—' }}</td>
+                    <td>{{ r.max_score }}</td>
+                    <td>{{ r.percentage if r.percentage is not None else '—' }}</td>
+                    <td>{{ r.pass_fail }}</td>
+                    <td>{{ r.presence_status }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
 {% else %}
-<p>No assessment results yet.</p>
+<div class="empty-state">
+    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+    <h3>هنوز نتیجه ارزیابی‌ای ثبت نشده است</h3>
+</div>
 {% endif %}
 {% endblock %}

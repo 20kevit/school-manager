@@ -1,35 +1,53 @@
 {% extends "base.html" %}
-{% block title %}Edit Result{% endblock %}
+{% block title %}ویرایش نتیجه{% endblock %}
 {% block content %}
-<h1>Edit Result</h1>
+{% from "macros/utils.html" import page_header %}
+{{ page_header("ویرایش نتیجه") }}
 
-<div class="card">
-    <p><strong>Assessment:</strong> {{ assessment.title }}</p>
-    <p><strong>Student:</strong> {{ result.student.student_profile.first_name }} {{ result.student.student_profile.last_name }}</p>
-    <p><strong>Current Score:</strong> {{ result.score if result.score is not None else 'Not graded' }}</p>
+<div class="detail-card" style="margin-bottom: 1.5rem;">
+    <div class="detail-row">
+        <span class="detail-row-label">ارزیابی</span>
+        <span class="detail-row-value">{{ assessment.title }}</span>
+    </div>
+    <div class="detail-row">
+        <span class="detail-row-label">دانش‌آموز</span>
+        <span class="detail-row-value">{{ result.student.student_profile.first_name }} {{ result.student.student_profile.last_name }}</span>
+    </div>
+    <div class="detail-row">
+        <span class="detail-row-label">نمره فعلی</span>
+        <span class="detail-row-value">{{ result.score if result.score is not None else 'نمره‌گذاری نشده' }}</span>
+    </div>
 </div>
 
-<form method="POST">
-    <div class="form-group">
-        <label for="score">Score (out of {{ assessment.max_score }})</label>
-        <input type="number" name="score" id="score" value="{{ float(result.score) if result.score is not None else '' }}" min="0" max="{{ assessment.max_score }}" step="0.01">
-    </div>
+<div class="form-card">
+    <form method="POST">
+        <div class="form-grid">
+            <div class="form-group">
+                <label class="form-label" for="score">نمره (از {{ assessment.max_score }})</label>
+                <input type="number" name="score" id="score" class="form-input" value="{{ float(result.score) if result.score is not None else '' }}" min="0" max="{{ assessment.max_score }}" step="0.01">
+            </div>
 
-    <div class="form-group">
-        <label for="presence_status">Presence</label>
-        <select name="presence_status" id="presence_status">
-            {% for p in ['PRESENT', 'ABSENT', 'EXCUSED'] %}
-            <option value="{{ p }}" {% if result.presence_status == p %}selected{% endif %}>{{ p }}</option>
-            {% endfor %}
-        </select>
-    </div>
+            <div class="form-group">
+                <label class="form-label" for="presence_status">وضعیت حضور</label>
+                <select name="presence_status" id="presence_status" class="form-select">
+                    {% for p in ['PRESENT', 'ABSENT', 'EXCUSED'] %}
+                    <option value="{{ p }}" {% if result.presence_status == p %}selected{% endif %}>
+                        {% if p == 'PRESENT' %}حاضر{% elif p == 'ABSENT' %}غایب{% elif p == 'EXCUSED' %}معذور{% endif %}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
 
-    <div class="form-group">
-        <label for="comments">Comments</label>
-        <textarea name="comments" id="comments" rows="2">{{ result.comments }}</textarea>
-    </div>
+            <div class="form-group" style="grid-column: 1 / -1;">
+                <label class="form-label" for="comments">نظرات</label>
+                <textarea name="comments" id="comments" class="form-textarea" rows="2">{{ result.comments }}</textarea>
+            </div>
+        </div>
 
-    <button type="submit" class="btn">Save Changes</button>
-    <a href="{{ url_for('assessment.teacher_assessment_detail', assessment_id=assessment.id) }}">Cancel</a>
-</form>
+        <div class="form-actions">
+            <button type="submit" class="btn btn-primary">ذخیره تغییرات</button>
+            <a href="{{ url_for('assessment.teacher_assessment_detail', assessment_id=assessment.id) }}" class="btn btn-secondary">انصراف</a>
+        </div>
+    </form>
+</div>
 {% endblock %}

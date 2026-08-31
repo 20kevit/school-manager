@@ -1,51 +1,45 @@
 {% extends "base.html" %}
+{% from "macros/utils.html" import page_header, status_badge %}
 {% block title %}جلسه {{ session.session_number }}{% endblock %}
 {% block content %}
-<div class="page-header">
-    <h1>جلسه {{ session.session_number }} — {{ class_obj.title }}</h1>
+{{ page_header('جلسه ' ~ session.session_number ~ ' — ' ~ class_obj.title) }}
+
+<div class="page-header-actions" style="margin-bottom: 1.5rem;">
     <a href="{{ url_for('academy.session_list', class_id=class_obj.id) }}" class="btn btn-outline">بازگشت به لیست جلسات</a>
 </div>
 
-{% with messages = get_flashed_messages(with_categories=true) %}
-    {% if messages %}
-        {% for category, message in messages %}
-            <div class="alert alert-{{ category }}">{{ message }}</div>
-        {% endfor %}
-    {% endif %}
-{% endwith %}
-
 <div class="detail-card">
     <div class="detail-row">
-        <strong>شماره جلسه:</strong>
-        <span>{{ session.session_number }}</span>
+        <span class="detail-row-label">شماره جلسه:</span>
+        <span class="detail-row-value">{{ session.session_number }}</span>
     </div>
     <div class="detail-row">
-        <strong>تاریخ:</strong>
-        <span>{{ session.scheduled_date }}</span>
+        <span class="detail-row-label">تاریخ:</span>
+        <span class="detail-row-value">{{ session.scheduled_date }}</span>
     </div>
     <div class="detail-row">
-        <strong>ساعت شروع:</strong>
-        <span>{{ session.start_time.strftime('%H:%M') }}</span>
+        <span class="detail-row-label">ساعت شروع:</span>
+        <span class="detail-row-value">{{ session.start_time.strftime('%H:%M') }}</span>
     </div>
     <div class="detail-row">
-        <strong>ساعت پایان:</strong>
-        <span>{{ session.end_time.strftime('%H:%M') }}</span>
+        <span class="detail-row-label">ساعت پایان:</span>
+        <span class="detail-row-value">{{ session.end_time.strftime('%H:%M') }}</span>
     </div>
     <div class="detail-row">
-        <strong>عنوان:</strong>
-        <span>{{ session.title or '—' }}</span>
+        <span class="detail-row-label">عنوان:</span>
+        <span class="detail-row-value">{{ session.title or '—' }}</span>
     </div>
     <div class="detail-row">
-        <strong>توضیحات:</strong>
-        <span>{{ session.description or '—' }}</span>
+        <span class="detail-row-label">توضیحات:</span>
+        <span class="detail-row-value">{{ session.description or '—' }}</span>
     </div>
     <div class="detail-row">
-        <strong>وضعیت:</strong>
-        <span class="status-badge status-{{ session.status|lower }}">{{ session.status }}</span>
+        <span class="detail-row-label">وضعیت:</span>
+        <span class="detail-row-value">{{ status_badge(session.status) }}</span>
     </div>
     <div class="detail-row">
-        <strong>تغییر زمان:</strong>
-        <span>{{ 'بله' if session.is_rescheduled else 'خیر' }}</span>
+        <span class="detail-row-label">تغییر زمان:</span>
+        <span class="detail-row-value">{{ 'بله' if session.is_rescheduled else 'خیر' }}</span>
     </div>
 </div>
 
@@ -68,19 +62,19 @@
 </div>
 
 <div class="form-card">
-    <form method="POST" action="{{ url_for('academy.session_reschedule', session_id=session.id) }}" class="auth-form">
-        <div class="form-row">
+    <form method="POST" action="{{ url_for('academy.session_reschedule', session_id=session.id) }}">
+        <div class="form-grid">
             <div class="form-group">
-                <label for="new_date">تاریخ جدید</label>
-                <input type="date" id="new_date" name="new_date" required>
+                <label class="form-label" for="new_date">تاریخ جدید</label>
+                <input class="form-input" type="date" id="new_date" name="new_date" required>
             </div>
             <div class="form-group">
-                <label for="new_start_time">ساعت شروع جدید</label>
-                <input type="time" id="new_start_time" name="new_start_time" required>
+                <label class="form-label" for="new_start_time">ساعت شروع جدید</label>
+                <input class="form-input" type="time" id="new_start_time" name="new_start_time" required>
             </div>
             <div class="form-group">
-                <label for="new_end_time">ساعت پایان جدید</label>
-                <input type="time" id="new_end_time" name="new_end_time" required>
+                <label class="form-label" for="new_end_time">ساعت پایان جدید</label>
+                <input class="form-input" type="time" id="new_end_time" name="new_end_time" required>
             </div>
         </div>
         <button type="submit" class="btn btn-primary">ذخیره تغییرات</button>

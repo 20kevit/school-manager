@@ -1,23 +1,68 @@
 {% extends "base.html" %}
-{% block title %}Result Detail{% endblock %}
+{% block title %}جزئیات نتیجه{% endblock %}
 {% block content %}
-<h1>Result Detail</h1>
+{% from "macros/utils.html" import page_header, status_badge %}
+{{ page_header("جزئیات نتیجه") }}
 
-<div class="card">
-    <p><strong>Assessment:</strong> {{ assessment.title }}</p>
-    <p><strong>Type:</strong> {{ assessment.type }}</p>
-    <p><strong>Date:</strong> {{ assessment.scheduled_date or 'Not set' }}</p>
+<div class="detail-card">
+    <div class="detail-row">
+        <span class="detail-row-label">ارزیابی</span>
+        <span class="detail-row-value">{{ assessment.title }}</span>
+    </div>
+    <div class="detail-row">
+        <span class="detail-row-label">نوع</span>
+        <span class="detail-row-value">
+            {% if assessment.type == 'FINAL_EXAM' %}آزمون پایانی{% elif assessment.type == 'MIDTERM' %}آزمون میان‌ترم{% elif assessment.type == 'QUIZ' %}آزمون کلاسی{% elif assessment.type == 'PROJECT' %}پروژه{% elif assessment.type == 'PRACTICAL' %}عملی{% elif assessment.type == 'ORAL' %}شفاهی{% else %}سایر{% endif %}
+        </span>
+    </div>
+    <div class="detail-row">
+        <span class="detail-row-label">تاریخ</span>
+        <span class="detail-row-value">{{ assessment.scheduled_date or 'تعیین نشده' }}</span>
+    </div>
 </div>
 
-<div class="card">
-    <p><strong>Score:</strong> {{ result.score if result.score is not None else 'Not graded' }} / {{ result.max_score }}</p>
-    <p><strong>Percentage:</strong> {{ result.percentage ~ '%' if result.percentage is not None else '-' }}</p>
-    <p><strong>Pass/Fail:</strong> {{ result.pass_fail }}</p>
-    <p><strong>Presence:</strong> {{ result.presence_status }}</p>
+<div class="detail-card" style="margin-top: 1rem;">
+    <div class="detail-row">
+        <span class="detail-row-label">نمره</span>
+        <span class="detail-row-value">{{ (result.score if result.score is not None else 'نمره‌گذاری نشده') ~ ' / ' ~ result.max_score }}</span>
+    </div>
+    <div class="detail-row">
+        <span class="detail-row-label">درصد</span>
+        <span class="detail-row-value">{{ (result.percentage ~ '%') if result.percentage is not None else '—' }}</span>
+    </div>
+    <div class="detail-row">
+        <span class="detail-row-label">وضعیت قبولی</span>
+        <span class="detail-row-value">
+            {% if result.pass_fail == 'PASS' %}
+                {{ status_badge('PASS') }}
+            {% elif result.pass_fail == 'FAIL' %}
+                {{ status_badge('FAIL') }}
+            {% else %}
+                {{ result.pass_fail }}
+            {% endif %}
+        </span>
+    </div>
+    <div class="detail-row">
+        <span class="detail-row-label">وضعیت حضور</span>
+        <span class="detail-row-value">
+            {% if result.presence_status == 'PRESENT' %}
+                {{ status_badge('PRESENT') }}
+            {% elif result.presence_status == 'ABSENT' %}
+                {{ status_badge('ABSENT') }}
+            {% elif result.presence_status == 'EXCUSED' %}
+                {{ status_badge('EXCUSED') }}
+            {% else %}
+                {{ result.presence_status }}
+            {% endif %}
+        </span>
+    </div>
     {% if result.comments %}
-    <p><strong>Comments:</strong> {{ result.comments }}</p>
+    <div class="detail-row">
+        <span class="detail-row-label">نظرات</span>
+        <span class="detail-row-value">{{ result.comments }}</span>
+    </div>
     {% endif %}
 </div>
 
-<a href="{{ url_for('assessment.parent_child_results', student_id=student_id) }}">Back to results</a>
+<a href="{{ url_for('assessment.parent_child_results', student_id=student_id) }}" class="btn btn-secondary" style="margin-top: 1rem;">بازگشت به نتایج</a>
 {% endblock %}

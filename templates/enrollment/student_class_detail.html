@@ -1,96 +1,89 @@
 {% extends "base.html" %}
 {% block title %}جزئیات کلاس{% endblock %}
 {% block content %}
-<div class="page-header">
-    <h1>جزئیات کلاس</h1>
-</div>
-
-{% with messages = get_flashed_messages(with_categories=true) %}
-    {% if messages %}
-        {% for category, message in messages %}
-            <div class="alert alert-{{ category }}">{{ message }}</div>
-        {% endfor %}
-    {% endif %}
-{% endwith %}
+{% from "macros/utils.html" import page_header, status_badge %}
+{{ page_header("جزئیات کلاس") }}
 
 <div class="detail-card">
     <div class="detail-row">
-        <label>عنوان:</label>
-        <span>{{ academy_class.title }}</span>
+        <span class="detail-row-label">عنوان</span>
+        <span class="detail-row-value">{{ academy_class.title }}</span>
     </div>
     <div class="detail-row">
-        <label>درس:</label>
-        <span>{{ course.title }}</span>
+        <span class="detail-row-label">درس</span>
+        <span class="detail-row-value">{{ course.title }}</span>
     </div>
     {% if teacher %}
     <div class="detail-row">
-        <label>استاد:</label>
-        <span>{{ teacher.teacher_profile.first_name }} {{ teacher.teacher_profile.last_name }}</span>
+        <span class="detail-row-label">استاد</span>
+        <span class="detail-row-value">{{ teacher.teacher_profile.first_name }} {{ teacher.teacher_profile.last_name }}</span>
     </div>
     {% endif %}
     <div class="detail-row">
-        <label>تاریخ شروع:</label>
-        <span>{{ academy_class.start_date }}</span>
+        <span class="detail-row-label">تاریخ شروع</span>
+        <span class="detail-row-value">{{ academy_class.start_date }}</span>
     </div>
     {% if academy_class.end_date %}
     <div class="detail-row">
-        <label>تاریخ پایان:</label>
-        <span>{{ academy_class.end_date }}</span>
+        <span class="detail-row-label">تاریخ پایان</span>
+        <span class="detail-row-value">{{ academy_class.end_date }}</span>
     </div>
     {% endif %}
     <div class="detail-row">
-        <label>تعداد جلسات:</label>
-        <span>{{ academy_class.num_sessions }}</span>
+        <span class="detail-row-label">تعداد جلسات</span>
+        <span class="detail-row-value">{{ academy_class.num_sessions }}</span>
     </div>
     <div class="detail-row">
-        <label>ظرفیت باقیمانده:</label>
-        <span>{{ available_capacity }}</span>
+        <span class="detail-row-label">ظرفیت باقیمانده</span>
+        <span class="detail-row-value">{{ available_capacity }}</span>
     </div>
     <div class="detail-row">
-        <label>وضعیت:</label>
-        <span class="status-badge status-{{ academy_class.status|lower }}">{{ academy_class.status }}</span>
+        <span class="detail-row-label">وضعیت</span>
+        <span class="detail-row-value">{{ status_badge(academy_class.status) }}</span>
     </div>
 </div>
 
 {% if academy_class.schedule_entries %}
-<h3>برنامه هفتگی</h3>
+<h3 style="margin-top: var(--space-6);">برنامه هفتگی</h3>
 <div class="table-container">
-    <table class="data-table">
-        <thead>
-            <tr>
-                <th>روز هفته</th>
-                <th>ساعت شروع</th>
-                <th>ساعت پایان</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for schedule in academy_class.schedule_entries %}
-            <tr>
-                <td>{{ schedule.weekday }}</td>
-                <td>{{ schedule.start_time.strftime('%H:%M') }}</td>
-                <td>{{ schedule.end_time.strftime('%H:%M') }}</td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
+    <div class="table-scroll">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>روز هفته</th>
+                    <th>ساعت شروع</th>
+                    <th>ساعت پایان</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for schedule in academy_class.schedule_entries %}
+                <tr>
+                    <td>{{ schedule.weekday }}</td>
+                    <td>{{ schedule.start_time.strftime('%H:%M') }}</td>
+                    <td>{{ schedule.end_time.strftime('%H:%M') }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
 </div>
 {% endif %}
 
-<div class="action-buttons">
+<div class="action-links" style="margin-top: var(--space-6);">
     {% if existing_enrollment %}
         {% if existing_enrollment.status == 'PENDING' %}
-        <span class="btn btn-disabled">درخواست در انتظار تایید</span>
+        <span class="btn btn-secondary" disabled>درخواست در انتظار تایید</span>
         {% elif existing_enrollment.status == 'APPROVED' %}
-        <span class="btn btn-success">ثبت‌نام تایید شده</span>
+        <span class="btn btn-success" disabled>ثبت‌نام تایید شده</span>
         {% endif %}
     {% elif academy_class.status in ['PLANNED', 'ACTIVE'] and available_capacity > 0 %}
     <form method="POST" action="{{ url_for('enrollment.student_request_enrollment', class_id=academy_class.id) }}" style="display: inline;">
         <button type="submit" class="btn btn-primary">درخواست ثبت‌نام</button>
     </form>
     {% else %}
-    <span class="btn btn-disabled">ظرفیت تکمیل شده</span>
+    <span class="btn btn-secondary" disabled>ظرفیت تکمیل شده</span>
     {% endif %}
 </div>
 
-<a href="{{ url_for('enrollment.student_available_classes') }}" class="btn btn-outline">بازگشت به لیست کلاس‌ها</a>
+<a href="{{ url_for('enrollment.student_available_classes') }}" class="btn btn-secondary" style="margin-top: var(--space-4);">بازگشت به لیست کلاس‌ها</a>
 {% endblock %}

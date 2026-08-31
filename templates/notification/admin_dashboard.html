@@ -1,124 +1,166 @@
 {% extends "base.html" %}
+{% from "macros/utils.html" import page_header, status_badge %}
 {% block title %}مدیریت اعلان‌ها - پنل مدیریت{% endblock %}
 {% block content %}
-<h1>مدیریت اعلان‌ها</h1>
+{{ page_header("مدیریت اعلان‌ها") }}
 
-<div style="display:flex;gap:10px;margin:15px 0;">
-    <a href="{{ url_for('notification.admin_manual') }}" class="btn">ارسال دستی</a>
-    <a href="{{ url_for('notification.admin_announcement') }}" class="btn">ارسال اطلاع‌رسانی</a>
-    <a href="{{ url_for('notification.admin_templates') }}" class="btn">قالب‌ها</a>
+<div class="action-links">
+    <a href="{{ url_for('notification.admin_manual') }}" class="btn btn-primary">ارسال دستی</a>
+    <a href="{{ url_for('notification.admin_announcement') }}" class="btn btn-outline">ارسال اطلاع‌رسانی</a>
+    <a href="{{ url_for('notification.admin_templates') }}" class="btn btn-outline">قالب‌ها</a>
 </div>
 
-<h2>وضعیت ارائه‌دهندگان</h2>
-<table>
-    <thead>
-        <tr>
-            <th>ارائه‌دهنده</th>
-            <th>کانال</th>
-            <th>وضعیت</th>
-        </tr>
-    </thead>
-    <tbody>
-        {% for p in provider_health %}
-        <tr>
-            <td>{{ p.name }}</td>
-            <td>{{ p.channel }}</td>
-            <td>{{ "فعال" if p.available else "غیرفعال" }}</td>
-        </tr>
-        {% endfor %}
-    </tbody>
-</table>
+<h2 style="margin-top: 1.5rem;">وضعیت ارائه‌دهندگان</h2>
+<div class="table-container">
+    <div class="table-scroll">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>ارائه‌دهنده</th>
+                    <th>کانال</th>
+                    <th>وضعیت</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for p in provider_health %}
+                <tr>
+                    <td>{{ p.name }}</td>
+                    <td>{{ p.channel }}</td>
+                    <td>
+                        {% if p.available %}
+                        <span class="badge badge-success">فعال</span>
+                        {% else %}
+                        <span class="badge badge-danger">غیرفعال</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
 
-<h2>اعلان‌های ناموفق</h2>
+<h2 style="margin-top: 1.5rem;">اعلان‌های ناموفق</h2>
 {% if failed %}
-<table>
-    <thead>
-        <tr>
-            <th>شناسه</th>
-            <th>نوع</th>
-            <th>گیرنده</th>
-            <th>وضعیت</th>
-            <th>عملیات</th>
-        </tr>
-    </thead>
-    <tbody>
-        {% for n in failed %}
-        <tr>
-            <td>{{ n.id }}</td>
-            <td>{{ n.notification_type }}</td>
-            <td>{{ n.recipient_user_id }}</td>
-            <td>{{ n.status }}</td>
-            <td>
-                <a href="{{ url_for('notification.admin_detail', notification_id=n.id) }}">جزئیات</a>
-            </td>
-        </tr>
-        {% endfor %}
-    </tbody>
-</table>
+<div class="table-container">
+    <div class="table-scroll">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>شناسه</th>
+                    <th>نوع</th>
+                    <th>گیرنده</th>
+                    <th>وضعیت</th>
+                    <th>عملیات</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for n in failed %}
+                <tr>
+                    <td>{{ n.id }}</td>
+                    <td>{{ n.notification_type }}</td>
+                    <td>{{ n.recipient_user_id }}</td>
+                    <td>{{ status_badge(n.status) }}</td>
+                    <td>
+                        <a href="{{ url_for('notification.admin_detail', notification_id=n.id) }}" class="btn btn-sm btn-outline">جزئیات</a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
 {% else %}
-<p>اعلان ناموفقی وجود ندارد.</p>
+<div class="empty-state">
+    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 17H2a3 3 0 0 0 3-3V9a7 7 0 0 1 14 0v5a3 3 0 0 0 3 3zm-8.27 4a2 2 0 0 1-3.46 0"/></svg>
+    <h3>اعلان ناموفقی وجود ندارد</h3>
+</div>
 {% endif %}
 
-<h2>تاریخچه اعلان‌ها ({{ total }} مورد)</h2>
+<h2 style="margin-top: 1.5rem;">تاریخچه اعلان‌ها ({{ total }} مورد)</h2>
 
-<form method="get" style="margin:15px 0;">
-    <select name="status">
-        <option value="">همه وضعیت‌ها</option>
-        <option value="PENDING" {{ "selected" if selected_status == "PENDING" }}>در انتظار</option>
-        <option value="SENDING" {{ "selected" if selected_status == "SENDING" }}>در حال ارسال</option>
-        <option value="SENT" {{ "selected" if selected_status == "SENT" }}>ارسال شده</option>
-        <option value="FAILED" {{ "selected" if selected_status == "FAILED" }}>ناموفق</option>
-        <option value="CANCELLED" {{ "selected" if selected_status == "CANCELLED" }}>لغو شده</option>
-    </select>
-    <select name="type">
-        <option value="">همه انواع</option>
-        {% for t in ["ENROLLMENT_SUBMITTED","ENROLLMENT_APPROVED","ENROLLMENT_REJECTED","SESSION_CREATED","SESSION_CANCELLED","ACTIVITY_CREATED","ACTIVITY_GRADED","ASSESSMENT_CREATED","RESULT_PUBLISHED","TUITION_CHARGED","PAYMENT_RECEIVED","ANNOUNCEMENT"] %}
-        <option value="{{ t }}" {{ "selected" if selected_type == t }}>{{ t }}</option>
-        {% endfor %}
-    </select>
-    <button type="submit" class="btn">فیلتر</button>
-</form>
+<div class="filter-bar">
+    <form method="get" class="filter-form">
+        <div class="form-group">
+            <label for="status">وضعیت</label>
+            <select id="status" name="status" onchange="this.form.submit()">
+                <option value="">همه وضعیت‌ها</option>
+                <option value="PENDING" {{ "selected" if selected_status == "PENDING" }}>در انتظار</option>
+                <option value="SENDING" {{ "selected" if selected_status == "SENDING" }}>در حال ارسال</option>
+                <option value="SENT" {{ "selected" if selected_status == "SENT" }}>ارسال شده</option>
+                <option value="FAILED" {{ "selected" if selected_status == "FAILED" }}>ناموفق</option>
+                <option value="CANCELLED" {{ "selected" if selected_status == "CANCELLED" }}>لغو شده</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label for="type">نوع</label>
+            <select id="type" name="type" onchange="this.form.submit()">
+                <option value="">همه انواع</option>
+                {% for t in ["ENROLLMENT_SUBMITTED","ENROLLMENT_APPROVED","ENROLLMENT_REJECTED","SESSION_CREATED","SESSION_CANCELLED","ACTIVITY_CREATED","ACTIVITY_GRADED","ASSESSMENT_CREATED","RESULT_PUBLISHED","TUITION_CHARGED","PAYMENT_RECEIVED","ANNOUNCEMENT"] %}
+                <option value="{{ t }}" {{ "selected" if selected_type == t }}>{{ t }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <button type="submit" class="btn btn-sm btn-primary">فیلتر</button>
+    </form>
+</div>
 
-<table>
-    <thead>
-        <tr>
-            <th>شناسه</th>
-            <th>نوع</th>
-            <th>عنوان</th>
-            <th>گیرنده</th>
-            <th>اولویت</th>
-            <th>وضعیت</th>
-            <th>تاریخ ایجاد</th>
-            <th>عملیات</th>
-        </tr>
-    </thead>
-    <tbody>
-        {% for n in notifications %}
-        <tr>
-            <td>{{ n.id }}</td>
-            <td>{{ n.notification_type }}</td>
-            <td>{{ n.title }}</td>
-            <td>{{ n.recipient_user_id }}</td>
-            <td>{{ n.priority }}</td>
-            <td>{{ n.status }}</td>
-            <td>{{ n.created_at.strftime('%Y-%m-%d %H:%M') if n.created_at else '' }}</td>
-            <td>
-                <a href="{{ url_for('notification.admin_detail', notification_id=n.id) }}">جزئیات</a>
-            </td>
-        </tr>
-        {% endfor %}
-    </tbody>
-</table>
+{% if notifications %}
+<div class="table-container">
+    <div class="table-scroll">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>شناسه</th>
+                    <th>نوع</th>
+                    <th>عنوان</th>
+                    <th>گیرنده</th>
+                    <th>اولویت</th>
+                    <th>وضعیت</th>
+                    <th>تاریخ ایجاد</th>
+                    <th>عملیات</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for n in notifications %}
+                <tr>
+                    <td>{{ n.id }}</td>
+                    <td>{{ n.notification_type }}</td>
+                    <td>{{ n.title }}</td>
+                    <td>{{ n.recipient_user_id }}</td>
+                    <td>{{ n.priority }}</td>
+                    <td>{{ status_badge(n.status) }}</td>
+                    <td>{{ n.created_at.strftime('%Y-%m-%d %H:%M') if n.created_at else '' }}</td>
+                    <td>
+                        <a href="{{ url_for('notification.admin_detail', notification_id=n.id) }}" class="btn btn-sm btn-outline">جزئیات</a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
 
 {% if total_pages > 1 %}
-<div style="margin:15px 0;">
+<nav class="pagination" aria-label="صفحه‌بندی">
     {% if page > 1 %}
-    <a href="?page={{ page-1 }}&status={{ selected_status }}&type={{ selected_type }}">قبلی</a>
+    <a href="?page={{ page-1 }}&status={{ selected_status }}&type={{ selected_type }}" class="pagination-item" aria-label="صفحه قبل">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+    </a>
     {% endif %}
-    <span>صفحه {{ page }} از {{ total_pages }}</span>
+    <span class="pagination-item active" aria-current="page">{{ page }}</span>
+    <span class="pagination-ellipsis">از {{ total_pages }}</span>
     {% if page < total_pages %}
-    <a href="?page={{ page+1 }}&status={{ selected_status }}&type={{ selected_type }}">بعدی</a>
+    <a href="?page={{ page+1 }}&status={{ selected_status }}&type={{ selected_type }}" class="pagination-item" aria-label="صفحه بعد">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+    </a>
     {% endif %}
+</nav>
+{% endif %}
+{% else %}
+<div class="empty-state">
+    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><polyline points="13 2 13 9 20 9"/></svg>
+    <h3>اعلانی یافت نشد</h3>
 </div>
 {% endif %}
 {% endblock %}

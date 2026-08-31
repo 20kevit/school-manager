@@ -1,49 +1,42 @@
 {% extends "base.html" %}
 {% block title %}ثبت‌نام مستقیم دانش‌آموز{% endblock %}
 {% block content %}
-<div class="page-header">
-    <h1>ثبت‌نام مستقیم دانش‌آموز</h1>
+{% from "macros/utils.html" import page_header %}
+{{ page_header("ثبت‌نام مستقیم دانش‌آموز") }}
+
+<div class="form-card">
+    <form method="POST">
+        <div class="form-group">
+            <label class="form-label" for="student_user_id">دانش‌آموز</label>
+            <select id="student_user_id" name="student_user_id" class="form-select" required>
+                <option value="">انتخاب دانش‌آموز</option>
+                {% for student in students %}
+                <option value="{{ student.id }}">{{ student.student_profile.first_name }} {{ student.student_profile.last_name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label class="form-label" for="class_id">کلاس</label>
+            <select id="class_id" name="class_id" class="form-select" required>
+                <option value="">انتخاب کلاس</option>
+                {% for cls in classes %}
+                <option value="{{ cls.id }}">{{ cls.title }}</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label class="form-label">
+                <input type="checkbox" name="auto_approve" checked>
+                تایید خودکار
+            </label>
+        </div>
+
+        <div class="form-actions">
+            <button type="submit" class="btn btn-primary">ثبت‌نام</button>
+            <a href="{{ url_for('enrollment.admin_enrollment_list') }}" class="btn btn-secondary">لغو</a>
+        </div>
+    </form>
 </div>
-
-{% with messages = get_flashed_messages(with_categories=true) %}
-    {% if messages %}
-        {% for category, message in messages %}
-            <div class="alert alert-{{ category }}">{{ message }}</div>
-        {% endfor %}
-    {% endif %}
-{% endwith %}
-
-<form method="POST" class="form-container">
-    <div class="form-group">
-        <label for="student_user_id">دانش‌آموز</label>
-        <select id="student_user_id" name="student_user_id" required>
-            <option value="">انتخاب دانش‌آموز</option>
-            {% for student in students %}
-            <option value="{{ student.id }}">{{ student.student_profile.first_name }} {{ student.student_profile.last_name }}</option>
-            {% endfor %}
-        </select>
-    </div>
-
-    <div class="form-group">
-        <label for="class_id">کلاس</label>
-        <select id="class_id" name="class_id" required>
-            <option value="">انتخاب کلاس</option>
-            {% for cls in classes %}
-            <option value="{{ cls.id }}">{{ cls.title }}</option>
-            {% endfor %}
-        </select>
-    </div>
-
-    <div class="form-group">
-        <label>
-            <input type="checkbox" name="auto_approve" checked>
-            تایید خودکار
-        </label>
-    </div>
-
-    <div class="form-actions">
-        <button type="submit" class="btn btn-primary">ثبت‌نام</button>
-        <a href="{{ url_for('enrollment.admin_enrollment_list') }}" class="btn btn-outline">لغو</a>
-    </div>
-</form>
 {% endblock %}

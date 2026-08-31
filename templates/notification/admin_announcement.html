@@ -1,39 +1,44 @@
 {% extends "base.html" %}
+{% from "macros/utils.html" import page_header %}
 {% block title %}ارسال اطلاع‌رسانی{% endblock %}
 {% block content %}
-<h1>ارسال اطلاع‌رسانی</h1>
+{{ page_header("ارسال اطلاع‌رسانی") }}
 
-<form method="post">
-    <div>
-        <label for="title">عنوان:</label>
-        <input type="text" id="title" name="title" required>
-    </div>
-    <div>
-        <label for="message">پیام:</label>
-        <textarea id="message" name="message" rows="4" required></textarea>
-    </div>
-    <div>
-        <label>کانال‌ها:</label>
-        <div>
-            <label><input type="checkbox" name="channels" value="IN_APP"> درون‌برنامه‌ای</label>
-            <label><input type="checkbox" name="channels" value="SMS"> پیامک</label>
-            <label><input type="checkbox" name="channels" value="TELEGRAM"> تلگرام</label>
-            <label><input type="checkbox" name="channels" value="BALE"> بله</label>
-            <label><input type="checkbox" name="channels" value="EMAIL"> ایمیل</label>
+<div class="form-card">
+    <form method="post">
+        <div class="form-group">
+            <label for="title" class="form-label">عنوان:</label>
+            <input type="text" id="title" name="title" class="form-input" required>
         </div>
-    </div>
-    <div>
-        <label>گیرندگان:</label>
-        <div>
-            {% for user in users %}
-            <label>
-                <input type="checkbox" name="recipients" value="{{ user.id }}">
-                {{ user.login }}
-            </label>
-            {% endfor %}
+        <div class="form-group">
+            <label for="message" class="form-label">پیام:</label>
+            <textarea id="message" name="message" class="form-textarea" rows="4" required></textarea>
         </div>
-    </div>
-    <button type="submit" class="btn">ارسال</button>
-    <a href="{{ url_for('notification.admin_dashboard') }}">لغو</a>
-</form>
+        <div class="form-group">
+            <label class="form-label">کانال‌ها:</label>
+            <div class="form-grid">
+                <label class="form-checkbox-label"><input type="checkbox" name="channels" value="IN_APP"> درون‌برنامه‌ای</label>
+                <label class="form-checkbox-label"><input type="checkbox" name="channels" value="SMS"> پیامک</label>
+                <label class="form-checkbox-label"><input type="checkbox" name="channels" value="TELEGRAM"> تلگرام</label>
+                <label class="form-checkbox-label"><input type="checkbox" name="channels" value="BALE"> بله</label>
+                <label class="form-checkbox-label"><input type="checkbox" name="channels" value="EMAIL"> ایمیل</label>
+            </div>
+        </div>
+        <div class="form-group">
+            <label class="form-label">گیرندگان:</label>
+            <div class="form-grid">
+                {% for user in users %}
+                <label class="form-checkbox-label">
+                    <input type="checkbox" name="recipients" value="{{ user.id }}">
+                    {{ user.login }}
+                </label>
+                {% endfor %}
+            </div>
+        </div>
+        <div class="form-actions">
+            <button type="submit" class="btn btn-primary">ارسال</button>
+            <a href="{{ url_for('notification.admin_dashboard') }}" class="btn btn-secondary">لغو</a>
+        </div>
+    </form>
+</div>
 {% endblock %}

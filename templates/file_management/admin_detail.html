@@ -3,126 +3,115 @@
 {% block page_title %}جزئیات فایل{% endblock %}
 
 {% block page_content %}
-<div class="d-flex justify-content-between align-items-center mb-4">
-    <h4>جزئیات فایل</h4>
-    <a href="{{ url_for('file_management.admin_file_list') }}" class="btn btn-outline-secondary btn-sm">بازگشت به لیست</a>
-</div>
+{% from "macros/utils.html" import page_header, status_badge %}
 
-<div class="row">
-    <div class="col-md-8">
-        <div class="card">
-            <div class="card-body">
-                <table class="table table-borderless">
-                    <tr>
-                        <th style="width:150px">شناسه:</th>
-                        <td>{{ file_record.id }}</td>
-                    </tr>
-                    <tr>
-                        <th>نام اصلی فایل:</th>
-                        <td>{{ file_record.original_filename }}</td>
-                    </tr>
-                    <tr>
-                        <th>نام ذخیره شده:</th>
-                        <td><code>{{ file_record.stored_filename }}</code></td>
-                    </tr>
-                    <tr>
-                        <th>پسوند:</th>
-                        <td><code>{{ file_record.extension }}</code></td>
-                    </tr>
-                    <tr>
-                        <th>نوع MIME:</th>
-                        <td><code>{{ file_record.mime_type }}</code></td>
-                    </tr>
-                    <tr>
-                        <th>اندازه:</th>
-                        <td>
-                            {% if file_record.file_size < 1024 %}
-                                {{ file_record.file_size }} بایت
-                            {% elif file_record.file_size < 1048576 %}
-                                {{ "%.1f"|format(file_record.file_size / 1024) }} کیلوبایت
-                            {% else %}
-                                {{ "%.1f"|format(file_record.file_size / 1048576) }} مگابایت
-                            {% endif %}
-                        </td>
-                    </tr>
-                    <tr>
-                        <th>بک‌اند ذخیره‌سازی:</th>
-                        <td>{{ file_record.storage_backend }}</td>
-                    </tr>
-                    <tr>
-                        <th>وضعیت:</th>
-                        <td>
-                            {% if file_record.status == 'ACTIVE' %}
-                                <span class="badge bg-success">فعال</span>
-                            {% else %}
-                                <span class="badge bg-danger">حذف شده</span>
-                            {% endif %}
-                        </td>
-                    </tr>
-                    <tr>
-                        <th>نمایان‌بودن:</th>
-                        <td>
-                            {% if file_record.visibility == 'PUBLIC' %}
-                                <span class="badge bg-info">عمومی</span>
-                            {% else %}
-                                <span class="badge bg-warning">خصوصی</span>
-                            {% endif %}
-                        </td>
-                    </tr>
-                    <tr>
-                        <th>دسته‌بندی:</th>
-                        <td><span class="badge bg-secondary">{{ file_record.category }}</span></td>
-                    </tr>
-                    <tr>
-                        <th>آپلودکننده:</th>
-                        <td>{{ uploader.login if uploader else '-' }}</td>
-                    </tr>
-                    <tr>
-                        <th>نوع موجودیت:</th>
-                        <td>{{ file_record.entity_type or '-' }}</td>
-                    </tr>
-                    <tr>
-                        <th>شناسه موجودیت:</th>
-                        <td>{{ file_record.entity_id if file_record.entity_id else '-' }}</td>
-                    </tr>
-                    <tr>
-                        <th>تاریخ ایجاد:</th>
-                        <td>{{ file_record.created_at.strftime('%Y-%m-%d %H:%M:%S') if file_record.created_at else '-' }}</td>
-                    </tr>
-                    <tr>
-                        <th>آخرین بروزرسانی:</th>
-                        <td>{{ file_record.updated_at.strftime('%Y-%m-%d %H:%M:%S') if file_record.updated_at else '-' }}</td>
-                    </tr>
-                    <tr>
-                        <th>تاریخ حذف:</th>
-                        <td>{{ file_record.deleted_at.strftime('%Y-%m-%d %H:%M:%S') if file_record.deleted_at else '-' }}</td>
-                    </tr>
-                </table>
+{{ page_header("جزئیات فایل", action_url=url_for('file_management.admin_file_list'), action_label="بازگشت به لیست") }}
+
+<div class="dashboard-grid dashboard-grid-3">
+    <div style="grid-column: span 2;">
+        <div class="detail-card">
+            <div class="detail-row">
+                <span class="detail-row-label">شناسه</span>
+                <span class="detail-row-value">{{ file_record.id }}</span>
             </div>
+            <div class="detail-row">
+                <span class="detail-row-label">نام اصلی فایل</span>
+                <span class="detail-row-value">{{ file_record.original_filename }}</span>
+            </div>
+            <div class="detail-row">
+                <span class="detail-row-label">نام ذخیره شده</span>
+                <span class="detail-row-value"><code>{{ file_record.stored_filename }}</code></span>
+            </div>
+            <div class="detail-row">
+                <span class="detail-row-label">پسوند</span>
+                <span class="detail-row-value"><code>{{ file_record.extension }}</code></span>
+            </div>
+            <div class="detail-row">
+                <span class="detail-row-label">نوع MIME</span>
+                <span class="detail-row-value"><code>{{ file_record.mime_type }}</code></span>
+            </div>
+            <div class="detail-row">
+                <span class="detail-row-label">اندازه</span>
+                <span class="detail-row-value">
+                    {% if file_record.file_size < 1024 %}
+                        {{ file_record.file_size }} بایت
+                    {% elif file_record.file_size < 1048576 %}
+                        {{ "%.1f"|format(file_record.file_size / 1024) }} کیلوبایت
+                    {% else %}
+                        {{ "%.1f"|format(file_record.file_size / 1048576) }} مگابایت
+                    {% endif %}
+                </span>
+            </div>
+            <div class="detail-row">
+                <span class="detail-row-label">بک‌اند ذخیره‌سازی</span>
+                <span class="detail-row-value">{{ file_record.storage_backend }}</span>
+            </div>
+            <div class="detail-row">
+                <span class="detail-row-label">وضعیت</span>
+                <span class="detail-row-value">{{ status_badge(file_record.status) }}</span>
+            </div>
+            <div class="detail-row">
+                <span class="detail-row-label">نمایان‌بودن</span>
+                <span class="detail-row-value">
+                    {% if file_record.visibility == 'PUBLIC' %}
+                    <span class="badge badge-info">عمومی</span>
+                    {% else %}
+                    <span class="badge badge-warning">خصوصی</span>
+                    {% endif %}
+                </span>
+            </div>
+            <div class="detail-row">
+                <span class="detail-row-label">دسته‌بندی</span>
+                <span class="detail-row-value"><span class="badge badge-secondary">{{ file_record.category }}</span></span>
+            </div>
+            <div class="detail-row">
+                <span class="detail-row-label">آپلودکننده</span>
+                <span class="detail-row-value">{{ uploader.login if uploader else '—' }}</span>
+            </div>
+            <div class="detail-row">
+                <span class="detail-row-label">نوع موجودیت</span>
+                <span class="detail-row-value">{{ file_record.entity_type or '—' }}</span>
+            </div>
+            <div class="detail-row">
+                <span class="detail-row-label">شناسه موجودیت</span>
+                <span class="detail-row-value">{{ file_record.entity_id if file_record.entity_id else '—' }}</span>
+            </div>
+            <div class="detail-row">
+                <span class="detail-row-label">تاریخ ایجاد</span>
+                <span class="detail-row-value">{{ file_record.created_at.strftime('%Y-%m-%d %H:%M:%S') if file_record.created_at else '—' }}</span>
+            </div>
+            <div class="detail-row">
+                <span class="detail-row-label">آخرین بروزرسانی</span>
+                <span class="detail-row-value">{{ file_record.updated_at.strftime('%Y-%m-%d %H:%M:%S') if file_record.updated_at else '—' }}</span>
+            </div>
+            {% if file_record.deleted_at %}
+            <div class="detail-row">
+                <span class="detail-row-label">تاریخ حذف</span>
+                <span class="detail-row-value">{{ file_record.deleted_at.strftime('%Y-%m-%d %H:%M:%S') }}</span>
+            </div>
+            {% endif %}
         </div>
     </div>
 
-    <div class="col-md-4">
-        <div class="card mb-3">
+    <div>
+        <div class="card" style="margin-bottom: var(--space-4);">
+            <div class="card-header"><h3>عملیات</h3></div>
             <div class="card-body">
-                <h6>عملیات</h6>
                 {% if file_record.status == 'ACTIVE' %}
-                <a href="{{ url_for('file_management.download', file_id=file_record.id) }}" class="btn btn-success btn-sm w-100 mb-2">دانلود فایل</a>
-                <form method="POST" action="{{ url_for('file_management.admin_delete_file', file_id=file_record.id) }}" onsubmit="return confirm('آیا مطمئن هستید؟')">
-                    <button type="submit" class="btn btn-danger btn-sm w-100">حذف فایل</button>
+                <a href="{{ url_for('file_management.download', file_id=file_record.id) }}" class="btn btn-success btn-block" style="margin-bottom: var(--space-2);">دانلود فایل</a>
+                <form method="POST" action="{{ url_for('file_management.admin_delete_file', file_id=file_record.id) }}">
+                    <button type="submit" class="btn btn-danger btn-block" data-confirm="آیا از حذف این فایل اطمینان دارید؟">حذف فایل</button>
                 </form>
                 {% else %}
-                <p class="text-muted">فایل حذف شده است.</p>
+                <p class="text-muted text-sm">فایل حذف شده است.</p>
                 {% endif %}
             </div>
         </div>
 
         <div class="card">
+            <div class="card-header"><h3>اطلاعات فنی</h3></div>
             <div class="card-body">
-                <h6>اطلاعات فنی</h6>
-                <small class="text-muted">
-                    <div>کلید ذخیره: <code>{{ file_record.storage_key }}</code></div>
-                </small>
+                <p class="text-sm text-muted" style="margin-bottom: 0;">کلید ذخیره: <code>{{ file_record.storage_key }}</code></p>
             </div>
         </div>
     </div>

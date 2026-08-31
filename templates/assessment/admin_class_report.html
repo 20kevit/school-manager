@@ -1,49 +1,89 @@
 {% extends "base.html" %}
-{% block title %}Class Report - {{ summary.class.title }}{% endblock %}
+{% block title %}گزارش کلاس - {{ summary.class.title }}{% endblock %}
 {% block content %}
-<h1>Class Academic Report: {{ summary.class.title }}</h1>
+{% from "macros/utils.html" import page_header, stat_card %}
+{{ page_header("گزارش تحصیلی کلاس: " ~ summary.class.title) }}
 
-<div class="card">
-    <p><strong>Course:</strong> {{ summary.class.course.title }}</p>
-    <p><strong>Enrolled Students:</strong> {{ summary.enrolled_count }}</p>
-    <p><strong>Total Assessments:</strong> {{ summary.total_assessments }}</p>
-    <p><strong>Total Results:</strong> {{ summary.total_results }}</p>
-    <p><strong>Graded:</strong> {{ summary.graded }}</p>
-    <p><strong>Passed:</strong> {{ summary.passed }}</p>
-    <p><strong>Failed:</strong> {{ summary.failed }}</p>
-    <p><strong>Absent:</strong> {{ summary.absent }}</p>
-    <p><strong>Class Average:</strong> {{ summary.average if summary.average is not None else '-' }}</p>
-    <p><strong>Pass Rate:</strong> {{ summary.pass_rate ~ '%' if summary.pass_rate is not None else '-' }}</p>
+<div class="detail-card">
+    <div class="detail-row">
+        <span class="detail-row-label">دوره</span>
+        <span class="detail-row-value">{{ summary.class.course.title }}</span>
+    </div>
+    <div class="detail-row">
+        <span class="detail-row-label">دانش‌آموزان ثبت‌نام شده</span>
+        <span class="detail-row-value">{{ summary.enrolled_count }}</span>
+    </div>
+    <div class="detail-row">
+        <span class="detail-row-label">کل ارزیابی‌ها</span>
+        <span class="detail-row-value">{{ summary.total_assessments }}</span>
+    </div>
+    <div class="detail-row">
+        <span class="detail-row-label">کل نتایج</span>
+        <span class="detail-row-value">{{ summary.total_results }}</span>
+    </div>
+</div>
+
+<div class="dashboard-grid" style="margin-top: 1rem;">
+    {{ stat_card("نمره‌گذاری شده", summary.graded, icon="check", color="success") }}
+    {{ stat_card("قبول شده", summary.passed, icon="check", color="success") }}
+    {{ stat_card("مردود شده", summary.failed, icon="alert", color="danger") }}
+    {{ stat_card("غایب", summary.absent, icon="alert", color="warning") }}
+</div>
+
+<div class="detail-card" style="margin-top: 1rem;">
+    <div class="detail-row">
+        <span class="detail-row-label">میانگین کلاس</span>
+        <span class="detail-row-value">{{ summary.average if summary.average is not None else '—' }}</span>
+    </div>
+    <div class="detail-row">
+        <span class="detail-row-label">نرخ قبولی</span>
+        <span class="detail-row-value">{{ (summary.pass_rate ~ '%') if summary.pass_rate is not None else '—' }}</span>
+    </div>
 </div>
 
 {% if summary.assessments %}
-<h2>Assessments</h2>
-<table>
-    <thead>
-        <tr>
-            <th>Title</th>
-            <th>Type</th>
-            <th>Date</th>
-            <th>Status</th>
-            <th>Actions</th>
-        </tr>
-    </thead>
-    <tbody>
-        {% for a in summary.assessments %}
-        <tr>
-            <td>{{ a.title }}</td>
-            <td>{{ a.type }}</td>
-            <td>{{ a.scheduled_date or '-' }}</td>
-            <td>{{ a.status }}</td>
-            <td>
-                <a href="{{ url_for('assessment.admin_assessment_detail', assessment_id=a.id) }}">Detail</a>
-                <a href="{{ url_for('assessment.admin_assessment_report', assessment_id=a.id) }}">Report</a>
-            </td>
-        </tr>
-        {% endfor %}
-    </tbody>
-</table>
+<div class="page-header" style="margin-top: 2rem;">
+    <div class="page-header-content">
+        <h2>ارزیابی‌ها</h2>
+    </div>
+</div>
+
+<div class="table-container">
+    <div class="table-scroll">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>عنوان</th>
+                    <th>نوع</th>
+                    <th>تاریخ</th>
+                    <th>وضعیت</th>
+                    <th>عملیات</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for a in summary.assessments %}
+                <tr>
+                    <td>{{ a.title }}</td>
+                    <td>
+                        {% if a.type == 'FINAL_EXAM' %}آزمون پایانی{% elif a.type == 'MIDTERM' %}آزمون میان‌ترم{% elif a.type == 'QUIZ' %}آزمون کلاسی{% elif a.type == 'PROJECT' %}پروژه{% elif a.type == 'PRACTICAL' %}عملی{% elif a.type == 'ORAL' %}شفاهی{% else %}سایر{% endif %}
+                    </td>
+                    <td>{{ a.scheduled_date or '—' }}</td>
+                    <td>
+                        {% if a.status == 'DRAFT' %}پیش‌نویس{% elif a.status == 'SCHEDULED' %}برنامه‌ریزی شده{% elif a.status == 'OPEN' %}باز{% elif a.status == 'CLOSED' %}بسته شده{% elif a.status == 'GRADED' %}نمره‌گذاری شده{% elif a.status == 'CANCELLED' %}لغو شده{% else %}{{ a.status }}{% endif %}
+                    </td>
+                    <td>
+                        <div class="actions">
+                            <a href="{{ url_for('assessment.admin_assessment_detail', assessment_id=a.id) }}" class="btn btn-sm btn-ghost">جزئیات</a>
+                            <a href="{{ url_for('assessment.admin_assessment_report', assessment_id=a.id) }}" class="btn btn-sm btn-ghost">گزارش</a>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
 {% endif %}
 
-<a href="{{ url_for('assessment.admin_assessment_list') }}">Back to assessments</a>
+<a href="{{ url_for('assessment.admin_assessment_list') }}" class="btn btn-secondary" style="margin-top: 1rem;">بازگشت به ارزیابی‌ها</a>
 {% endblock %}

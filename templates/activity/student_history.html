@@ -1,36 +1,43 @@
 {% extends "base.html" %}
 {% block title %}تاریخچه ارسال‌ها{% endblock %}
 {% block content %}
-<h1>تاریخچه ارسال‌ها - {{ activity.title }}</h1>
+{% from "macros/utils.html" import page_header, status_badge %}
+{{ page_header("تاریخچه ارسال‌ها - " ~ activity.title) }}
 
 {% if history %}
-<table>
-    <thead>
-        <tr>
-            <th>نسخه</th>
-            <th>وضعیت</th>
-            <th>امتیاز</th>
-            <th>تاریخ ارسال</th>
-            <th>بازخورد</th>
-        </tr>
-    </thead>
-    <tbody>
-        {% for s in history %}
-        <tr>
-            <td>{{ s.version }}</td>
-            <td>{{ s.status }}</td>
-            <td>{% if s.score is not none %}{{ s.score }}{% else %}-{% endif %}</td>
-            <td>{% if s.submitted_at %}{{ s.submitted_at.strftime('%Y-%m-%d %H:%M') }}{% else %}-{% endif %}</td>
-            <td>{% if s.feedback %}{{ s.feedback[:50] }}{% if s.feedback|length > 50 %}...{% endif %}{% else %}-{% endif %}</td>
-        </tr>
-        {% endfor %}
-    </tbody>
-</table>
+<div class="table-container">
+    <div class="table-scroll">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>نسخه</th>
+                    <th>وضعیت</th>
+                    <th>امتیاز</th>
+                    <th>تاریخ ارسال</th>
+                    <th>بازخورد</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for s in history %}
+                <tr>
+                    <td>{{ s.version }}</td>
+                    <td>{{ status_badge(s.status) }}</td>
+                    <td>{% if s.score is not none %}{{ s.score }}{% else %}-{% endif %}</td>
+                    <td>{% if s.submitted_at %}{{ s.submitted_at.strftime('%Y-%m-%d %H:%M') }}{% else %}-{% endif %}</td>
+                    <td>{% if s.feedback %}{{ s.feedback[:50] }}{% if s.feedback|length > 50 %}...{% endif %}{% else %}-{% endif %}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
 {% else %}
-<p>ارسالی ثبت نشده است.</p>
+<div class="empty-state">
+    <h3>ارسالی ثبت نشده است.</h3>
+</div>
 {% endif %}
 
 <div>
-    <a href="{{ url_for('activity.student_activity_detail', activity_id=activity.id) }}">بازگشت</a>
+    <a href="{{ url_for('activity.student_activity_detail', activity_id=activity.id) }}" class="btn btn-secondary">بازگشت</a>
 </div>
 {% endblock %}

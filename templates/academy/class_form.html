@@ -1,62 +1,55 @@
 {% extends "base.html" %}
+{% from "macros/utils.html" import page_header %}
 {% block title %}{{ 'ویرایش کلاس' if class_obj else 'ایجاد کلاس جدید' }}{% endblock %}
 {% block content %}
-<div class="page-header">
-    <h1>{{ 'ویرایش کلاس' if class_obj else 'ایجاد کلاس جدید' }}</h1>
-</div>
-
-{% with messages = get_flashed_messages(with_categories=true) %}
-    {% if messages %}
-        {% for category, message in messages %}
-            <div class="alert alert-{{ category }}">{{ message }}</div>
-        {% endfor %}
-    {% endif %}
-{% endwith %}
+{{ page_header('ویرایش کلاس' if class_obj else 'ایجاد کلاس جدید') }}
 
 <div class="form-card">
-    <form method="POST" class="auth-form">
+    <form method="POST">
+        <div class="form-grid">
+            <div class="form-group">
+                <label class="form-label" for="title">عنوان کلاس</label>
+                <input class="form-input" type="text" id="title" name="title" value="{{ class_obj.title if class_obj else '' }}" required>
+            </div>
+
+            {% if not class_obj %}
+            <div class="form-group">
+                <label class="form-label" for="course_id">درس</label>
+                <select class="form-select" id="course_id" name="course_id" required>
+                    <option value="">انتخاب درس</option>
+                    {% for course in courses %}
+                    <option value="{{ course.id }}" {{ 'selected' if class_obj and class_obj.course_id == course.id }}>{{ course.title }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            {% endif %}
+        </div>
+
+        <div class="form-grid">
+            <div class="form-group">
+                <label class="form-label" for="start_date">تاریخ شروع</label>
+                <input class="form-input" type="date" id="start_date" name="start_date" value="{{ class_obj.start_date if class_obj else '' }}" required {% if class_obj %}readonly{% endif %}>
+            </div>
+            <div class="form-group">
+                <label class="form-label" for="end_date">تاریخ پایان (اختیاری)</label>
+                <input class="form-input" type="date" id="end_date" name="end_date" value="{{ class_obj.end_date if class_obj and class_obj.end_date else '' }}" {% if class_obj %}readonly{% endif %}>
+            </div>
+        </div>
+
+        <div class="form-grid">
+            <div class="form-group">
+                <label class="form-label" for="capacity">ظرفیت</label>
+                <input class="form-input" type="number" id="capacity" name="capacity" value="{{ class_obj.capacity if class_obj else 30 }}" min="1">
+            </div>
+            <div class="form-group">
+                <label class="form-label" for="num_sessions">تعداد جلسات</label>
+                <input class="form-input" type="number" id="num_sessions" name="num_sessions" value="{{ class_obj.num_sessions if class_obj else '' }}" min="1" {% if class_obj %}readonly{% endif %}>
+            </div>
+        </div>
+
         <div class="form-group">
-            <label for="title">عنوان کلاس</label>
-            <input type="text" id="title" name="title" value="{{ class_obj.title if class_obj else '' }}" required>
-        </div>
-
-        {% if not class_obj %}
-        <div class="form-group">
-            <label for="course_id">درس</label>
-            <select id="course_id" name="course_id" required>
-                <option value="">انتخاب درس</option>
-                {% for course in courses %}
-                <option value="{{ course.id }}" {{ 'selected' if class_obj and class_obj.course_id == course.id }}>{{ course.title }}</option>
-                {% endfor %}
-            </select>
-        </div>
-        {% endif %}
-
-        <div class="form-row">
-            <div class="form-group">
-                <label for="start_date">تاریخ شروع</label>
-                <input type="date" id="start_date" name="start_date" value="{{ class_obj.start_date if class_obj else '' }}" required {% if class_obj %}readonly{% endif %}>
-            </div>
-            <div class="form-group">
-                <label for="end_date">تاریخ پایان (اختیاری)</label>
-                <input type="date" id="end_date" name="end_date" value="{{ class_obj.end_date if class_obj and class_obj.end_date else '' }}" {% if class_obj %}readonly{% endif %}>
-            </div>
-        </div>
-
-        <div class="form-row">
-            <div class="form-group">
-                <label for="capacity">ظرفیت</label>
-                <input type="number" id="capacity" name="capacity" value="{{ class_obj.capacity if class_obj else 30 }}" min="1">
-            </div>
-            <div class="form-group">
-                <label for="num_sessions">تعداد جلسات</label>
-                <input type="number" id="num_sessions" name="num_sessions" value="{{ class_obj.num_sessions if class_obj else '' }}" min="1" {% if class_obj %}readonly{% endif %}>
-            </div>
-        </div>
-
-        <div class="form-group">
-            <label for="teacher_user_id">معلم</label>
-            <select id="teacher_user_id" name="teacher_user_id">
+            <label class="form-label" for="teacher_user_id">معلم</label>
+            <select class="form-select" id="teacher_user_id" name="teacher_user_id">
                 <option value="">بدون معلم</option>
                 {% for teacher in teachers %}
                 <option value="{{ teacher.id }}" {{ 'selected' if class_obj and class_obj.teacher_user_id == teacher.id }}>{{ teacher.teacher_profile.first_name }} {{ teacher.teacher_profile.last_name }}</option>
@@ -66,8 +59,8 @@
 
         {% if class_obj %}
         <div class="form-group">
-            <label for="status">وضعیت</label>
-            <select id="status" name="status">
+            <label class="form-label" for="status">وضعیت</label>
+            <select class="form-select" id="status" name="status">
                 {% for status in ['PLANNED', 'ACTIVE', 'COMPLETED', 'CANCELLED'] %}
                 <option value="{{ status }}" {{ 'selected' if class_obj.status == status }}>{{ status }}</option>
                 {% endfor %}
@@ -80,10 +73,10 @@
             <h3>برنامه هفتگی</h3>
         </div>
         <div id="schedule-entries">
-            <div class="schedule-entry form-row">
+            <div class="schedule-entry form-grid">
                 <div class="form-group">
-                    <label>روز هفته</label>
-                    <select name="schedule_weekday_0" required>
+                    <label class="form-label">روز هفته</label>
+                    <select class="form-select" name="schedule_weekday_0" required>
                         <option value="SATURDAY">شنبه</option>
                         <option value="SUNDAY">یکشنبه</option>
                         <option value="MONDAY">دوشنبه</option>
@@ -94,12 +87,12 @@
                     </select>
                 </div>
                 <div class="form-group">
-                    <label>ساعت شروع</label>
-                    <input type="time" name="schedule_start_0" required>
+                    <label class="form-label">ساعت شروع</label>
+                    <input class="form-input" type="time" name="schedule_start_0" required>
                 </div>
                 <div class="form-group">
-                    <label>ساعت پایان</label>
-                    <input type="time" name="schedule_end_0" required>
+                    <label class="form-label">ساعت پایان</label>
+                    <input class="form-input" type="time" name="schedule_end_0" required>
                 </div>
                 <button type="button" class="btn btn-sm btn-danger" onclick="removeScheduleEntry(this)">حذف</button>
             </div>
@@ -131,23 +124,23 @@ const weekdayNames = ['شنبه', 'یکشنبه', 'دوشنبه', 'سه‌شنب
 function addScheduleEntry() {
     const container = document.getElementById('schedule-entries');
     const div = document.createElement('div');
-    div.className = 'schedule-entry form-row';
+    div.className = 'schedule-entry form-grid';
     let options = '';
     weekdays.forEach((w, i) => {
         options += `<option value="${w}">${weekdayNames[i]}</option>`;
     });
     div.innerHTML = `
         <div class="form-group">
-            <label>روز هفته</label>
-            <select name="schedule_weekday_${scheduleCount}" required>${options}</select>
+            <label class="form-label">روز هفته</label>
+            <select class="form-select" name="schedule_weekday_${scheduleCount}" required>${options}</select>
         </div>
         <div class="form-group">
-            <label>ساعت شروع</label>
-            <input type="time" name="schedule_start_${scheduleCount}" required>
+            <label class="form-label">ساعت شروع</label>
+            <input class="form-input" type="time" name="schedule_start_${scheduleCount}" required>
         </div>
         <div class="form-group">
-            <label>ساعت پایان</label>
-            <input type="time" name="schedule_end_${scheduleCount}" required>
+            <label class="form-label">ساعت پایان</label>
+            <input class="form-input" type="time" name="schedule_end_${scheduleCount}" required>
         </div>
         <button type="button" class="btn btn-sm btn-danger" onclick="removeScheduleEntry(this)">حذف</button>
     `;
@@ -164,19 +157,19 @@ function addContentEntry() {
     const div = document.createElement('div');
     div.className = 'content-entry form-card';
     div.innerHTML = `
-        <div class="form-row">
+        <div class="form-grid">
             <div class="form-group">
-                <label>شماره جلسه</label>
-                <input type="number" name="content_session_${contentCount}" min="1" required>
+                <label class="form-label">شماره جلسه</label>
+                <input class="form-input" type="number" name="content_session_${contentCount}" min="1" required>
             </div>
             <div class="form-group" style="flex: 2;">
-                <label>عنوان</label>
-                <input type="text" name="content_title_${contentCount}" required>
+                <label class="form-label">عنوان</label>
+                <input class="form-input" type="text" name="content_title_${contentCount}" required>
             </div>
         </div>
         <div class="form-group">
-            <label>توضیحات</label>
-            <textarea name="content_description_${contentCount}" rows="2"></textarea>
+            <label class="form-label">توضیحات</label>
+            <textarea class="form-textarea" name="content_description_${contentCount}" rows="2"></textarea>
         </div>
         <button type="button" class="btn btn-sm btn-danger" onclick="this.closest('.content-entry').remove()">حذف</button>
     `;

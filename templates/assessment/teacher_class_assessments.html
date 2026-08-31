@@ -1,39 +1,51 @@
 {% extends "base.html" %}
-{% block title %}Assessments - {{ academy_class.title }}{% endblock %}
+{% block title %}ارزیابی‌ها - {{ academy_class.title }}{% endblock %}
 {% block content %}
-<h1>Assessments: {{ academy_class.title }}</h1>
+{% from "macros/utils.html" import page_header, status_badge %}
+{{ page_header("ارزیابی‌ها: " ~ academy_class.title) }}
 
 {% if assessments %}
-<table>
-    <thead>
-        <tr>
-            <th>Title</th>
-            <th>Type</th>
-            <th>Date</th>
-            <th>Max Score</th>
-            <th>Status</th>
-            <th>Actions</th>
-        </tr>
-    </thead>
-    <tbody>
-        {% for a in assessments %}
-        <tr>
-            <td><a href="{{ url_for('assessment.teacher_assessment_detail', assessment_id=a.id) }}">{{ a.title }}</a></td>
-            <td>{{ a.type }}</td>
-            <td>{{ a.scheduled_date or '-' }}</td>
-            <td>{{ a.max_score }}</td>
-            <td>{{ a.status }}</td>
-            <td>
-                <a href="{{ url_for('assessment.teacher_grade_assessment', assessment_id=a.id) }}">Grade</a>
-                <a href="{{ url_for('assessment.teacher_history', assessment_id=a.id) }}">History</a>
-            </td>
-        </tr>
-        {% endfor %}
-    </tbody>
-</table>
+<div class="table-container">
+    <div class="table-scroll">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>عنوان</th>
+                    <th>نوع</th>
+                    <th>تاریخ</th>
+                    <th>حداکثر نمره</th>
+                    <th>وضعیت</th>
+                    <th>عملیات</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for a in assessments %}
+                <tr>
+                    <td><a href="{{ url_for('assessment.teacher_assessment_detail', assessment_id=a.id) }}">{{ a.title }}</a></td>
+                    <td>
+                        {% if a.type == 'FINAL_EXAM' %}آزمون پایانی{% elif a.type == 'MIDTERM' %}آزمون میان‌ترم{% elif a.type == 'QUIZ' %}آزمون کلاسی{% elif a.type == 'PROJECT' %}پروژه{% elif a.type == 'PRACTICAL' %}عملی{% elif a.type == 'ORAL' %}شفاهی{% else %}سایر{% endif %}
+                    </td>
+                    <td>{{ a.scheduled_date or '—' }}</td>
+                    <td>{{ a.max_score }}</td>
+                    <td>{{ status_badge(a.status) }}</td>
+                    <td>
+                        <div class="actions">
+                            <a href="{{ url_for('assessment.teacher_grade_assessment', assessment_id=a.id) }}" class="btn btn-sm btn-outline btn-success">نمره‌گذاری</a>
+                            <a href="{{ url_for('assessment.teacher_history', assessment_id=a.id) }}" class="btn btn-sm btn-ghost">تاریخچه</a>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
 {% else %}
-<p>No assessments for this class.</p>
+<div class="empty-state">
+    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+    <h3>هنوز ارزیابی‌ای برای این کلاس ثبت نشده است</h3>
+</div>
 {% endif %}
 
-<a href="{{ url_for('assessment.teacher_my_classes') }}">Back to classes</a>
+<a href="{{ url_for('assessment.teacher_my_classes') }}" class="btn btn-secondary" style="margin-top: 1rem;">بازگشت به کلاس‌ها</a>
 {% endblock %}

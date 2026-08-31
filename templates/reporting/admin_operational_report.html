@@ -1,6 +1,6 @@
 {% extends "reporting/base_report.html" %}
 
-{% block title %}گزارش عملیاتی - Academy{% endblock %}
+{% block title %}گزارش عملیاتی - آکادمی{% endblock %}
 
 {% block report_title %}گزارش عملیاتی{% endblock %}
 
@@ -9,57 +9,59 @@
 {% endblock %}
 
 {% block report_content %}
-<div class="report-card">
-    <h2>کلاس‌های امروز</h2>
+<div class="detail-card">
+    <div class="detail-header"><h3>کلاس‌های امروز</h3></div>
     {% if report.today_classes %}
-    <table class="report-table">
-        <thead>
-            <tr>
-                <th>عنوان کلاس</th>
-                <th>دوره</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for class in report.today_classes %}
-            <tr>
-                <td>
-                    <a href="{{ url_for('reporting.admin_class_report', class_id=class.id) }}">
-                        {{ class.title }}
-                    </a>
-                </td>
-                <td>{{ class.course }}</td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
+    <div class="table-container">
+        <div class="table-scroll">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>عنوان کلاس</th>
+                        <th>دوره</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for class in report.today_classes %}
+                    <tr>
+                        <td>
+                            <a href="{{ url_for('reporting.admin_class_report', class_id=class.id) }}">
+                                {{ class.title }}
+                            </a>
+                        </td>
+                        <td>{{ class.course }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
     {% else %}
-    <p>کلاسی برای امروز برنامه‌ریزی نشده است.</p>
+    {{ empty_state("کلاسی برنامه‌ریزی نشده", "کلاسی برای امروز برنامه‌ریزی نشده است.") }}
     {% endif %}
 </div>
 
-<div class="report-card">
-    <h2>آمار عملیاتی</h2>
-    <div class="report-stats">
-        <div class="stat-item">
-            <span class="stat-value">{{ report.upcoming_sessions }}</span>
-            <span class="stat-label">جلسات آینده (۷ روز)</span>
-        </div>
-        <div class="stat-item">
-            <span class="stat-value">{{ report.pending_enrollments }}</span>
-            <span class="stat-label">درخواست‌های ثبت‌نام در انتظار</span>
-        </div>
-        <div class="stat-item">
-            <span class="stat-value">{{ report.sessions_without_attendance }}</span>
-            <span class="stat-label">جلسات بدون حضور و غیاب</span>
-        </div>
-        <div class="stat-item">
-            <span class="stat-value">{{ report.failed_notifications }}</span>
-            <span class="stat-label">اعلانات ناموفق</span>
-        </div>
-        <div class="stat-item">
-            <span class="stat-value">{{ report.unpaid_balances }}</span>
-            <span class="stat-label">بدهکاران</span>
-        </div>
+<div class="detail-card">
+    <div class="detail-header"><h3>آمار عملیاتی</h3></div>
+    <div class="detail-row">
+        <span class="detail-row-label">جلسات آینده (۷ روز)</span>
+        <span class="detail-row-value">{{ report.upcoming_sessions }}</span>
+    </div>
+    <div class="detail-row">
+        <span class="detail-row-label">درخواست‌های ثبت‌نام در انتظار</span>
+        <span class="detail-row-value">{{ report.pending_enrollments }}</span>
+    </div>
+    <div class="detail-row">
+        <span class="detail-row-label">جلسات بدون حضور و غیاب</span>
+        <span class="detail-row-value">{{ report.sessions_without_attendance }}</span>
+    </div>
+    <div class="detail-row">
+        <span class="detail-row-label">اعلانات ناموفق</span>
+        <span class="detail-row-value">{{ report.failed_notifications }}</span>
+    </div>
+    <div class="detail-row">
+        <span class="detail-row-label">بدهکاران</span>
+        <span class="detail-row-value">{{ report.unpaid_balances }}</span>
     </div>
 </div>
 

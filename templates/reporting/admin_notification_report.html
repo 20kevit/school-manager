@@ -1,6 +1,6 @@
 {% extends "reporting/base_report.html" %}
 
-{% block title %}گزارش اعلانات - Academy{% endblock %}
+{% block title %}گزارش اعلانات - آکادمی{% endblock %}
 
 {% block report_title %}گزارش اعلانات{% endblock %}
 
@@ -9,55 +9,57 @@
 {% endblock %}
 
 {% block report_content %}
-<div class="report-card">
-    <h2>آمار کلی اعلانات</h2>
-    <div class="report-stats">
-        <div class="stat-item">
-            <span class="stat-value">{{ report.total }}</span>
-            <span class="stat-label">کل اعلانات</span>
-        </div>
-        <div class="stat-item">
-            <span class="stat-value">{{ report.sent }}</span>
-            <span class="stat-label">ارسال شده</span>
-        </div>
-        <div class="stat-item">
-            <span class="stat-value">{{ report.failed }}</span>
-            <span class="stat-label">ناموفق</span>
-        </div>
-        <div class="stat-item">
-            <span class="stat-value">{{ report.pending }}</span>
-            <span class="stat-label">در انتظار ارسال</span>
-        </div>
-        <div class="stat-item">
-            <span class="stat-value">{{ report.success_rate }}%</span>
-            <span class="stat-label">نرخ موفقیت</span>
-        </div>
+<div class="detail-card">
+    <div class="detail-header"><h3>آمار کلی اعلانات</h3></div>
+    <div class="detail-row">
+        <span class="detail-row-label">کل اعلانات</span>
+        <span class="detail-row-value">{{ report.total }}</span>
+    </div>
+    <div class="detail-row">
+        <span class="detail-row-label">ارسال شده</span>
+        <span class="detail-row-value">{{ report.sent }}</span>
+    </div>
+    <div class="detail-row">
+        <span class="detail-row-label">ناموفق</span>
+        <span class="detail-row-value">{{ report.failed }}</span>
+    </div>
+    <div class="detail-row">
+        <span class="detail-row-label">در انتظار ارسال</span>
+        <span class="detail-row-value">{{ report.pending }}</span>
+    </div>
+    <div class="detail-row">
+        <span class="detail-row-label">نرخ موفقیت</span>
+        <span class="detail-row-value">{{ report.success_rate }}%</span>
     </div>
 </div>
 
 {% if report.channels %}
-<div class="report-card">
-    <h2>آمار بر اساس کانال</h2>
-    <table class="report-table">
-        <thead>
-            <tr>
-                <th>کانال</th>
-                <th>کل</th>
-                <th>تحویل شده</th>
-                <th>نرخ موفقیت</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for channel in report.channels %}
-            <tr>
-                <td>{{ channel.channel }}</td>
-                <td>{{ channel.total }}</td>
-                <td>{{ channel.delivered }}</td>
-                <td>{{ channel.success_rate }}%</td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
+<div class="detail-card">
+    <div class="detail-header"><h3>آمار بر اساس کانال</h3></div>
+    <div class="table-container">
+        <div class="table-scroll">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>کانال</th>
+                        <th>کل</th>
+                        <th>تحویل شده</th>
+                        <th>نرخ موفقیت</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for channel in report.channels %}
+                    <tr>
+                        <td>{{ channel.channel }}</td>
+                        <td>{{ channel.total }}</td>
+                        <td>{{ channel.delivered }}</td>
+                        <td>{{ channel.success_rate }}%</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
 </div>
 {% endif %}
 {% endblock %}

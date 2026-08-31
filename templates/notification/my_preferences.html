@@ -1,21 +1,39 @@
 {% extends "base.html" %}
+{% from "macros/utils.html" import page_header %}
 {% block title %}تنظیمات اعلان{% endblock %}
 {% block content %}
-<h1>تنظیمات اعلان</h1>
-<form method="post">
-<table>
-    <thead><tr><th>نوع اعلان</th><th>SMS</th><th>تلگرام</th><th>بله</th><th>ایمیل</th></tr></thead>
-    <tbody>
-    {% for ntype in ["ENROLLMENT_SUBMITTED","ENROLLMENT_APPROVED","ENROLLMENT_REJECTED","SESSION_CREATED","SESSION_RESCHEDULED","SESSION_CANCELLED","SESSION_REMINDER","ACTIVITY_CREATED","ACTIVITY_DUE_SOON","ACTIVITY_GRADED","ASSESSMENT_CREATED","ASSESSMENT_RESCHEDULED","ASSESSMENT_CANCELLED","RESULT_PUBLISHED","TUITION_CHARGED","PAYMENT_RECEIVED","REFUND_ISSUED","BALANCE_CHANGED","ANNOUNCEMENT"] %}
-    <tr>
-        <td>{{ ntype }}</td>
-        {% for ch in ["SMS","TELEGRAM","BALE","EMAIL"] %}
-        <td><input type="checkbox" name="{{ ntype }}_{{ ch }}" {% if matrix.get(ntype, {}).get(ch, true) %}checked{% endif %}></td>
-        {% endfor %}
-    </tr>
-    {% endfor %}
-    </tbody>
-</table>
-<button type="submit" class="btn">ذخیره</button>
-</form>
+{{ page_header("تنظیمات اعلان") }}
+
+<div class="form-card">
+    <form method="post">
+        <div class="table-container">
+            <div class="table-scroll">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>نوع اعلان</th>
+                            <th>SMS</th>
+                            <th>تلگرام</th>
+                            <th>بله</th>
+                            <th>ایمیل</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for ntype in ["ENROLLMENT_SUBMITTED","ENROLLMENT_APPROVED","ENROLLMENT_REJECTED","SESSION_CREATED","SESSION_RESCHEDULED","SESSION_CANCELLED","SESSION_REMINDER","ACTIVITY_CREATED","ACTIVITY_DUE_SOON","ACTIVITY_GRADED","ASSESSMENT_CREATED","ASSESSMENT_RESCHEDULED","ASSESSMENT_CANCELLED","RESULT_PUBLISHED","TUITION_CHARGED","PAYMENT_RECEIVED","REFUND_ISSUED","BALANCE_CHANGED","ANNOUNCEMENT"] %}
+                        <tr>
+                            <td>{{ ntype }}</td>
+                            {% for ch in ["SMS","TELEGRAM","BALE","EMAIL"] %}
+                            <td><input type="checkbox" name="{{ ntype }}_{{ ch }}" {% if matrix.get(ntype, {}).get(ch, true) %}checked{% endif %}></td>
+                            {% endfor %}
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        <div class="form-actions">
+            <button type="submit" class="btn btn-primary">ذخیره</button>
+        </div>
+    </form>
+</div>
 {% endblock %}

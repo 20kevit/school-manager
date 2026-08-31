@@ -1,35 +1,60 @@
 {% extends "base.html" %}
 {% block title %}{{ activity.title }}{% endblock %}
 {% block content %}
-<h1>{{ activity.title }}</h1>
+{% from "macros/utils.html" import page_header, status_badge %}
+{{ page_header(activity.title) }}
 
-<div>
-    <p><strong>نوع:</strong> {{ activity.type }}</p>
-    <p><strong>الزامی/اختیاری:</strong> {% if activity.requirement == 'REQUIRED' %}الزامی{% else %}اختیاری{% endif %}</p>
-    <p><strong>حداکثر امتیاز:</strong> {{ activity.max_score }}</p>
-    {% if activity.deadline %}
-    <p><strong>مهلت:</strong> {{ activity.deadline.strftime('%Y-%m-%d %H:%M') }}</p>
-    {% else %}
-    <p><strong>مهلت:</strong> ندارد</p>
-    {% endif %}
+<div class="detail-card">
+    <div class="detail-row">
+        <strong>نوع:</strong>
+        <span>{{ status_badge(activity.type) }}</span>
+    </div>
+    <div class="detail-row">
+        <strong>الزامی/اختیاری:</strong>
+        <span>{{ status_badge(activity.requirement) }}</span>
+    </div>
+    <div class="detail-row">
+        <strong>حداکثر امتیاز:</strong>
+        <span>{{ activity.max_score }}</span>
+    </div>
+    <div class="detail-row">
+        <strong>مهلت:</strong>
+        <span>{% if activity.deadline %}{{ activity.deadline.strftime('%Y-%m-%d %H:%M') }}{% else %}ندارد{% endif %}</span>
+    </div>
     {% if activity.description %}
-    <p><strong>توضیحات:</strong></p>
-    <div>{{ activity.description }}</div>
+    <div class="detail-row">
+        <strong>توضیحات:</strong>
+        <span>{{ activity.description }}</span>
+    </div>
     {% endif %}
 </div>
 
 {% if latest %}
 <h2>آخرین ارسال</h2>
-<div>
-    <p><strong>وضعیت:</strong> {{ latest.status }}</p>
-    <p><strong>نسخه:</strong> {{ latest.version }}</p>
-    <p><strong>تاریخ ارسال:</strong> {% if latest.submitted_at %}{{ latest.submitted_at.strftime('%Y-%m-%d %H:%M') }}{% else %}-{% endif %}</p>
+<div class="detail-card">
+    <div class="detail-row">
+        <strong>وضعیت:</strong>
+        <span>{{ status_badge(latest.status) }}</span>
+    </div>
+    <div class="detail-row">
+        <strong>نسخه:</strong>
+        <span>{{ latest.version }}</span>
+    </div>
+    <div class="detail-row">
+        <strong>تاریخ ارسال:</strong>
+        <span>{% if latest.submitted_at %}{{ latest.submitted_at.strftime('%Y-%m-%d %H:%M') }}{% else %}-{% endif %}</span>
+    </div>
     {% if latest.score is not none %}
-    <p><strong>امتیاز:</strong> {{ latest.score }} / {{ activity.max_score }}</p>
+    <div class="detail-row">
+        <strong>امتیاز:</strong>
+        <span>{{ latest.score }} / {{ activity.max_score }}</span>
+    </div>
     {% endif %}
     {% if latest.feedback %}
-    <p><strong>بازخورد استاد:</strong></p>
-    <div>{{ latest.feedback }}</div>
+    <div class="detail-row">
+        <strong>بازخورد استاد:</strong>
+        <span>{{ latest.feedback }}</span>
+    </div>
     {% endif %}
 </div>
 
@@ -46,29 +71,31 @@
 
 {% if history|length > 1 %}
 <div>
-    <a href="{{ url_for('activity.student_submission_history', activity_id=activity.id) }}">مشاهده تاریخچه ارسال‌ها ({{ history|length }} نسخه)</a>
+    <a href="{{ url_for('activity.student_submission_history', activity_id=activity.id) }}" class="btn btn-sm btn-outline">مشاهده تاریخچه ارسال‌ها ({{ history|length }} نسخه)</a>
 </div>
 {% endif %}
 {% endif %}
 
 {% if activity.is_active %}
 <h2>{% if latest %}ارسال مجدد{% else %}ارسال فعالیت{% endif %}</h2>
-<form method="POST" action="{{ url_for('activity.student_submit_activity', activity_id=activity.id) }}" enctype="multipart/form-data">
-    <div>
-        <label>متن پاسخ:</label>
-        <textarea name="text_content" rows="6">{{ latest.text_content if latest else '' }}</textarea>
-    </div>
-    <div>
-        <label>فایل‌های پیوست (حداکثر 5 مگابایت هر فایل):</label>
-        <input type="file" name="files" multiple accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.jpg,.jpeg,.png,.zip">
-    </div>
-    <div>
-        <button type="submit">{% if latest %}ارسال مجدد{% else %}ارسال{% endif %}</button>
-    </div>
-</form>
+<div class="form-card">
+    <form method="POST" action="{{ url_for('activity.student_submit_activity', activity_id=activity.id) }}" enctype="multipart/form-data">
+        <div class="form-group">
+            <label for="text_content">متن پاسخ</label>
+            <textarea id="text_content" name="text_content" class="form-textarea" rows="6">{{ latest.text_content if latest else '' }}</textarea>
+        </div>
+        <div class="form-group">
+            <label for="files">فایل‌های پیوست (حداکثر 5 مگابایت هر فایل)</label>
+            <input type="file" id="files" name="files" class="form-input" multiple accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.jpg,.jpeg,.png,.zip">
+        </div>
+        <div class="form-actions">
+            <button type="submit" class="btn btn-primary">{% if latest %}ارسال مجدد{% else %}ارسال{% endif %}</button>
+        </div>
+    </form>
+</div>
 {% endif %}
 
 <div>
-    <a href="{{ url_for('activity.student_class_activities', class_id=academy_class.id) }}">بازگشت</a>
+    <a href="{{ url_for('activity.student_class_activities', class_id=academy_class.id) }}" class="btn btn-secondary">بازگشت</a>
 </div>
 {% endblock %}

@@ -1,52 +1,48 @@
 {% extends "base.html" %}
 {% block title %}کلاس‌های موجود{% endblock %}
 {% block content %}
-<div class="page-header">
-    <h1>کلاس‌های موجود</h1>
-</div>
-
-{% with messages = get_flashed_messages(with_categories=true) %}
-    {% if messages %}
-        {% for category, message in messages %}
-            <div class="alert alert-{{ category }}">{{ message }}</div>
-        {% endfor %}
-    {% endif %}
-{% endwith %}
+{% from "macros/utils.html" import page_header, status_badge %}
+{{ page_header("کلاس‌های موجود") }}
 
 {% if classes %}
 <div class="table-container">
-    <table class="data-table">
-        <thead>
-            <tr>
-                <th>عنوان</th>
-                <th>درس</th>
-                <th>تاریخ شروع</th>
-                <th>ظرفیت باقیمانده</th>
-                <th>وضعیت</th>
-                <th>عملیات</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for cls in classes %}
-            <tr>
-                <td>{{ cls.title }}</td>
-                <td>{{ cls.course.title }}</td>
-                <td>{{ cls.start_date }}</td>
-                <td>{{ cls.capacity }}</td>
-                <td><span class="status-badge status-{{ cls.status|lower }}">{{ cls.status }}</span></td>
-                <td>
-                    {% if cls.id in enrolled_class_ids %}
-                    <span class="btn btn-sm btn-disabled">ثبت‌نام شده</span>
-                    {% else %}
-                    <a href="{{ url_for('enrollment.student_class_detail', class_id=cls.id) }}" class="btn btn-sm btn-primary">مشاهده و ثبت‌نام</a>
-                    {% endif %}
-                </td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
+    <div class="table-scroll">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>عنوان</th>
+                    <th>درس</th>
+                    <th>تاریخ شروع</th>
+                    <th>ظرفیت باقیمانده</th>
+                    <th>وضعیت</th>
+                    <th>عملیات</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for cls in classes %}
+                <tr>
+                    <td>{{ cls.title }}</td>
+                    <td>{{ cls.course.title }}</td>
+                    <td>{{ cls.start_date }}</td>
+                    <td>{{ cls.capacity }}</td>
+                    <td>{{ status_badge(cls.status) }}</td>
+                    <td>
+                        {% if cls.id in enrolled_class_ids %}
+                        <span class="btn btn-sm btn-secondary" disabled>ثبت‌نام شده</span>
+                        {% else %}
+                        <a href="{{ url_for('enrollment.student_class_detail', class_id=cls.id) }}" class="btn btn-sm btn-primary">مشاهده و ثبت‌نام</a>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
 </div>
 {% else %}
-<p class="empty-state">کلاسی موجود نیست.</p>
+<div class="empty-state">
+    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><polyline points="13 2 13 9 20 9"/></svg>
+    <h3>کلاسی موجود نیست</h3>
+</div>
 {% endif %}
 {% endblock %}

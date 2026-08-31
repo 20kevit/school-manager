@@ -1,51 +1,43 @@
 {% extends "base.html" %}
+{% from "macros/utils.html" import page_header, status_badge %}
 {% block title %}{{ class_obj.title }}{% endblock %}
 {% block content %}
-<div class="page-header">
-    <h1>{{ class_obj.title }}</h1>
-    <div class="header-actions">
-        <a href="{{ url_for('academy.class_edit', class_id=class_obj.id) }}" class="btn btn-outline">ویرایش</a>
-        <a href="{{ url_for('academy.session_list', class_id=class_obj.id) }}" class="btn btn-primary">لیست جلسات</a>
-    </div>
-</div>
+{{ page_header(class_obj.title) }}
 
-{% with messages = get_flashed_messages(with_categories=true) %}
-    {% if messages %}
-        {% for category, message in messages %}
-            <div class="alert alert-{{ category }}">{{ message }}</div>
-        {% endfor %}
-    {% endif %}
-{% endwith %}
+<div class="page-header-actions" style="margin-bottom: 1.5rem;">
+    <a href="{{ url_for('academy.class_edit', class_id=class_obj.id) }}" class="btn btn-outline">ویرایش</a>
+    <a href="{{ url_for('academy.session_list', class_id=class_obj.id) }}" class="btn btn-primary">لیست جلسات</a>
+</div>
 
 <div class="detail-card">
     <div class="detail-row">
-        <strong>درس:</strong>
-        <span><a href="{{ url_for('academy.course_detail', course_id=class_obj.course.id) }}">{{ class_obj.course.title }}</a></span>
+        <span class="detail-row-label">درس:</span>
+        <span class="detail-row-value"><a href="{{ url_for('academy.course_detail', course_id=class_obj.course.id) }}">{{ class_obj.course.title }}</a></span>
     </div>
     <div class="detail-row">
-        <strong>تاریخ شروع:</strong>
-        <span>{{ class_obj.start_date }}</span>
+        <span class="detail-row-label">تاریخ شروع:</span>
+        <span class="detail-row-value">{{ class_obj.start_date }}</span>
     </div>
     <div class="detail-row">
-        <strong>تاریخ پایان:</strong>
-        <span>{{ class_obj.end_date or '—' }}</span>
+        <span class="detail-row-label">تاریخ پایان:</span>
+        <span class="detail-row-value">{{ class_obj.end_date or '—' }}</span>
     </div>
     <div class="detail-row">
-        <strong>ظرفیت:</strong>
-        <span>{{ class_obj.capacity }}</span>
+        <span class="detail-row-label">ظرفیت:</span>
+        <span class="detail-row-value">{{ class_obj.capacity }}</span>
     </div>
     <div class="detail-row">
-        <strong>تعداد جلسات:</strong>
-        <span>{{ class_obj.num_sessions }}</span>
+        <span class="detail-row-label">تعداد جلسات:</span>
+        <span class="detail-row-value">{{ class_obj.num_sessions }}</span>
     </div>
     <div class="detail-row">
-        <strong>وضعیت:</strong>
-        <span class="status-badge status-{{ class_obj.status|lower }}">{{ class_obj.status }}</span>
+        <span class="detail-row-label">وضعیت:</span>
+        <span class="detail-row-value">{{ status_badge(class_obj.status) }}</span>
     </div>
     {% if class_obj.teacher %}
     <div class="detail-row">
-        <strong>معلم:</strong>
-        <span>{{ class_obj.teacher.teacher_profile.first_name }} {{ class_obj.teacher.teacher_profile.last_name }}</span>
+        <span class="detail-row-label">معلم:</span>
+        <span class="detail-row-value">{{ class_obj.teacher.teacher_profile.first_name }} {{ class_obj.teacher.teacher_profile.last_name }}</span>
     </div>
     {% endif %}
 </div>
@@ -72,36 +64,38 @@
 
 {% if sessions %}
 <div class="table-container">
-    <table class="data-table">
-        <thead>
-            <tr>
-                <th>شماره</th>
-                <th>تاریخ</th>
-                <th>ساعت</th>
-                <th>عنوان</th>
-                <th>وضعیت</th>
-                <th>عملیات</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for session in sessions %}
-            <tr>
-                <td>{{ session.session_number }}</td>
-                <td>{{ session.scheduled_date }}</td>
-                <td>{{ session.start_time.strftime('%H:%M') }} — {{ session.end_time.strftime('%H:%M') }}</td>
-                <td>{{ session.title or '—' }}</td>
-                <td>
-                    <span class="status-badge status-{{ session.status|lower }}">{{ session.status }}</span>
-                </td>
-                <td>
-                    <a href="{{ url_for('academy.session_detail', session_id=session.id) }}" class="btn btn-sm btn-outline">جزئیات</a>
-                </td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
+    <div class="table-scroll">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>شماره</th>
+                    <th>تاریخ</th>
+                    <th>ساعت</th>
+                    <th>عنوان</th>
+                    <th>وضعیت</th>
+                    <th>عملیات</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for session in sessions %}
+                <tr>
+                    <td>{{ session.session_number }}</td>
+                    <td>{{ session.scheduled_date }}</td>
+                    <td>{{ session.start_time.strftime('%H:%M') }} — {{ session.end_time.strftime('%H:%M') }}</td>
+                    <td>{{ session.title or '—' }}</td>
+                    <td>{{ status_badge(session.status) }}</td>
+                    <td>
+                        <a href="{{ url_for('academy.session_detail', session_id=session.id) }}" class="btn btn-sm btn-outline">جزئیات</a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
 </div>
 {% else %}
-<p class="empty-state">جلسه‌ای تولید نشده است.</p>
+<div class="empty-state">
+    <h3>جلسه‌ای تولید نشده است.</h3>
+</div>
 {% endif %}
 {% endblock %}

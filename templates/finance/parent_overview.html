@@ -1,17 +1,8 @@
 {% extends "base.html" %}
+{% from "macros/utils.html" import page_header %}
 {% block title %}وضعیت مالی فرزندان{% endblock %}
 {% block content %}
-<div class="page-header">
-    <h1>وضعیت مالی فرزندان</h1>
-</div>
-
-{% with messages = get_flashed_messages(with_categories=true) %}
-    {% if messages %}
-        {% for category, message in messages %}
-            <div class="alert alert-{{ category }}">{{ message }}</div>
-        {% endfor %}
-    {% endif %}
-{% endwith %}
+{{ page_header("وضعیت مالی فرزندان") }}
 
 {% if children_data %}
 <div class="children-list">
@@ -42,6 +33,8 @@
     {% endfor %}
 </div>
 {% else %}
-<p class="empty-state">فرزندی یافت نشد.</p>
+<div class="empty-state">
+    <p>فرزندی یافت نشد.</p>
+</div>
 {% endif %}
 {% endblock %}

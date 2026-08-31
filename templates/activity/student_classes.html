@@ -1,30 +1,41 @@
 {% extends "base.html" %}
 {% block title %}کلاس‌های من{% endblock %}
 {% block content %}
-<h1>کلاس‌های من</h1>
+{% from "macros/utils.html" import page_header, status_badge %}
+{{ page_header("کلاس‌های من") }}
 
 {% if classes %}
-<table>
-    <thead>
-        <tr>
-            <th>عنوان</th>
-            <th>تاریخ شروع</th>
-            <th>وضعیت</th>
-            <th>عملیات</th>
-        </tr>
-    </thead>
-    <tbody>
-        {% for c in classes %}
-        <tr>
-            <td>{{ c.title }}</td>
-            <td>{{ c.start_date }}</td>
-            <td>{{ c.status }}</td>
-            <td><a href="{{ url_for('activity.student_class_activities', class_id=c.id) }}">فعالیت‌ها</a></td>
-        </tr>
-        {% endfor %}
-    </tbody>
-</table>
+<div class="table-container">
+    <div class="table-scroll">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>عنوان</th>
+                    <th>تاریخ شروع</th>
+                    <th>وضعیت</th>
+                    <th>عملیات</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for c in classes %}
+                <tr>
+                    <td>{{ c.title }}</td>
+                    <td>{{ c.start_date }}</td>
+                    <td>{{ status_badge(c.status) }}</td>
+                    <td>
+                        <div class="action-links">
+                            <a href="{{ url_for('activity.student_class_activities', class_id=c.id) }}" class="btn btn-sm btn-outline">فعالیت‌ها</a>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
 {% else %}
-<p>شما در هیچ کلاسی ثبت‌نام نکرده‌اید.</p>
+<div class="empty-state">
+    <h3>شما در هیچ کلاسی ثبت‌نام نکرده‌اید.</h3>
+</div>
 {% endif %}
 {% endblock %}

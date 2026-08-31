@@ -1,48 +1,71 @@
 {% extends "base.html" %}
-{% block title %}Grade - {{ assessment.title }}{% endblock %}
+{% block title %}نمره‌گذاری - {{ assessment.title }}{% endblock %}
 {% block content %}
-<h1>Grade: {{ assessment.title }}</h1>
-<p><strong>Class:</strong> {{ assessment.academy_class.title }} | <strong>Max Score:</strong> {{ assessment.max_score }} | <strong>Passing Score:</strong> {{ assessment.passing_score }}</p>
+{% from "macros/utils.html" import page_header %}
+{{ page_header("نمره‌گذاری: " ~ assessment.title) }}
+
+<div class="detail-card" style="margin-bottom: 1.5rem;">
+    <div class="detail-row">
+        <span class="detail-row-label">کلاس</span>
+        <span class="detail-row-value">{{ assessment.academy_class.title }}</span>
+    </div>
+    <div class="detail-row">
+        <span class="detail-row-label">حداکثر نمره</span>
+        <span class="detail-row-value">{{ assessment.max_score }}</span>
+    </div>
+    <div class="detail-row">
+        <span class="detail-row-label">نمره قبولی</span>
+        <span class="detail-row-value">{{ assessment.passing_score }}</span>
+    </div>
+</div>
 
 <form method="POST">
-    <table>
-        <thead>
-            <tr>
-                <th>Student</th>
-                <th>Score (out of {{ assessment.max_score }})</th>
-                <th>Presence</th>
-                <th>Comments</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for item in eligible %}
-            {% set r = result_map.get(item.enrollment.id) %}
-            <tr>
-                <td>{{ item.student.student_profile.first_name }} {{ item.student.student_profile.last_name }}</td>
-                <td>
-                    <input type="number" name="grade_{{ item.enrollment.id }}_score"
-                           value="{{ float(r.score) if r and r.score is not None else '' }}"
-                           min="0" max="{{ assessment.max_score }}" step="0.01"
-                           placeholder="Score">
-                </td>
-                <td>
-                    <select name="grade_{{ item.enrollment.id }}_presence">
-                        {% for p in ['PRESENT', 'ABSENT', 'EXCUSED'] %}
-                        <option value="{{ p }}" {% if r and r.presence_status == p %}selected{% endif %}>{{ p }}</option>
-                        {% endfor %}
-                    </select>
-                </td>
-                <td>
-                    <input type="text" name="grade_{{ item.enrollment.id }}_comments"
-                           value="{{ r.comments if r else '' }}" placeholder="Comments">
-                </td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
+    <div class="table-container">
+        <div class="table-scroll">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>دانش‌آموز</th>
+                        <th>نمره (از {{ assessment.max_score }})</th>
+                        <th>وضعیت حضور</th>
+                        <th>نظرات</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in eligible %}
+                    {% set r = result_map.get(item.enrollment.id) %}
+                    <tr>
+                        <td>{{ item.student.student_profile.first_name }} {{ item.student.student_profile.last_name }}</td>
+                        <td>
+                            <input type="number" name="grade_{{ item.enrollment.id }}_score"
+                                   value="{{ float(r.score) if r and r.score is not None else '' }}"
+                                   min="0" max="{{ assessment.max_score }}" step="0.01"
+                                   placeholder="نمره" class="form-input">
+                        </td>
+                        <td>
+                            <select name="grade_{{ item.enrollment.id }}_presence" class="form-select">
+                                {% for p in ['PRESENT', 'ABSENT', 'EXCUSED'] %}
+                                <option value="{{ p }}" {% if r and r.presence_status == p %}selected{% endif %}>
+                                    {% if p == 'PRESENT' %}حاضر{% elif p == 'ABSENT' %}غایب{% elif p == 'EXCUSED' %}معذور{% endif %}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </td>
+                        <td>
+                            <input type="text" name="grade_{{ item.enrollment.id }}_comments"
+                                   value="{{ r.comments if r else '' }}" placeholder="نظرات" class="form-input">
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
 
-    <button type="submit" class="btn" style="margin-top: 1rem;">Save Grades</button>
+    <div class="form-actions" style="margin-top: 1.5rem;">
+        <button type="submit" class="btn btn-primary">ذخیره نمرات</button>
+    </div>
 </form>
 
-<a href="{{ url_for('assessment.admin_assessment_detail', assessment_id=assessment.id) }}">Back to assessment</a>
+<a href="{{ url_for('assessment.admin_assessment_detail', assessment_id=assessment.id) }}" class="btn btn-secondary" style="margin-top: 1rem;">بازگشت به ارزیابی</a>
 {% endblock %}

@@ -1,44 +1,40 @@
 {% extends "base.html" %}
 {% block title %}درخواست‌های در انتظار{% endblock %}
 {% block content %}
-<div class="page-header">
-    <h1>درخواست‌های در انتظار تایید</h1>
-</div>
-
-{% with messages = get_flashed_messages(with_categories=true) %}
-    {% if messages %}
-        {% for category, message in messages %}
-            <div class="alert alert-{{ category }}">{{ message }}</div>
-        {% endfor %}
-    {% endif %}
-{% endwith %}
+{% from "macros/utils.html" import page_header %}
+{{ page_header("درخواست‌های در انتظار تایید") }}
 
 {% if enrollments %}
 <div class="table-container">
-    <table class="data-table">
-        <thead>
-            <tr>
-                <th>دانش‌آموز</th>
-                <th>کلاس</th>
-                <th>تاریخ درخواست</th>
-                <th>عملیات</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for enrollment in enrollments %}
-            <tr>
-                <td>{{ enrollment.student.student_profile.first_name }} {{ enrollment.student.student_profile.last_name }}</td>
-                <td>{{ enrollment.academy_class.title }}</td>
-                <td>{{ enrollment.requested_at.strftime('%Y-%m-%d') }}</td>
-                <td>
-                    <a href="{{ url_for('enrollment.admin_enrollment_detail', enrollment_id=enrollment.id) }}" class="btn btn-sm btn-outline">جزئیات</a>
-                </td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
+    <div class="table-scroll">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>دانش‌آموز</th>
+                    <th>کلاس</th>
+                    <th>تاریخ درخواست</th>
+                    <th>عملیات</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for enrollment in enrollments %}
+                <tr>
+                    <td>{{ enrollment.student.student_profile.first_name }} {{ enrollment.student.student_profile.last_name }}</td>
+                    <td>{{ enrollment.academy_class.title }}</td>
+                    <td>{{ enrollment.requested_at.strftime('%Y-%m-%d') }}</td>
+                    <td>
+                        <a href="{{ url_for('enrollment.admin_enrollment_detail', enrollment_id=enrollment.id) }}" class="btn btn-sm btn-outline">جزئیات</a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
 </div>
 {% else %}
-<p class="empty-state">درخواست در انتظاری وجود ندارد.</p>
+<div class="empty-state">
+    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><polyline points="13 2 13 9 20 9"/></svg>
+    <h3>درخواست در انتظاری وجود ندارد</h3>
+</div>
 {% endif %}
 {% endblock %}

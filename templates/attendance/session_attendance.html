@@ -1,23 +1,20 @@
 {% extends "base.html" %}
+{% from "macros/utils.html" import page_header, status_badge %}
 {% block title %}حضور و غیاب - جلسه {{ session.session_number }}{% endblock %}
 {% block content %}
 <div class="page-header">
-    <h1>حضور و غیاب جلسه {{ session.session_number }}</h1>
-    <p>{{ academy_class.title }} — {{ session.scheduled_date.strftime('%Y-%m-%d') }}</p>
-    {% if is_admin %}
-    <a href="{{ url_for('attendance.admin_session_attendance', session_id=session.id) }}" class="btn btn-outline">بازگشت</a>
-    {% else %}
-    <a href="{{ url_for('attendance.teacher_session_attendance', session_id=session.id) }}" class="btn btn-outline">بازگشت</a>
-    {% endif %}
+    <div class="page-header-content">
+        <h1>حضور و غیاب جلسه {{ session.session_number }}</h1>
+        <p>{{ academy_class.title }} — {{ session.scheduled_date.strftime('%Y-%m-%d') }}</p>
+    </div>
+    <div class="page-header-actions">
+        {% if is_admin %}
+        <a href="{{ url_for('attendance.admin_session_attendance', session_id=session.id) }}" class="btn btn-outline">بازگشت</a>
+        {% else %}
+        <a href="{{ url_for('attendance.teacher_session_attendance', session_id=session.id) }}" class="btn btn-outline">بازگشت</a>
+        {% endif %}
+    </div>
 </div>
-
-{% with messages = get_flashed_messages(with_categories=true) %}
-    {% if messages %}
-        {% for category, message in messages %}
-            <div class="alert alert-{{ category }}">{{ message }}</div>
-        {% endfor %}
-    {% endif %}
-{% endwith %}
 
 <div class="attendance-summary">
     <span class="summary-item">حاضر: <strong>{{ summary.PRESENT }}</strong></span>
@@ -30,44 +27,48 @@
 {% if eligible %}
 <form method="POST" action="{% if is_admin %}{{ url_for('attendance.admin_save_session_attendance', session_id=session.id) }}{% else %}{{ url_for('attendance.teacher_save_session_attendance', session_id=session.id) }}{% endif %}">
     <div class="table-container">
-        <table class="data-table">
-            <thead>
-                <tr>
-                    <th>دانش‌آموز</th>
-                    <th>وضعیت</th>
-                    <th>یادداشت</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for item in eligible %}
-                {% set enr = item.enrollment %}
-                {% set stu = item.student %}
-                {% set existing = existing_map.get(enr.id) %}
-                <tr>
-                    <td>{{ stu.student_profile.first_name }} {{ stu.student_profile.last_name }}</td>
-                    <td>
-                        <select name="attendance_{{ enr.id }}_status" class="form-control">
-                            <option value="">— انتخاب —</option>
-                            <option value="PRESENT" {{ 'selected' if existing and existing.status == 'PRESENT' }}>حاضر</option>
-                            <option value="ABSENT" {{ 'selected' if existing and existing.status == 'ABSENT' }}>غایب</option>
-                            <option value="LATE" {{ 'selected' if existing and existing.status == 'LATE' }}>تأخیر</option>
-                            <option value="EXCUSED" {{ 'selected' if existing and existing.status == 'EXCUSED' }}>معذور</option>
-                        </select>
-                    </td>
-                    <td>
-                        <input type="text" name="attendance_{{ enr.id }}_note" class="form-control"
-                               value="{{ existing.note if existing and existing.note else '' }}" placeholder="یادداشت (اختیاری)">
-                    </td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+        <div class="table-scroll">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>دانش‌آموز</th>
+                        <th>وضعیت</th>
+                        <th>یادداشت</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in eligible %}
+                    {% set enr = item.enrollment %}
+                    {% set stu = item.student %}
+                    {% set existing = existing_map.get(enr.id) %}
+                    <tr>
+                        <td>{{ stu.student_profile.first_name }} {{ stu.student_profile.last_name }}</td>
+                        <td>
+                            <select name="attendance_{{ enr.id }}_status" class="form-select">
+                                <option value="">— انتخاب —</option>
+                                <option value="PRESENT" {{ 'selected' if existing and existing.status == 'PRESENT' }}>حاضر</option>
+                                <option value="ABSENT" {{ 'selected' if existing and existing.status == 'ABSENT' }}>غایب</option>
+                                <option value="LATE" {{ 'selected' if existing and existing.status == 'LATE' }}>تأخیر</option>
+                                <option value="EXCUSED" {{ 'selected' if existing and existing.status == 'EXCUSED' }}>معذور</option>
+                            </select>
+                        </td>
+                        <td>
+                            <input type="text" name="attendance_{{ enr.id }}_note" class="form-input"
+                                   value="{{ existing.note if existing and existing.note else '' }}" placeholder="یادداشت (اختیاری)">
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
     </div>
     <div class="form-actions">
         <button type="submit" class="btn btn-primary">ذخیره حضور و غیاب</button>
     </div>
 </form>
 {% else %}
-<p class="empty-state">دانش‌آموز واجد شرایطی برای این جلسه یافت نشد.</p>
+<div class="empty-state">
+    <h3>دانش‌آموز واجد شرایطی برای این جلسه یافت نشد.</h3>
+</div>
 {% endif %}
 {% endblock %}

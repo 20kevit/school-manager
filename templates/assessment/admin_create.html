@@ -1,77 +1,88 @@
 {% extends "base.html" %}
-{% block title %}Create Assessment{% endblock %}
+{% block title %}ایجاد ارزیابی{% endblock %}
 {% block content %}
-<h1>Create Assessment</h1>
+{% from "macros/utils.html" import page_header %}
+{{ page_header("ایجاد ارزیابی جدید") }}
 
-<form method="POST">
-    <div class="form-group">
-        <label for="class_id">Class *</label>
-        <select name="class_id" id="class_id" required>
-            {% for c in classes %}
-            <option value="{{ c.id }}">{{ c.title }}</option>
-            {% endfor %}
-        </select>
-    </div>
+<div class="form-card">
+    <form method="POST">
+        <div class="form-grid">
+            <div class="form-group">
+                <label class="form-label" for="class_id">کلاس <span class="required">*</span></label>
+                <select name="class_id" id="class_id" class="form-select" required>
+                    {% for c in classes %}
+                    <option value="{{ c.id }}">{{ c.title }}</option>
+                    {% endfor %}
+                </select>
+            </div>
 
-    <div class="form-group">
-        <label for="assessment_type">Type *</label>
-        <select name="assessment_type" id="assessment_type" required>
-            {% for t in ['FINAL_EXAM', 'MIDTERM', 'QUIZ', 'PROJECT', 'PRACTICAL', 'ORAL', 'OTHER'] %}
-            <option value="{{ t }}">{{ t }}</option>
-            {% endfor %}
-        </select>
-    </div>
+            <div class="form-group">
+                <label class="form-label" for="assessment_type">نوع <span class="required">*</span></label>
+                <select name="assessment_type" id="assessment_type" class="form-select" required>
+                    {% for t in ['FINAL_EXAM', 'MIDTERM', 'QUIZ', 'PROJECT', 'PRACTICAL', 'ORAL', 'OTHER'] %}
+                    <option value="{{ t }}">
+                        {% if t == 'FINAL_EXAM' %}آزمون پایانی{% elif t == 'MIDTERM' %}آزمون میان‌ترم{% elif t == 'QUIZ' %}آزمون کلاسی{% elif t == 'PROJECT' %}پروژه{% elif t == 'PRACTICAL' %}عملی{% elif t == 'ORAL' %}شفاهی{% else %}سایر{% endif %}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
 
-    <div class="form-group">
-        <label for="title">Title *</label>
-        <input type="text" name="title" id="title" required>
-    </div>
+            <div class="form-group">
+                <label class="form-label" for="title">عنوان <span class="required">*</span></label>
+                <input type="text" name="title" id="title" class="form-input" required>
+            </div>
 
-    <div class="form-group">
-        <label for="description">Description</label>
-        <textarea name="description" id="description" rows="3"></textarea>
-    </div>
+            <div class="form-group">
+                <label class="form-label" for="description">توضیحات</label>
+                <textarea name="description" id="description" class="form-textarea" rows="3"></textarea>
+            </div>
 
-    <div class="form-group">
-        <label for="scheduled_date">Scheduled Date</label>
-        <input type="date" name="scheduled_date" id="scheduled_date">
-    </div>
+            <div class="form-group">
+                <label class="form-label" for="scheduled_date">تاریخ برنامه‌ریزی شده</label>
+                <input type="date" name="scheduled_date" id="scheduled_date" class="form-input">
+            </div>
 
-    <div class="form-group">
-        <label for="scheduled_time">Scheduled Time</label>
-        <input type="datetime-local" name="scheduled_time" id="scheduled_time">
-    </div>
+            <div class="form-group">
+                <label class="form-label" for="scheduled_time">زمان برنامه‌ریزی شده</label>
+                <input type="datetime-local" name="scheduled_time" id="scheduled_time" class="form-input">
+            </div>
 
-    <div class="form-group">
-        <label for="duration_minutes">Duration (minutes)</label>
-        <input type="number" name="duration_minutes" id="duration_minutes" min="1">
-    </div>
+            <div class="form-group">
+                <label class="form-label" for="duration_minutes">مدت زمان (دقیقه)</label>
+                <input type="number" name="duration_minutes" id="duration_minutes" class="form-input" min="1">
+            </div>
 
-    <div class="form-group">
-        <label for="max_score">Maximum Score</label>
-        <input type="number" name="max_score" id="max_score" value="100" min="1" step="0.01">
-    </div>
+            <div class="form-group">
+                <label class="form-label" for="max_score">حداکثر نمره</label>
+                <input type="number" name="max_score" id="max_score" class="form-input" value="100" min="1" step="0.01">
+            </div>
 
-    <div class="form-group">
-        <label for="passing_score">Passing Score</label>
-        <input type="number" name="passing_score" id="passing_score" value="60" min="0" step="0.01">
-    </div>
+            <div class="form-group">
+                <label class="form-label" for="passing_score">نمره قبولی</label>
+                <input type="number" name="passing_score" id="passing_score" class="form-input" value="60" min="0" step="0.01">
+            </div>
 
-    <div class="form-group">
-        <label for="status">Status</label>
-        <select name="status" id="status">
-            {% for s in ['DRAFT', 'SCHEDULED', 'OPEN', 'CLOSED', 'GRADED'] %}
-            <option value="{{ s }}" {% if s == 'DRAFT' %}selected{% endif %}>{{ s }}</option>
-            {% endfor %}
-        </select>
-    </div>
+            <div class="form-group">
+                <label class="form-label" for="status">وضعیت</label>
+                <select name="status" id="status" class="form-select">
+                    {% for s in ['DRAFT', 'SCHEDULED', 'OPEN', 'CLOSED', 'GRADED'] %}
+                    <option value="{{ s }}" {% if s == 'DRAFT' %}selected{% endif %}>
+                        {% if s == 'DRAFT' %}پیش‌نویس{% elif s == 'SCHEDULED' %}برنامه‌ریزی شده{% elif s == 'OPEN' %}باز{% elif s == 'CLOSED' %}بسته شده{% elif s == 'GRADED' %}نمره‌گذاری شده{% endif %}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
 
-    <div class="form-group">
-        <label for="notes">Notes</label>
-        <textarea name="notes" id="notes" rows="2"></textarea>
-    </div>
+            <div class="form-group" style="grid-column: 1 / -1;">
+                <label class="form-label" for="notes">یادداشت‌ها</label>
+                <textarea name="notes" id="notes" class="form-textarea" rows="2"></textarea>
+            </div>
+        </div>
 
-    <button type="submit" class="btn">Create Assessment</button>
-    <a href="{{ url_for('assessment.admin_assessment_list') }}">Cancel</a>
-</form>
+        <div class="form-actions">
+            <button type="submit" class="btn btn-primary">ایجاد ارزیابی</button>
+            <a href="{{ url_for('assessment.admin_assessment_list') }}" class="btn btn-secondary">انصراف</a>
+        </div>
+    </form>
+</div>
 {% endblock %}

@@ -1,100 +1,177 @@
 {% extends "base.html" %}
-{% block title %}{{ assessment.title }} - Assessment Detail{% endblock %}
+{% block title %}{{ assessment.title }} - جزئیات ارزیابی{% endblock %}
 {% block content %}
-<h1>{{ assessment.title }}</h1>
+{% from "macros/utils.html" import page_header, status_badge, stat_card %}
+{{ page_header(assessment.title) }}
 
-<div class="card">
-    <p><strong>Type:</strong> {{ assessment.type }}</p>
-    <p><strong>Class:</strong> {{ academy_class.title }}</p>
-    <p><strong>Status:</strong> {{ assessment.status }}</p>
-    <p><strong>Scheduled Date:</strong> {{ assessment.scheduled_date or 'Not set' }}</p>
-    <p><strong>Duration:</strong> {{ assessment.duration_minutes ~ ' min' if assessment.duration_minutes else 'Not set' }}</p>
-    <p><strong>Max Score:</strong> {{ assessment.max_score }}</p>
-    <p><strong>Passing Score:</strong> {{ assessment.passing_score }}</p>
+<div class="detail-card">
+    <div class="detail-row">
+        <span class="detail-row-label">نوع</span>
+        <span class="detail-row-value">
+            {% if assessment.type == 'FINAL_EXAM' %}آزمون پایانی{% elif assessment.type == 'MIDTERM' %}آزمون میان‌ترم{% elif assessment.type == 'QUIZ' %}آزمون کلاسی{% elif assessment.type == 'PROJECT' %}پروژه{% elif assessment.type == 'PRACTICAL' %}عملی{% elif assessment.type == 'ORAL' %}شفاهی{% else %}سایر{% endif %}
+        </span>
+    </div>
+    <div class="detail-row">
+        <span class="detail-row-label">کلاس</span>
+        <span class="detail-row-value">{{ academy_class.title }}</span>
+    </div>
+    <div class="detail-row">
+        <span class="detail-row-label">وضعیت</span>
+        <span class="detail-row-value">{{ status_badge(assessment.status) }}</span>
+    </div>
+    <div class="detail-row">
+        <span class="detail-row-label">تاریخ برنامه‌ریزی</span>
+        <span class="detail-row-value">{{ assessment.scheduled_date or 'تعیین نشده' }}</span>
+    </div>
+    <div class="detail-row">
+        <span class="detail-row-label">مدت زمان</span>
+        <span class="detail-row-value">{{ (assessment.duration_minutes ~ ' دقیقه') if assessment.duration_minutes else 'تعیین نشده' }}</span>
+    </div>
+    <div class="detail-row">
+        <span class="detail-row-label">حداکثر نمره</span>
+        <span class="detail-row-value">{{ assessment.max_score }}</span>
+    </div>
+    <div class="detail-row">
+        <span class="detail-row-label">نمره قبولی</span>
+        <span class="detail-row-value">{{ assessment.passing_score }}</span>
+    </div>
     {% if assessment.description %}
-    <p><strong>Description:</strong> {{ assessment.description }}</p>
+    <div class="detail-row">
+        <span class="detail-row-label">توضیحات</span>
+        <span class="detail-row-value">{{ assessment.description }}</span>
+    </div>
     {% endif %}
     {% if assessment.notes %}
-    <p><strong>Notes:</strong> {{ assessment.notes }}</p>
+    <div class="detail-row">
+        <span class="detail-row-label">یادداشت‌ها</span>
+        <span class="detail-row-value">{{ assessment.notes }}</span>
+    </div>
     {% endif %}
 </div>
 
 <div style="margin: 1rem 0; display: flex; gap: 0.5rem; flex-wrap: wrap;">
-    <a href="{{ url_for('assessment.admin_edit_assessment', assessment_id=assessment.id) }}" class="btn">Edit</a>
-    <a href="{{ url_for('assessment.admin_grade_assessment', assessment_id=assessment.id) }}" class="btn">Grade</a>
-    <a href="{{ url_for('assessment.admin_assessment_report', assessment_id=assessment.id) }}" class="btn">Report</a>
-    <a href="{{ url_for('assessment.admin_export_assessment_csv', assessment_id=assessment.id) }}" class="btn">Export CSV</a>
+    <a href="{{ url_for('assessment.admin_edit_assessment', assessment_id=assessment.id) }}" class="btn btn-sm btn-outline btn-primary">ویرایش</a>
+    <a href="{{ url_for('assessment.admin_grade_assessment', assessment_id=assessment.id) }}" class="btn btn-sm btn-outline btn-success">نمره‌گذاری</a>
+    <a href="{{ url_for('assessment.admin_assessment_report', assessment_id=assessment.id) }}" class="btn btn-sm btn-ghost">گزارش</a>
+    <a href="{{ url_for('assessment.admin_export_assessment_csv', assessment_id=assessment.id) }}" class="btn btn-sm btn-outline">خروجی CSV</a>
 
     {% if assessment.status != 'CANCELLED' and assessment.status != 'GRADED' %}
     <form method="POST" action="{{ url_for('assessment.admin_cancel_assessment', assessment_id=assessment.id) }}" style="display:inline;">
-        <button type="submit" class="btn btn-danger" onclick="return confirm('Cancel this assessment?')">Cancel Assessment</button>
+        <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('آیا از لغو این ارزیابی اطمینان دارید؟')">لغو ارزیابی</button>
     </form>
     {% endif %}
 
     {% if assessment.status == 'DRAFT' %}
     <form method="POST" action="{{ url_for('assessment.admin_update_status', assessment_id=assessment.id) }}" style="display:inline;">
         <input type="hidden" name="status" value="SCHEDULED">
-        <button type="submit" class="btn">Schedule</button>
+        <button type="submit" class="btn btn-sm btn-outline btn-primary">برنامه‌ریزی</button>
     </form>
     {% elif assessment.status == 'SCHEDULED' %}
     <form method="POST" action="{{ url_for('assessment.admin_update_status', assessment_id=assessment.id) }}" style="display:inline;">
         <input type="hidden" name="status" value="OPEN">
-        <button type="submit" class="btn">Open</button>
+        <button type="submit" class="btn btn-sm btn-outline btn-primary">باز کردن</button>
     </form>
     {% elif assessment.status == 'OPEN' %}
     <form method="POST" action="{{ url_for('assessment.admin_update_status', assessment_id=assessment.id) }}" style="display:inline;">
         <input type="hidden" name="status" value="CLOSED">
-        <button type="submit" class="btn">Close</button>
+        <button type="submit" class="btn btn-sm btn-outline btn-secondary">بستن</button>
     </form>
     {% elif assessment.status == 'CLOSED' %}
     <form method="POST" action="{{ url_for('assessment.admin_update_status', assessment_id=assessment.id) }}" style="display:inline;">
         <input type="hidden" name="status" value="GRADED">
-        <button type="submit" class="btn">Mark Graded</button>
+        <button type="submit" class="btn btn-sm btn-outline btn-primary">نمره‌گذاری نهایی</button>
     </form>
     {% endif %}
 </div>
 
-<h2>Results Summary</h2>
-<div class="card">
-    <p><strong>Total Eligible:</strong> {{ report.total_eligible }}</p>
-    <p><strong>Graded:</strong> {{ report.total_graded }}</p>
-    <p><strong>Absent:</strong> {{ report.total_absent }}</p>
-    <p><strong>Not Graded:</strong> {{ report.total_not_graded }}</p>
-    <p><strong>Average:</strong> {{ report.average if report.average is not None else '-' }}</p>
-    <p><strong>Highest:</strong> {{ report.highest if report.highest is not None else '-' }}</p>
-    <p><strong>Lowest:</strong> {{ report.lowest if report.lowest is not None else '-' }}</p>
-    <p><strong>Pass Rate:</strong> {{ report.pass_rate ~ '%' if report.pass_rate is not None else '-' }}</p>
+<div class="page-header" style="margin-top: 2rem;">
+    <div class="page-header-content">
+        <h2>خلاصه نتایج</h2>
+    </div>
+</div>
+
+<div class="dashboard-grid">
+    {{ stat_card("کل واجدین", report.total_eligible, icon="users", color="primary") }}
+    {{ stat_card("نمره‌گذاری شده", report.total_graded, icon="check", color="success") }}
+    {{ stat_card("غایب", report.total_absent, icon="alert", color="danger") }}
+    {{ stat_card("نمره‌گذاری نشده", report.total_not_graded, icon="class", color="warning") }}
+</div>
+
+<div class="detail-card" style="margin-top: 1rem;">
+    <div class="detail-row">
+        <span class="detail-row-label">میانگین</span>
+        <span class="detail-row-value">{{ report.average if report.average is not None else '—' }}</span>
+    </div>
+    <div class="detail-row">
+        <span class="detail-row-label">بالاترین نمره</span>
+        <span class="detail-row-value">{{ report.highest if report.highest is not None else '—' }}</span>
+    </div>
+    <div class="detail-row">
+        <span class="detail-row-label">پایین‌ترین نمره</span>
+        <span class="detail-row-value">{{ report.lowest if report.lowest is not None else '—' }}</span>
+    </div>
+    <div class="detail-row">
+        <span class="detail-row-label">نرخ قبولی</span>
+        <span class="detail-row-value">{{ (report.pass_rate ~ '%') if report.pass_rate is not None else '—' }}</span>
+    </div>
 </div>
 
 {% if report.results %}
-<h2>Student Results</h2>
-<table>
-    <thead>
-        <tr>
-            <th>Student</th>
-            <th>Score</th>
-            <th>Max</th>
-            <th>%</th>
-            <th>Pass/Fail</th>
-            <th>Presence</th>
-            <th>Actions</th>
-        </tr>
-    </thead>
-    <tbody>
-        {% for r in report.results %}
-        <tr>
-            <td>{{ r.student.student_profile.first_name }} {{ r.student.student_profile.last_name }}</td>
-            <td>{{ r.score if r.score is not None else '-' }}</td>
-            <td>{{ r.max_score }}</td>
-            <td>{{ r.percentage if r.percentage is not None else '-' }}</td>
-            <td>{{ r.pass_fail }}</td>
-            <td>{{ r.presence_status }}</td>
-            <td><a href="{{ url_for('assessment.admin_student_results', student_id=r.student_user_id) }}">History</a></td>
-        </tr>
-        {% endfor %}
-    </tbody>
-</table>
+<div class="page-header" style="margin-top: 2rem;">
+    <div class="page-header-content">
+        <h2>نتایج دانش‌آموزان</h2>
+    </div>
+</div>
+
+<div class="table-container">
+    <div class="table-scroll">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>دانش‌آموز</th>
+                    <th>نمره</th>
+                    <th>حداکثر</th>
+                    <th>درصد</th>
+                    <th>قبول/مردود</th>
+                    <th>وضعیت حضور</th>
+                    <th>عملیات</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for r in report.results %}
+                <tr>
+                    <td>{{ r.student.student_profile.first_name }} {{ r.student.student_profile.last_name }}</td>
+                    <td>{{ r.score if r.score is not None else '—' }}</td>
+                    <td>{{ r.max_score }}</td>
+                    <td>{{ r.percentage if r.percentage is not None else '—' }}</td>
+                    <td>
+                        {% if r.pass_fail == 'PASS' %}
+                            {{ status_badge('PASS') }}
+                        {% elif r.pass_fail == 'FAIL' %}
+                            {{ status_badge('FAIL') }}
+                        {% else %}
+                            {{ r.pass_fail }}
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if r.presence_status == 'PRESENT' %}
+                            {{ status_badge('PRESENT') }}
+                        {% elif r.presence_status == 'ABSENT' %}
+                            {{ status_badge('ABSENT') }}
+                        {% elif r.presence_status == 'EXCUSED' %}
+                            {{ status_badge('EXCUSED') }}
+                        {% else %}
+                            {{ r.presence_status }}
+                        {% endif %}
+                    </td>
+                    <td><a href="{{ url_for('assessment.admin_student_results', student_id=r.student_user_id) }}" class="btn btn-sm btn-ghost">تاریخچه</a></td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
 {% endif %}
 
-<a href="{{ url_for('assessment.admin_assessment_list') }}">Back to list</a>
+<a href="{{ url_for('assessment.admin_assessment_list') }}" class="btn btn-secondary" style="margin-top: 1rem;">بازگشت به لیست</a>
 {% endblock %}

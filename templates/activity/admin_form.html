@@ -1,81 +1,93 @@
 {% extends "base.html" %}
-{% block title %}{% if activity %}ویرایش فعالیت{% else %}ایجاد فعالیت جدید{% endif %}{% endblock %}
+{% block title %}{% if activity %}ویرایش فعالیت{% else %}ایجاد فعالیت جدید{% endif %} - آکادمی{% endblock %}
 {% block content %}
-<h1>{% if activity %}ویرایش فعالیت{% else %}ایجاد فعالیت جدید{% endif %}</h1>
+{% from "macros/utils.html" import page_header %}
+{{ page_header("ویرایش فعالیت" if activity else "ایجاد فعالیت جدید") }}
 
-<form method="POST">
-    <div>
-        <label>عنوان:</label>
-        <input type="text" name="title" value="{{ activity.title if activity else '' }}" required>
-    </div>
-    <div>
-        <label>نوع:</label>
-        <select name="type">
-            <option value="HOMEWORK" {% if activity and activity.type == 'HOMEWORK' %}selected{% endif %}>تکلیف</option>
-            <option value="PROJECT" {% if activity and activity.type == 'PROJECT' %}selected{% endif %}>پروژه</option>
-            <option value="PRACTICE" {% if activity and activity.type == 'PRACTICE' %}selected{% endif %}>تمرین</option>
-            <option value="QUIZ" {% if activity and activity.type == 'QUIZ' %}selected{% endif %}>آزمون کوچک</option>
-            <option value="EXAM" {% if activity and activity.type == 'EXAM' %}selected{% endif %}>امتحان</option>
-        </select>
-    </div>
-    <div>
-        <label>توضیحات:</label>
-        <textarea name="description" rows="4">{{ activity.description if activity else '' }}</textarea>
-    </div>
-    <div>
-        <label>الزامی/اختیاری:</label>
-        <select name="requirement">
-            <option value="REQUIRED" {% if activity and activity.requirement == 'REQUIRED' %}selected{% endif %}>الزامی</option>
-            <option value="OPTIONAL" {% if activity and activity.requirement == 'OPTIONAL' %}selected{% endif %}>اختیاری</option>
-        </select>
-    </div>
-    <div>
-        <label>حداکثر امتیاز:</label>
-        <input type="number" name="max_score" value="{{ activity.max_score if activity else 100 }}" min="0" step="0.5">
-    </div>
-    <div>
-        <label>مهلت تحویل (اختیاری):</label>
-        <input type="datetime-local" name="deadline" value="{{ activity.deadline.strftime('%Y-%m-%dT%H:%M') if activity and activity.deadline else '' }}">
-    </div>
-    <div>
-        <label>ترتیب نمایش:</label>
-        <input type="number" name="sort_order" value="{{ activity.sort_order if activity else 0 }}" min="0">
-    </div>
+<div class="form-card">
+    <form method="POST">
+        <div class="form-group">
+            <label class="form-label" for="title">عنوان <span class="required">*</span></label>
+            <input type="text" id="title" name="title" class="form-input" value="{{ activity.title if activity else '' }}" required>
+        </div>
 
-    {% if not activity %}
-    <div>
-        <label>دوره (برای فعالیت سطح دوره):</label>
-        <select name="course_id">
-            <option value="">بدون دوره</option>
-            {% for c in courses %}
-            <option value="{{ c.id }}">{{ c.title }}</option>
-            {% endfor %}
-        </select>
-    </div>
-    <div>
-        <label>کلاس (برای فعالیت سطح کلاس):</label>
-        <select name="class_id">
-            <option value="">بدون کلاس</option>
-            {% for c in classes %}
-            <option value="{{ c.id }}">{{ c.title }}</option>
-            {% endfor %}
-        </select>
-    </div>
-    {% endif %}
+        <div class="form-grid">
+            <div class="form-group">
+                <label class="form-label" for="type">نوع</label>
+                <select id="type" name="type" class="form-select">
+                    <option value="HOMEWORK" {% if activity and activity.type == 'HOMEWORK' %}selected{% endif %}>تکلیف</option>
+                    <option value="PROJECT" {% if activity and activity.type == 'PROJECT' %}selected{% endif %}>پروژه</option>
+                    <option value="PRACTICE" {% if activity and activity.type == 'PRACTICE' %}selected{% endif %}>تمرین</option>
+                    <option value="QUIZ" {% if activity and activity.type == 'QUIZ' %}selected{% endif %}>آزمون کوچک</option>
+                    <option value="EXAM" {% if activity and activity.type == 'EXAM' %}selected{% endif %}>امتحان</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label class="form-label" for="requirement">الزامی/اختیاری</label>
+                <select id="requirement" name="requirement" class="form-select">
+                    <option value="REQUIRED" {% if activity and activity.requirement == 'REQUIRED' %}selected{% endif %}>الزامی</option>
+                    <option value="OPTIONAL" {% if activity and activity.requirement == 'OPTIONAL' %}selected{% endif %}>اختیاری</option>
+                </select>
+            </div>
+        </div>
 
-    <div>
-        <label>جلسه (اختیاری):</label>
-        <select name="session_id">
-            <option value="">بدون جلسه</option>
-            {% for s in sessions %}
-            <option value="{{ s.id }}" {% if activity and activity.session_id == s.id %}selected{% endif %}>جلسه {{ s.session_number }} - {{ s.title or '' }}</option>
-            {% endfor %}
-        </select>
-    </div>
+        <div class="form-group">
+            <label class="form-label" for="description">توضیحات</label>
+            <textarea id="description" name="description" class="form-textarea" rows="4">{{ activity.description if activity else '' }}</textarea>
+        </div>
 
-    <div>
-        <button type="submit">{% if activity %}ذخیره تغییرات{% else %}ایجاد فعالیت{% endif %}</button>
-        <a href="{{ url_for('activity.admin_activity_list') }}">انصراف</a>
-    </div>
-</form>
+        <div class="form-grid-3">
+            <div class="form-group">
+                <label class="form-label" for="max_score">حداکثر امتیاز</label>
+                <input type="number" id="max_score" name="max_score" class="form-input" value="{{ activity.max_score if activity else 100 }}" min="0" step="0.5">
+            </div>
+            <div class="form-group">
+                <label class="form-label" for="deadline">مهلت تحویل</label>
+                <input type="datetime-local" id="deadline" name="deadline" class="form-input" value="{{ activity.deadline.strftime('%Y-%m-%dT%H:%M') if activity and activity.deadline else '' }}">
+            </div>
+            <div class="form-group">
+                <label class="form-label" for="sort_order">ترتیب نمایش</label>
+                <input type="number" id="sort_order" name="sort_order" class="form-input" value="{{ activity.sort_order if activity else 0 }}" min="0">
+            </div>
+        </div>
+
+        {% if not activity %}
+        <div class="form-grid">
+            <div class="form-group">
+                <label class="form-label" for="course_id">دوره</label>
+                <select id="course_id" name="course_id" class="form-select">
+                    <option value="">بدون دوره</option>
+                    {% for c in courses %}
+                    <option value="{{ c.id }}">{{ c.title }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="form-group">
+                <label class="form-label" for="class_id">کلاس</label>
+                <select id="class_id" name="class_id" class="form-select">
+                    <option value="">بدون کلاس</option>
+                    {% for c in classes %}
+                    <option value="{{ c.id }}">{{ c.title }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+        </div>
+        {% endif %}
+
+        <div class="form-group">
+            <label class="form-label" for="session_id">جلسه (اختیاری)</label>
+            <select id="session_id" name="session_id" class="form-select">
+                <option value="">بدون جلسه</option>
+                {% for s in sessions %}
+                <option value="{{ s.id }}" {% if activity and activity.session_id == s.id %}selected{% endif %}>جلسه {{ s.session_number }} - {{ s.title or '' }}</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div class="form-actions">
+            <button type="submit" class="btn btn-primary">{{ 'ذخیره تغییرات' if activity else 'ایجاد فعالیت' }}</button>
+            <a href="{{ url_for('activity.admin_activity_list') }}" class="btn btn-secondary">لغو</a>
+        </div>
+    </form>
+</div>
 {% endblock %}

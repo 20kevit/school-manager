@@ -1,75 +1,113 @@
 {% extends "base.html" %}
 {% block title %}{{ activity.title }} - جزئیات فعالیت{% endblock %}
 {% block content %}
-<h1>{{ activity.title }}</h1>
+{% from "macros/utils.html" import page_header, status_badge %}
 
-<div>
-    <p><strong>نوع:</strong> {{ activity.type }}</p>
-    <p><strong>الزامی/اختیاری:</strong> {% if activity.requirement == 'REQUIRED' %}الزامی{% else %}اختیاری{% endif %}</p>
-    <p><strong>حداکثر امتیاز:</strong> {{ activity.max_score }}</p>
-    {% if activity.deadline %}
-    <p><strong>مهلت:</strong> {{ activity.deadline.strftime('%Y-%m-%d %H:%M') }}</p>
-    {% else %}
-    <p><strong>مهلت:</strong> ندارد</p>
-    {% endif %}
-    <p><strong>وضعیت:</strong> {% if activity.is_active %}فعال{% else %}غیرفعال{% endif %}</p>
+{{ page_header(activity.title) }}
+
+<div class="detail-card">
+    <div class="detail-row">
+        <span class="detail-row-label">نوع</span>
+        <span class="detail-row-value"><span class="badge badge-secondary">{{ activity.type }}</span></span>
+    </div>
+    <div class="detail-row">
+        <span class="detail-row-label">الزامی/اختیاری</span>
+        <span class="detail-row-value">{{ status_badge(activity.requirement.value if activity.requirement else 'OPTIONAL') }}</span>
+    </div>
+    <div class="detail-row">
+        <span class="detail-row-label">حداکثر امتیاز</span>
+        <span class="detail-row-value">{{ activity.max_score }}</span>
+    </div>
+    <div class="detail-row">
+        <span class="detail-row-label">مهلت</span>
+        <span class="detail-row-value">{{ activity.deadline.strftime('%Y-%m-%d %H:%M') if activity.deadline else 'ندارد' }}</span>
+    </div>
+    <div class="detail-row">
+        <span class="detail-row-label">وضعیت</span>
+        <span class="detail-row-value">
+            {% if activity.is_active %}<span class="badge badge-success">فعال</span>{% else %}<span class="badge badge-danger">غیرفعال</span>{% endif %}
+        </span>
+    </div>
     {% if activity.description %}
-    <p><strong>توضیحات:</strong></p>
-    <div>{{ activity.description }}</div>
+    <div class="detail-row">
+        <span class="detail-row-label">توضیحات</span>
+        <span class="detail-row-value">{{ activity.description }}</span>
+    </div>
     {% endif %}
 </div>
 
-<div>
-    <a href="{{ url_for('activity.admin_edit_activity', activity_id=activity.id) }}">ویرایش</a>
+<div class="action-links">
+    <a href="{{ url_for('activity.admin_edit_activity', activity_id=activity.id) }}" class="btn btn-primary">ویرایش</a>
     {% if activity.is_active %}
     <form method="POST" action="{{ url_for('activity.admin_deactivate_activity', activity_id=activity.id) }}" style="display:inline;">
-        <button type="submit" onclick="return confirm('آیا مطمئن هستید؟')">غیرفعال کردن</button>
+        <button type="submit" class="btn btn-danger" data-confirm="آیا از غیرفعال کردن این فعالیت اطمینان دارید؟">غیرفعال کردن</button>
     </form>
     {% endif %}
 </div>
 
 {% if activity.class_id %}
-<h2>خلاصه ارسال‌ها</h2>
-<div>
-    <p>تعداد کل دانش‌آموزان: {{ summary.total }}</p>
-    <p>ارسال شده: {{ summary.submitted }}</p>
-    <p>ارسال دیر: {{ summary.late }}</p>
-    <p>نمره‌دهی شده: {{ summary.graded }}</p>
-    <p>ارسال نشده: {{ summary.not_submitted }}</p>
-</div>
+<div class="dashboard-section" style="margin-top: var(--space-8);">
+    <div class="dashboard-section-title">خلاصه ارسال‌ها</div>
+    <div class="dashboard-grid dashboard-grid-5">
+        <div class="stat-card">
+            <div class="stat-card-label">تعداد کل</div>
+            <div class="stat-card-value" style="font-size: var(--font-size-xl);">{{ summary.total }}</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-card-label">ارسال شده</div>
+            <div class="stat-card-value text-success" style="font-size: var(--font-size-xl);">{{ summary.submitted }}</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-card-label">ارسال دیر</div>
+            <div class="stat-card-value text-warning" style="font-size: var(--font-size-xl);">{{ summary.late }}</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-card-label">نمره‌دهی شده</div>
+            <div class="stat-card-value text-primary" style="font-size: var(--font-size-xl);">{{ summary.graded }}</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-card-label">ارسال نشده</div>
+            <div class="stat-card-value text-danger" style="font-size: var(--font-size-xl);">{{ summary.not_submitted }}</div>
+        </div>
+    </div>
 
-<h2>ارسال‌ها</h2>
-{% if submissions %}
-<table>
-    <thead>
-        <tr>
-            <th>دانش‌آموز</th>
-            <th>نسخه</th>
-            <th>وضعیت</th>
-            <th>امتیاز</th>
-            <th>تاریخ ارسال</th>
-            <th>عملیات</th>
-        </tr>
-    </thead>
-    <tbody>
-        {% for s in submissions %}
-        <tr>
-            <td>{{ students_map[s.student_user_id].login if students_map.get(s.student_user_id) else '-' }}</td>
-            <td>{{ s.version }}</td>
-            <td>{{ s.status }}</td>
-            <td>{% if s.score is not none %}{{ s.score }}{% else %}-{% endif %}</td>
-            <td>{% if s.submitted_at %}{{ s.submitted_at.strftime('%Y-%m-%d %H:%M') }}{% else %}-{% endif %}</td>
-            <td><a href="{{ url_for('activity.admin_submission_detail', submission_id=s.id) }}">مشاهده</a></td>
-        </tr>
-        {% endfor %}
-    </tbody>
-</table>
-{% else %}
-<p>ارسالی ثبت نشده است.</p>
-{% endif %}
+    <div class="dashboard-section-title" style="margin-top: var(--space-6);">ارسال‌ها</div>
+    {% if submissions %}
+    <div class="table-container">
+        <div class="table-scroll">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>دانش‌آموز</th>
+                        <th>نسخه</th>
+                        <th>وضعیت</th>
+                        <th>امتیاز</th>
+                        <th>تاریخ ارسال</th>
+                        <th>عملیات</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for s in submissions %}
+                    <tr>
+                        <td>{{ students_map[s.student_user_id].login if students_map.get(s.student_user_id) else '—' }}</td>
+                        <td>{{ s.version }}</td>
+                        <td>{{ status_badge(s.status.value if s.status else 'SUBMITTED') }}</td>
+                        <td>{{ s.score if s.score is not none else '—' }}</td>
+                        <td>{{ s.submitted_at.strftime('%Y-%m-%d %H:%M') if s.submitted_at else '—' }}</td>
+                        <td><a href="{{ url_for('activity.admin_submission_detail', submission_id=s.id) }}" class="btn btn-sm btn-outline">مشاهده</a></td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% else %}
+    <div class="empty-state">
+        <h3>ارسالی ثبت نشده است</h3>
+    </div>
+    {% endif %}
+</div>
 {% endif %}
 
-<div>
-    <a href="{{ url_for('activity.admin_activity_list') }}">بازگشت به لیست</a>
-</div>
+<a href="{{ url_for('activity.admin_activity_list') }}" class="btn btn-secondary" style="margin-top: var(--space-4);">بازگشت به لیست</a>
 {% endblock %}

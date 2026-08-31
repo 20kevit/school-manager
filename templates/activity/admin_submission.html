@@ -1,66 +1,109 @@
 {% extends "base.html" %}
-{% block title %}مشاهده ارسال{% endblock %}
+{% block title %}جزئیات ارسال - آکادمی{% endblock %}
 {% block content %}
-<h1>جزئیات ارسال</h1>
+{% from "macros/utils.html" import page_header, status_badge %}
 
-<div>
-    <p><strong>فعالیت:</strong> <a href="{{ url_for('activity.admin_activity_detail', activity_id=activity.id) }}">{{ activity.title }}</a></p>
-    <p><strong>دانش‌آموز:</strong> {{ student.login }}</p>
-    <p><strong>نسخه:</strong> {{ submission.version }}</p>
-    <p><strong>وضعیت:</strong> {{ submission.status }}</p>
-    <p><strong>تاریخ ارسال:</strong> {% if submission.submitted_at %}{{ submission.submitted_at.strftime('%Y-%m-%d %H:%M') }}{% else %}-{% endif %}</p>
+{{ page_header("جزئیات ارسال") }}
+
+<div class="detail-card">
+    <div class="detail-row">
+        <span class="detail-row-label">فعالیت</span>
+        <span class="detail-row-value"><a href="{{ url_for('activity.admin_activity_detail', activity_id=activity.id) }}">{{ activity.title }}</a></span>
+    </div>
+    <div class="detail-row">
+        <span class="detail-row-label">دانش‌آموز</span>
+        <span class="detail-row-value">{{ student.login }}</span>
+    </div>
+    <div class="detail-row">
+        <span class="detail-row-label">نسخه</span>
+        <span class="detail-row-value">{{ submission.version }}</span>
+    </div>
+    <div class="detail-row">
+        <span class="detail-row-label">وضعیت</span>
+        <span class="detail-row-value">{{ status_badge(submission.status.value if submission.status else 'SUBMITTED') }}</span>
+    </div>
+    <div class="detail-row">
+        <span class="detail-row-label">تاریخ ارسال</span>
+        <span class="detail-row-value">{{ submission.submitted_at.strftime('%Y-%m-%d %H:%M') if submission.submitted_at else '—' }}</span>
+    </div>
     {% if submission.score is not none %}
-    <p><strong>امتیاز:</strong> {{ submission.score }} / {{ activity.max_score }}</p>
+    <div class="detail-row">
+        <span class="detail-row-label">امتیاز</span>
+        <span class="detail-row-value"><strong>{{ submission.score }}</strong> / {{ activity.max_score }}</span>
+    </div>
     {% endif %}
     {% if submission.feedback %}
-    <p><strong>بازخورد:</strong></p>
-    <div>{{ submission.feedback }}</div>
+    <div class="detail-row">
+        <span class="detail-row-label">بازخورد</span>
+        <span class="detail-row-value">{{ submission.feedback }}</span>
+    </div>
     {% endif %}
     {% if submission.graded_at %}
-    <p><strong>تاریخ نمره‌دهی:</strong> {{ submission.graded_at.strftime('%Y-%m-%d %H:%M') }}</p>
+    <div class="detail-row">
+        <span class="detail-row-label">تاریخ نمره‌دهی</span>
+        <span class="detail-row-value">{{ submission.graded_at.strftime('%Y-%m-%d %H:%M') }}</span>
+    </div>
     {% endif %}
 </div>
 
 {% if submission.text_content %}
-<h2>متن ارسالی</h2>
-<div>{{ submission.text_content }}</div>
+<div class="dashboard-section">
+    <div class="dashboard-section-title">متن ارسالی</div>
+    <div class="card"><div class="card-body">{{ submission.text_content }}</div></div>
+</div>
 {% endif %}
 
 {% if files %}
-<h2>فایل‌های پیوست</h2>
-<ul>
-    {% for f in files %}
-    <li>
-        <a href="{{ url_for('activity.download_file', file_id=f.id) }}">{{ f.original_filename }}</a>
-        <span>({{ f.file_size }} بایت)</span>
-    </li>
-    {% endfor %}
-</ul>
+<div class="dashboard-section">
+    <div class="dashboard-section-title">فایل‌های پیوست</div>
+    <div class="table-container">
+        <table class="data-table">
+            <thead><tr><th>نام فایل</th><th>اندازه</th><th>عملیات</th></tr></thead>
+            <tbody>
+                {% for f in files %}
+                <tr>
+                    <td>{{ f.original_filename }}</td>
+                    <td>{{ f.file_size }} بایت</td>
+                    <td><a href="{{ url_for('activity.download_file', file_id=f.id) }}" class="btn btn-sm btn-outline">دانلود</a></td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
 {% endif %}
 
-<h2>نمره‌دهی</h2>
-<form method="POST" action="{{ url_for('activity.admin_grade_submission', submission_id=submission.id) }}">
-    <div>
-        <label>امتیاز:</label>
-        <input type="number" name="score" value="{{ submission.score if submission.score is not none else '' }}" min="0" max="{{ activity.max_score }}" step="0.5" required>
-    </div>
-    <div>
-        <label>بازخورد:</label>
-        <textarea name="feedback" rows="4">{{ submission.feedback or '' }}</textarea>
-    </div>
-    <button type="submit">نمره‌دهی</button>
-</form>
-
-<h2>برگرداندن برای اصلاح</h2>
-<form method="POST" action="{{ url_for('activity.admin_return_submission', submission_id=submission.id) }}">
-    <div>
-        <label>بازخورد:</label>
-        <textarea name="feedback" rows="4" required>{{ submission.feedback or '' }}</textarea>
-    </div>
-    <button type="submit">برگرداندن</button>
-</form>
-
-<div>
-    <a href="{{ url_for('activity.admin_activity_detail', activity_id=activity.id) }}">بازگشت</a>
+<div class="form-card" style="margin-top: var(--space-6);">
+    <h3 style="margin-bottom: var(--space-4);">نمره‌دهی</h3>
+    <form method="POST" action="{{ url_for('activity.admin_grade_submission', submission_id=submission.id) }}">
+        <div class="form-grid">
+            <div class="form-group">
+                <label class="form-label" for="score">امتیاز</label>
+                <input type="number" id="score" name="score" class="form-input" value="{{ submission.score if submission.score is not none else '' }}" min="0" max="{{ activity.max_score }}" step="0.5" required>
+            </div>
+            <div class="form-group">
+                <label class="form-label" for="feedback">بازخورد</label>
+                <textarea id="feedback" name="feedback" class="form-textarea" rows="3">{{ submission.feedback or '' }}</textarea>
+            </div>
+        </div>
+        <div class="form-actions">
+            <button type="submit" class="btn btn-primary">نمره‌دهی</button>
+        </div>
+    </form>
 </div>
+
+<div class="form-card" style="margin-top: var(--space-4);">
+    <h3 style="margin-bottom: var(--space-4);">برگرداندن برای اصلاح</h3>
+    <form method="POST" action="{{ url_for('activity.admin_return_submission', submission_id=submission.id) }}">
+        <div class="form-group">
+            <label class="form-label" for="return_feedback">بازخورد</label>
+            <textarea id="return_feedback" name="feedback" class="form-textarea" rows="3" required>{{ submission.feedback or '' }}</textarea>
+        </div>
+        <div class="form-actions">
+            <button type="submit" class="btn btn-warning">برگرداندن</button>
+        </div>
+    </form>
+</div>
+
+<a href="{{ url_for('activity.admin_activity_detail', activity_id=activity.id) }}" class="btn btn-secondary" style="margin-top: var(--space-4);">بازگشت</a>
 {% endblock %}

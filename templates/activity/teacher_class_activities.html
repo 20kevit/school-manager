@@ -1,42 +1,49 @@
 {% extends "base.html" %}
 {% block title %}فعالیت‌های {{ academy_class.title }}{% endblock %}
 {% block content %}
-<h1>فعالیت‌های {{ academy_class.title }}</h1>
-
-<div>
-    <a href="{{ url_for('activity.teacher_create_activity', class_id=academy_class.id) }}">ایجاد فعالیت جدید</a>
-</div>
+{% from "macros/utils.html" import page_header, status_badge %}
+{{ page_header("فعالیت‌های " ~ academy_class.title, action_url=url_for('activity.teacher_create_activity', class_id=academy_class.id), action_label="ایجاد فعالیت جدید") }}
 
 {% if activities %}
-<table>
-    <thead>
-        <tr>
-            <th>عنوان</th>
-            <th>نوع</th>
-            <th>جلسه</th>
-            <th>مهلت</th>
-            <th>وضعیت</th>
-            <th>عملیات</th>
-        </tr>
-    </thead>
-    <tbody>
-        {% for a in activities %}
-        <tr>
-            <td><a href="{{ url_for('activity.teacher_activity_detail', activity_id=a.id) }}">{{ a.title }}</a></td>
-            <td>{{ a.type }}</td>
-            <td>{% if a.session_id %}جلسه{% else %}-{% endif %}</td>
-            <td>{% if a.deadline %}{{ a.deadline.strftime('%Y-%m-%d %H:%M') }}{% else %}-{% endif %}</td>
-            <td>{% if a.is_active %}فعال{% else %}غیرفعال{% endif %}</td>
-            <td><a href="{{ url_for('activity.teacher_activity_detail', activity_id=a.id) }}">مشاهده</a></td>
-        </tr>
-        {% endfor %}
-    </tbody>
-</table>
+<div class="table-container">
+    <div class="table-scroll">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>عنوان</th>
+                    <th>نوع</th>
+                    <th>جلسه</th>
+                    <th>مهلت</th>
+                    <th>وضعیت</th>
+                    <th>عملیات</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for a in activities %}
+                <tr>
+                    <td><a href="{{ url_for('activity.teacher_activity_detail', activity_id=a.id) }}">{{ a.title }}</a></td>
+                    <td>{{ status_badge(a.type) }}</td>
+                    <td>{% if a.session_id %}جلسه{% else %}-{% endif %}</td>
+                    <td>{% if a.deadline %}{{ a.deadline.strftime('%Y-%m-%d %H:%M') }}{% else %}-{% endif %}</td>
+                    <td>{{ status_badge('ACTIVE' if a.is_active else 'CANCELLED') }}</td>
+                    <td>
+                        <div class="action-links">
+                            <a href="{{ url_for('activity.teacher_activity_detail', activity_id=a.id) }}" class="btn btn-sm btn-outline">مشاهده</a>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
 {% else %}
-<p>فعالیتی تعریف نشده است.</p>
+<div class="empty-state">
+    <h3>فعالیتی تعریف نشده است.</h3>
+</div>
 {% endif %}
 
 <div>
-    <a href="{{ url_for('activity.teacher_my_classes') }}">بازگشت</a>
+    <a href="{{ url_for('activity.teacher_my_classes') }}" class="btn btn-secondary">بازگشت</a>
 </div>
 {% endblock %}

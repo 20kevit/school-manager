@@ -1,26 +1,51 @@
 {% extends "base.html" %}
 {% block title %}مشاهده ارسال{% endblock %}
 {% block content %}
-<h1>جزئیات ارسال</h1>
+{% from "macros/utils.html" import page_header, status_badge %}
+{{ page_header("جزئیات ارسال") }}
 
-<div>
-    <p><strong>فعالیت:</strong> {{ activity.title }}</p>
-    <p><strong>دانش‌آموز:</strong> {{ student.login }}</p>
-    <p><strong>نسخه:</strong> {{ submission.version }}</p>
-    <p><strong>وضعیت:</strong> {{ submission.status }}</p>
-    <p><strong>تاریخ ارسال:</strong> {% if submission.submitted_at %}{{ submission.submitted_at.strftime('%Y-%m-%d %H:%M') }}{% else %}-{% endif %}</p>
+<div class="detail-card">
+    <div class="detail-row">
+        <strong>فعالیت:</strong>
+        <span>{{ activity.title }}</span>
+    </div>
+    <div class="detail-row">
+        <strong>دانش‌آموز:</strong>
+        <span>{{ student.login }}</span>
+    </div>
+    <div class="detail-row">
+        <strong>نسخه:</strong>
+        <span>{{ submission.version }}</span>
+    </div>
+    <div class="detail-row">
+        <strong>وضعیت:</strong>
+        <span>{{ status_badge(submission.status) }}</span>
+    </div>
+    <div class="detail-row">
+        <strong>تاریخ ارسال:</strong>
+        <span>{% if submission.submitted_at %}{{ submission.submitted_at.strftime('%Y-%m-%d %H:%M') }}{% else %}-{% endif %}</span>
+    </div>
     {% if submission.score is not none %}
-    <p><strong>امتیاز:</strong> {{ submission.score }} / {{ activity.max_score }}</p>
+    <div class="detail-row">
+        <strong>امتیاز:</strong>
+        <span>{{ submission.score }} / {{ activity.max_score }}</span>
+    </div>
     {% endif %}
     {% if submission.feedback %}
-    <p><strong>بازخورد:</strong></p>
-    <div>{{ submission.feedback }}</div>
+    <div class="detail-row">
+        <strong>بازخورد:</strong>
+        <span>{{ submission.feedback }}</span>
+    </div>
     {% endif %}
 </div>
 
 {% if submission.text_content %}
 <h2>متن ارسالی</h2>
-<div>{{ submission.text_content }}</div>
+<div class="detail-card">
+    <div class="detail-row">
+        <span>{{ submission.text_content }}</span>
+    </div>
+</div>
 {% endif %}
 
 {% if files %}
@@ -36,28 +61,36 @@
 {% endif %}
 
 <h2>نمره‌دهی</h2>
-<form method="POST" action="{{ url_for('activity.teacher_grade_submission', submission_id=submission.id) }}">
-    <div>
-        <label>امتیاز:</label>
-        <input type="number" name="score" value="{{ submission.score if submission.score is not none else '' }}" min="0" max="{{ activity.max_score }}" step="0.5" required>
-    </div>
-    <div>
-        <label>بازخورد:</label>
-        <textarea name="feedback" rows="4">{{ submission.feedback or '' }}</textarea>
-    </div>
-    <button type="submit">نمره‌دهی</button>
-</form>
+<div class="form-card">
+    <form method="POST" action="{{ url_for('activity.teacher_grade_submission', submission_id=submission.id) }}">
+        <div class="form-group">
+            <label for="score">امتیاز</label>
+            <input type="number" id="score" name="score" class="form-input" value="{{ submission.score if submission.score is not none else '' }}" min="0" max="{{ activity.max_score }}" step="0.5" required>
+        </div>
+        <div class="form-group">
+            <label for="feedback">بازخورد</label>
+            <textarea id="feedback" name="feedback" class="form-textarea" rows="4">{{ submission.feedback or '' }}</textarea>
+        </div>
+        <div class="form-actions">
+            <button type="submit" class="btn btn-primary">نمره‌دهی</button>
+        </div>
+    </form>
+</div>
 
 <h2>برگرداندن برای اصلاح</h2>
-<form method="POST" action="{{ url_for('activity.teacher_return_submission', submission_id=submission.id) }}">
-    <div>
-        <label>بازخورد:</label>
-        <textarea name="feedback" rows="4" required>{{ submission.feedback or '' }}</textarea>
-    </div>
-    <button type="submit">برگرداندن</button>
-</form>
+<div class="form-card">
+    <form method="POST" action="{{ url_for('activity.teacher_return_submission', submission_id=submission.id) }}">
+        <div class="form-group">
+            <label for="return-feedback">بازخورد</label>
+            <textarea id="return-feedback" name="feedback" class="form-textarea" rows="4" required>{{ submission.feedback or '' }}</textarea>
+        </div>
+        <div class="form-actions">
+            <button type="submit" class="btn btn-danger">برگرداندن</button>
+        </div>
+    </form>
+</div>
 
 <div>
-    <a href="{{ url_for('activity.teacher_activity_detail', activity_id=activity.id) }}">بازگشت</a>
+    <a href="{{ url_for('activity.teacher_activity_detail', activity_id=activity.id) }}" class="btn btn-secondary">بازگشت</a>
 </div>
 {% endblock %}

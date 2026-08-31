@@ -1,36 +1,47 @@
 {% extends "base.html" %}
 {% block title %}فعالیت‌های {{ academy_class.title }}{% endblock %}
 {% block content %}
-<h1>فعالیت‌های {{ academy_class.title }}</h1>
+{% from "macros/utils.html" import page_header, status_badge %}
+{{ page_header("فعالیت‌های " ~ academy_class.title) }}
 
 {% if activities %}
-<table>
-    <thead>
-        <tr>
-            <th>عنوان</th>
-            <th>نوع</th>
-            <th>الزامی</th>
-            <th>مهلت</th>
-            <th>عملیات</th>
-        </tr>
-    </thead>
-    <tbody>
-        {% for a in activities %}
-        <tr>
-            <td><a href="{{ url_for('activity.student_activity_detail', activity_id=a.id) }}">{{ a.title }}</a></td>
-            <td>{{ a.type }}</td>
-            <td>{% if a.requirement == 'REQUIRED' %}الزامی{% else %}اختیاری{% endif %}</td>
-            <td>{% if a.deadline %}{{ a.deadline.strftime('%Y-%m-%d %H:%M') }}{% else %}-{% endif %}</td>
-            <td><a href="{{ url_for('activity.student_activity_detail', activity_id=a.id) }}">مشاهده</a></td>
-        </tr>
-        {% endfor %}
-    </tbody>
-</table>
+<div class="table-container">
+    <div class="table-scroll">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>عنوان</th>
+                    <th>نوع</th>
+                    <th>الزامی</th>
+                    <th>مهلت</th>
+                    <th>عملیات</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for a in activities %}
+                <tr>
+                    <td><a href="{{ url_for('activity.student_activity_detail', activity_id=a.id) }}">{{ a.title }}</a></td>
+                    <td>{{ status_badge(a.type) }}</td>
+                    <td>{{ status_badge(a.requirement) }}</td>
+                    <td>{% if a.deadline %}{{ a.deadline.strftime('%Y-%m-%d %H:%M') }}{% else %}-{% endif %}</td>
+                    <td>
+                        <div class="action-links">
+                            <a href="{{ url_for('activity.student_activity_detail', activity_id=a.id) }}" class="btn btn-sm btn-outline">مشاهده</a>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
 {% else %}
-<p>فعالیتی تعریف نشده است.</p>
+<div class="empty-state">
+    <h3>فعالیتی تعریف نشده است.</h3>
+</div>
 {% endif %}
 
 <div>
-    <a href="{{ url_for('activity.student_my_classes') }}">بازگشت</a>
+    <a href="{{ url_for('activity.student_my_classes') }}" class="btn btn-secondary">بازگشت</a>
 </div>
 {% endblock %}

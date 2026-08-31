@@ -1,22 +1,46 @@
 {% extends "base.html" %}
-{% block title %}Children's Results{% endblock %}
+{% block title %}نتایج فرزندان{% endblock %}
 {% block content %}
-<h1>Children's Academic Results</h1>
+{% from "macros/utils.html" import page_header %}
+{{ page_header("نتایج تحصیلی فرزندان") }}
 
 {% if children_data %}
 {% for item in children_data %}
-<div class="card" style="margin-bottom: 1rem;">
-    <h2>{{ item.child.student_profile.first_name }} {{ item.child.student_profile.last_name }}</h2>
-    <p><strong>Total Assessments:</strong> {{ item.summary.total_assessments }}</p>
-    <p><strong>Graded:</strong> {{ item.summary.graded }}</p>
-    <p><strong>Passed:</strong> {{ item.summary.passed }}</p>
-    <p><strong>Failed:</strong> {{ item.summary.failed }}</p>
-    <p><strong>Average:</strong> {{ item.summary.average if item.summary.average is not None else '-' }}</p>
+<div class="detail-card" style="margin-bottom: 1.5rem;">
+    <div class="detail-row">
+        <span class="detail-row-label">نام دانش‌آموز</span>
+        <span class="detail-row-value">{{ item.child.student_profile.first_name }} {{ item.child.student_profile.last_name }}</span>
+    </div>
+    <div class="detail-row">
+        <span class="detail-row-label">کل ارزیابی‌ها</span>
+        <span class="detail-row-value">{{ item.summary.total_assessments }}</span>
+    </div>
+    <div class="detail-row">
+        <span class="detail-row-label">نمره‌گذاری شده</span>
+        <span class="detail-row-value">{{ item.summary.graded }}</span>
+    </div>
+    <div class="detail-row">
+        <span class="detail-row-label">قبول شده</span>
+        <span class="detail-row-value">{{ item.summary.passed }}</span>
+    </div>
+    <div class="detail-row">
+        <span class="detail-row-label">مردود شده</span>
+        <span class="detail-row-value">{{ item.summary.failed }}</span>
+    </div>
+    <div class="detail-row">
+        <span class="detail-row-label">میانگین</span>
+        <span class="detail-row-value">{{ item.summary.average if item.summary.average is not None else '—' }}</span>
+    </div>
 
-    <a href="{{ url_for('assessment.parent_child_results', student_id=item.child.id) }}">View Details</a>
+    <div style="margin-top: 1rem;">
+        <a href="{{ url_for('assessment.parent_child_results', student_id=item.child.id) }}" class="btn btn-sm btn-outline btn-primary">مشاهده جزئیات</a>
+    </div>
 </div>
 {% endfor %}
 {% else %}
-<p>No linked children found.</p>
+<div class="empty-state">
+    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+    <h3>هیچ فرزند مرتبطی یافت نشد</h3>
+</div>
 {% endif %}
 {% endblock %}

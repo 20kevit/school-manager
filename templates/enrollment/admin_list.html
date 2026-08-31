@@ -1,24 +1,14 @@
 {% extends "base.html" %}
 {% block title %}لیست ثبت‌نام‌ها{% endblock %}
 {% block content %}
-<div class="page-header">
-    <h1>لیست ثبت‌نام‌ها</h1>
-    <a href="{{ url_for('enrollment.admin_enroll') }}" class="btn btn-primary">ثبت‌نام مستقیم دانش‌آموز</a>
-</div>
-
-{% with messages = get_flashed_messages(with_categories=true) %}
-    {% if messages %}
-        {% for category, message in messages %}
-            <div class="alert alert-{{ category }}">{{ message }}</div>
-        {% endfor %}
-    {% endif %}
-{% endwith %}
+{% from "macros/utils.html" import page_header, status_badge %}
+{{ page_header("لیست ثبت‌نام‌ها", action_url=url_for('enrollment.admin_enroll'), action_label="ثبت‌نام مستقیم دانش‌آموز") }}
 
 <div class="filter-bar">
     <form method="GET" class="filter-form">
         <div class="form-group">
-            <label for="class_id">فیلتر بر اساس کلاس</label>
-            <select id="class_id" name="class_id" onchange="this.form.submit()">
+            <label class="form-label" for="class_id">فیلتر بر اساس کلاس</label>
+            <select id="class_id" name="class_id" class="form-select" onchange="this.form.submit()">
                 <option value="">همه کلاس‌ها</option>
                 {% for cls in classes %}
                 <option value="{{ cls.id }}" {{ 'selected' if selected_class_id == cls.id }}>{{ cls.title }}</option>
@@ -26,8 +16,8 @@
             </select>
         </div>
         <div class="form-group">
-            <label for="status">فیلتر بر اساس وضعیت</label>
-            <select id="status" name="status" onchange="this.form.submit()">
+            <label class="form-label" for="status">فیلتر بر اساس وضعیت</label>
+            <select id="status" name="status" class="form-select" onchange="this.form.submit()">
                 <option value="">همه وضعیت‌ها</option>
                 <option value="PENDING" {{ 'selected' if selected_status == 'PENDING' }}>در انتظار</option>
                 <option value="APPROVED" {{ 'selected' if selected_status == 'APPROVED' }}>تایید شده</option>
@@ -40,32 +30,37 @@
 
 {% if enrollments %}
 <div class="table-container">
-    <table class="data-table">
-        <thead>
-            <tr>
-                <th>دانش‌آموز</th>
-                <th>کلاس</th>
-                <th>وضعیت</th>
-                <th>تاریخ درخواست</th>
-                <th>عملیات</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for enrollment in enrollments %}
-            <tr>
-                <td>{{ enrollment.student.student_profile.first_name }} {{ enrollment.student.student_profile.last_name }}</td>
-                <td>{{ enrollment.academy_class.title }}</td>
-                <td><span class="status-badge status-{{ enrollment.status|lower }}">{{ enrollment.status }}</span></td>
-                <td>{{ enrollment.requested_at.strftime('%Y-%m-%d') }}</td>
-                <td>
-                    <a href="{{ url_for('enrollment.admin_enrollment_detail', enrollment_id=enrollment.id) }}" class="btn btn-sm btn-outline">جزئیات</a>
-                </td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
+    <div class="table-scroll">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>دانش‌آموز</th>
+                    <th>کلاس</th>
+                    <th>وضعیت</th>
+                    <th>تاریخ درخواست</th>
+                    <th>عملیات</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for enrollment in enrollments %}
+                <tr>
+                    <td>{{ enrollment.student.student_profile.first_name }} {{ enrollment.student.student_profile.last_name }}</td>
+                    <td>{{ enrollment.academy_class.title }}</td>
+                    <td>{{ status_badge(enrollment.status) }}</td>
+                    <td>{{ enrollment.requested_at.strftime('%Y-%m-%d') }}</td>
+                    <td>
+                        <a href="{{ url_for('enrollment.admin_enrollment_detail', enrollment_id=enrollment.id) }}" class="btn btn-sm btn-outline">جزئیات</a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
 </div>
 {% else %}
-<p class="empty-state">ثبت‌نامی یافت نشد.</p>
+<div class="empty-state">
+    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><polyline points="13 2 13 9 20 9"/></svg>
+    <h3>ثبت‌نامی یافت نشد</h3>
+</div>
 {% endif %}
 {% endblock %}

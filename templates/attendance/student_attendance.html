@@ -1,17 +1,8 @@
 {% extends "base.html" %}
+{% from "macros/utils.html" import page_header, status_badge %}
 {% block title %}حضور و غیاب من{% endblock %}
 {% block content %}
-<div class="page-header">
-    <h1>حضور و غیاب من</h1>
-</div>
-
-{% with messages = get_flashed_messages(with_categories=true) %}
-    {% if messages %}
-        {% for category, message in messages %}
-            <div class="alert alert-{{ category }}">{{ message }}</div>
-        {% endfor %}
-    {% endif %}
-{% endwith %}
+{{ page_header("حضور و غیاب من") }}
 
 <div class="attendance-summary">
     <span class="summary-item">حاضر: <strong>{{ summary.PRESENT }}</strong></span>
@@ -23,30 +14,34 @@
 
 {% if records %}
 <div class="table-container">
-    <table class="data-table">
-        <thead>
-            <tr>
-                <th>کلاس</th>
-                <th>جلسه</th>
-                <th>تاریخ</th>
-                <th>وضعیت</th>
-                <th>یادداشت</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for record in records %}
-            <tr>
-                <td>{{ record.session.academy_class.title }}</td>
-                <td>{{ record.session.session_number }}</td>
-                <td>{{ record.session.scheduled_date.strftime('%Y-%m-%d') }}</td>
-                <td><span class="status-badge status-{{ record.status|lower }}">{{ record.status }}</span></td>
-                <td>{{ record.note if record.note else '—' }}</td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
+    <div class="table-scroll">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>کلاس</th>
+                    <th>جلسه</th>
+                    <th>تاریخ</th>
+                    <th>وضعیت</th>
+                    <th>یادداشت</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for record in records %}
+                <tr>
+                    <td>{{ record.session.academy_class.title }}</td>
+                    <td>{{ record.session.session_number }}</td>
+                    <td>{{ record.session.scheduled_date.strftime('%Y-%m-%d') }}</td>
+                    <td>{{ status_badge(record.status) }}</td>
+                    <td>{{ record.note if record.note else '—' }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
 </div>
 {% else %}
-<p class="empty-state">سابقه حضور و غیابی یافت نشد.</p>
+<div class="empty-state">
+    <h3>سابقه حضور و غیابی یافت نشد.</h3>
+</div>
 {% endif %}
 {% endblock %}

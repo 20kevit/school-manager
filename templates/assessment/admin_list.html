@@ -1,65 +1,89 @@
 {% extends "base.html" %}
-{% block title %}Assessments - Admin{% endblock %}
+{% block title %}ارزیابی‌ها - مدیریت{% endblock %}
 {% block content %}
-<h1>Assessments</h1>
+{% from "macros/utils.html" import page_header, status_badge %}
+{{ page_header("ارزیابی‌ها", action_url=url_for('assessment.admin_create_assessment'), action_label="ایجاد ارزیابی جدید") }}
 
-<div style="margin-bottom: 1rem;">
-    <a href="{{ url_for('assessment.admin_create_assessment') }}" class="btn">Create Assessment</a>
+<div class="filter-bar">
+    <form method="GET" class="filter-form">
+        <div class="form-group">
+            <label class="form-label" for="class_id">کلاس</label>
+            <select id="class_id" name="class_id" class="form-select" onchange="this.form.submit()">
+                <option value="">همه کلاس‌ها</option>
+                {% for c in classes %}
+                <option value="{{ c.id }}" {% if filters.class_id == c.id %}selected{% endif %}>{{ c.title }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="form-group">
+            <label class="form-label" for="type">نوع</label>
+            <select id="type" name="type" class="form-select" onchange="this.form.submit()">
+                <option value="">همه انواع</option>
+                {% for t in ['FINAL_EXAM', 'MIDTERM', 'QUIZ', 'PROJECT', 'PRACTICAL', 'ORAL', 'OTHER'] %}
+                <option value="{{ t }}" {% if filters.type == t %}selected{% endif %}>
+                    {% if t == 'FINAL_EXAM' %}آزمون پایانی{% elif t == 'MIDTERM' %}آزمون میان‌ترم{% elif t == 'QUIZ' %}آزمون کلاسی{% elif t == 'PROJECT' %}پروژه{% elif t == 'PRACTICAL' %}عملی{% elif t == 'ORAL' %}شفاهی{% else %}سایر{% endif %}
+                </option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="form-group">
+            <label class="form-label" for="status">وضعیت</label>
+            <select id="status" name="status" class="form-select" onchange="this.form.submit()">
+                <option value="">همه وضعیت‌ها</option>
+                {% for s in ['DRAFT', 'SCHEDULED', 'OPEN', 'CLOSED', 'GRADED', 'CANCELLED'] %}
+                <option value="{{ s }}" {% if filters.status == s %}selected{% endif %}>
+                    {% if s == 'DRAFT' %}پیش‌نویس{% elif s == 'SCHEDULED' %}برنامه‌ریزی شده{% elif s == 'OPEN' %}باز{% elif s == 'CLOSED' %}بسته شده{% elif s == 'GRADED' %}نمره‌گذاری شده{% elif s == 'CANCELLED' %}لغو شده{% endif %}
+                </option>
+                {% endfor %}
+            </select>
+        </div>
+    </form>
 </div>
 
-<form method="GET" style="margin-bottom: 1rem; display: flex; gap: 1rem; flex-wrap: wrap;">
-    <select name="class_id">
-        <option value="">All Classes</option>
-        {% for c in classes %}
-        <option value="{{ c.id }}" {% if filters.class_id == c.id %}selected{% endif %}>{{ c.title }}</option>
-        {% endfor %}
-    </select>
-    <select name="type">
-        <option value="">All Types</option>
-        {% for t in ['FINAL_EXAM', 'MIDTERM', 'QUIZ', 'PROJECT', 'PRACTICAL', 'ORAL', 'OTHER'] %}
-        <option value="{{ t }}" {% if filters.type == t %}selected{% endif %}>{{ t }}</option>
-        {% endfor %}
-    </select>
-    <select name="status">
-        <option value="">All Statuses</option>
-        {% for s in ['DRAFT', 'SCHEDULED', 'OPEN', 'CLOSED', 'GRADED', 'CANCELLED'] %}
-        <option value="{{ s }}" {% if filters.status == s %}selected{% endif %}>{{ s }}</option>
-        {% endfor %}
-    </select>
-    <button type="submit" class="btn">Filter</button>
-</form>
-
 {% if assessments %}
-<table>
-    <thead>
-        <tr>
-            <th>Title</th>
-            <th>Type</th>
-            <th>Class</th>
-            <th>Date</th>
-            <th>Max Score</th>
-            <th>Status</th>
-            <th>Actions</th>
-        </tr>
-    </thead>
-    <tbody>
-        {% for a in assessments %}
-        <tr>
-            <td><a href="{{ url_for('assessment.admin_assessment_detail', assessment_id=a.id) }}">{{ a.title }}</a></td>
-            <td>{{ a.type }}</td>
-            <td>{{ a.academy_class.title }}</td>
-            <td>{{ a.scheduled_date or '-' }}</td>
-            <td>{{ a.max_score }}</td>
-            <td>{{ a.status }}</td>
-            <td>
-                <a href="{{ url_for('assessment.admin_grade_assessment', assessment_id=a.id) }}">Grade</a>
-                <a href="{{ url_for('assessment.admin_assessment_report', assessment_id=a.id) }}">Report</a>
-            </td>
-        </tr>
-        {% endfor %}
-    </tbody>
-</table>
+<div class="table-container">
+    <div class="table-scroll">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>عنوان</th>
+                    <th>نوع</th>
+                    <th>کلاس</th>
+                    <th>تاریخ</th>
+                    <th>حداکثر نمره</th>
+                    <th>وضعیت</th>
+                    <th>عملیات</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for a in assessments %}
+                <tr>
+                    <td><a href="{{ url_for('assessment.admin_assessment_detail', assessment_id=a.id) }}">{{ a.title }}</a></td>
+                    <td>
+                        {% if a.type == 'FINAL_EXAM' %}آزمون پایانی{% elif a.type == 'MIDTERM' %}میان‌ترم{% elif a.type == 'QUIZ' %}کلاسی{% elif a.type == 'PROJECT' %}پروژه{% elif a.type == 'PRACTICAL' %}عملی{% elif a.type == 'ORAL' %}شفاهی{% else %}سایر{% endif %}
+                    </td>
+                    <td>{{ a.academy_class.title }}</td>
+                    <td>{{ a.scheduled_date or '—' }}</td>
+                    <td>{{ a.max_score }}</td>
+                    <td>{{ status_badge(a.status) }}</td>
+                    <td>
+                        <div class="actions">
+                            <a href="{{ url_for('assessment.admin_grade_assessment', assessment_id=a.id) }}" class="btn btn-sm btn-outline">نمره‌گذاری</a>
+                            <a href="{{ url_for('assessment.admin_assessment_report', assessment_id=a.id) }}" class="btn btn-sm btn-ghost">گزارش</a>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
 {% else %}
-<p>No assessments found.</p>
+<div class="empty-state">
+    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+    <h3>هنوز ارزیابی‌ای ثبت نشده است</h3>
+    <p>برای شروع اولین ارزیابی خود را ایجاد کنید.</p>
+    <a href="{{ url_for('assessment.admin_create_assessment') }}" class="btn btn-primary">ایجاد ارزیابی</a>
+</div>
 {% endif %}
 {% endblock %}

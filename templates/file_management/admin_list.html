@@ -3,114 +3,125 @@
 {% block page_title %}لیست فایل‌ها{% endblock %}
 
 {% block page_content %}
-<div class="d-flex justify-content-between align-items-center mb-4">
-    <h4>مدیریت فایل‌ها</h4>
-    <a href="{{ url_for('file_management.admin_orphans') }}" class="btn btn-outline-warning btn-sm">فایل‌های یتیم</a>
+{% from "macros/utils.html" import page_header %}
+{{ page_header("مدیریت فایل‌ها", action_url=url_for('file_management.admin_orphans'), action_label="فایل‌های یتیم") }}
+
+<div class="filter-bar">
+    <form method="GET" class="filter-form">
+        <div class="form-group">
+            <label class="form-label" for="category">دسته‌بندی</label>
+            <select id="category" name="category" class="form-select" onchange="this.form.submit()">
+                <option value="">همه دسته‌ها</option>
+                {% for cat in categories %}
+                    <option value="{{ cat }}" {{ 'selected' if selected_category == cat }}>{{ cat }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="form-group">
+            <label class="form-label" for="status">وضعیت</label>
+            <select id="status" name="status" class="form-select" onchange="this.form.submit()">
+                <option value="ACTIVE" {{ 'selected' if selected_status == 'ACTIVE' }}>فعال</option>
+                <option value="DELETED" {{ 'selected' if selected_status == 'DELETED' }}>حذف شده</option>
+                <option value="" {{ 'selected' if not selected_status }}>همه</option>
+            </select>
+        </div>
+        <div class="form-group" style="flex: 2;">
+            <label class="form-label" for="search">جستجو</label>
+            <input type="text" id="search" name="search" class="form-input" placeholder="جستجوی نام فایل..." value="{{ search }}">
+        </div>
+        <div class="filter-actions">
+            <button type="submit" class="btn btn-primary btn-sm">فیلتر</button>
+            <a href="{{ url_for('file_management.admin_file_list') }}" class="btn btn-secondary btn-sm">پاک کردن</a>
+        </div>
+    </form>
 </div>
 
-<form method="GET" class="row g-2 mb-4">
-    <div class="col-md-2">
-        <select name="category" class="form-select form-select-sm">
-            <option value="">همه دسته‌ها</option>
-            {% for cat in categories %}
-                <option value="{{ cat }}" {{ 'selected' if selected_category == cat }}>{{ cat }}</option>
-            {% endfor %}
-        </select>
-    </div>
-    <div class="col-md-2">
-        <select name="status" class="form-select form-select-sm">
-            <option value="ACTIVE" {{ 'selected' if selected_status == 'ACTIVE' }}>فعال</option>
-            <option value="DELETED" {{ 'selected' if selected_status == 'DELETED' }}>حذف شده</option>
-            <option value="" {{ 'selected' if not selected_status }}>همه</option>
-        </select>
-    </div>
-    <div class="col-md-3">
-        <input type="text" name="search" class="form-control form-control-sm" placeholder="جستجوی نام فایل..." value="{{ search }}">
-    </div>
-    <div class="col-md-2">
-        <button type="submit" class="btn btn-primary btn-sm w-100">فیلتر</button>
-    </div>
-    <div class="col-md-2">
-        <a href="{{ url_for('file_management.admin_file_list') }}" class="btn btn-outline-secondary btn-sm w-100">پاک کردن فیلتر</a>
-    </div>
-</form>
-
-<p class="text-muted">تعداد کل: {{ total }} فایل</p>
+<p class="text-sm text-muted" style="margin-bottom: var(--space-4);">تعداد کل: {{ total }} فایل</p>
 
 {% if files %}
-<div class="table-responsive">
-    <table class="table table-hover table-sm">
-        <thead>
-            <tr>
-                <th>#</th>
-                <th>نام فایل</th>
-                <th>نوع</th>
-                <th>اندازه</th>
-                <th>دسته</th>
-                <th>وضعیت</th>
-                <th>تاریخ ایجاد</th>
-                <th>عملیات</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for f in files %}
-            <tr>
-                <td>{{ f.id }}</td>
-                <td title="{{ f.original_filename }}">{{ f.original_filename[:30] }}{% if f.original_filename|length > 30 %}...{% endif %}</td>
-                <td><code>{{ f.extension }}</code></td>
-                <td>
-                    {% if f.file_size < 1024 %}
-                        {{ f.file_size }} B
-                    {% elif f.file_size < 1048576 %}
-                        {{ "%.1f"|format(f.file_size / 1024) }} KB
-                    {% else %}
-                        {{ "%.1f"|format(f.file_size / 1048576) }} MB
-                    {% endif %}
-                </td>
-                <td><span class="badge bg-secondary">{{ f.category }}</span></td>
-                <td>
-                    {% if f.status == 'ACTIVE' %}
-                        <span class="badge bg-success">فعال</span>
-                    {% else %}
-                        <span class="badge bg-danger">حذف شده</span>
-                    {% endif %}
-                </td>
-                <td>{{ f.created_at.strftime('%Y-%m-%d %H:%M') if f.created_at else '-' }}</td>
-                <td>
-                    <a href="{{ url_for('file_management.admin_file_detail', file_id=f.id) }}" class="btn btn-outline-info btn-xs">جزئیات</a>
-                    {% if f.status == 'ACTIVE' %}
-                    <a href="{{ url_for('file_management.download', file_id=f.id) }}" class="btn btn-outline-success btn-xs">دانلود</a>
-                    {% endif %}
-                </td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
+<div class="table-container">
+    <div class="table-scroll">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>نام فایل</th>
+                    <th>نوع</th>
+                    <th>اندازه</th>
+                    <th>دسته</th>
+                    <th>وضعیت</th>
+                    <th>تاریخ ایجاد</th>
+                    <th>عملیات</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for f in files %}
+                <tr>
+                    <td>{{ f.id }}</td>
+                    <td title="{{ f.original_filename }}" class="truncate" style="max-width: 200px;">{{ f.original_filename }}</td>
+                    <td><code>{{ f.extension }}</code></td>
+                    <td>
+                        {% if f.file_size < 1024 %}
+                            {{ f.file_size }} B
+                        {% elif f.file_size < 1048576 %}
+                            {{ "%.1f"|format(f.file_size / 1024) }} KB
+                        {% else %}
+                            {{ "%.1f"|format(f.file_size / 1048576) }} MB
+                        {% endif %}
+                    </td>
+                    <td><span class="badge badge-secondary">{{ f.category }}</span></td>
+                    <td>
+                        {% if f.status == 'ACTIVE' %}
+                            <span class="badge badge-success">فعال</span>
+                        {% else %}
+                            <span class="badge badge-danger">حذف شده</span>
+                        {% endif %}
+                    </td>
+                    <td>{{ f.created_at.strftime('%Y-%m-%d %H:%M') if f.created_at else '—' }}</td>
+                    <td>
+                        <div class="actions">
+                            <a href="{{ url_for('file_management.admin_file_detail', file_id=f.id) }}" class="btn btn-sm btn-outline">جزئیات</a>
+                            {% if f.status == 'ACTIVE' %}
+                            <a href="{{ url_for('file_management.download', file_id=f.id) }}" class="btn btn-sm btn-ghost">دانلود</a>
+                            {% endif %}
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
 </div>
 
 {% if total_pages > 1 %}
-<nav>
-    <ul class="pagination pagination-sm justify-content-center">
-        {% if page > 1 %}
-            <li class="page-item"><a class="page-link" href="?page={{ page-1 }}&category={{ selected_category or '' }}&status={{ selected_status or '' }}&search={{ search }}">قبلی</a></li>
+<nav class="pagination">
+    {% if page > 1 %}
+    <a class="pagination-item" href="?page={{ page-1 }}&category={{ selected_category or '' }}&status={{ selected_status or '' }}&search={{ search }}">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+    </a>
+    {% endif %}
+    {% for p in range(1, total_pages + 1) %}
+        {% if p == page %}
+            <span class="pagination-item active">{{ p }}</span>
+        {% elif p <= 3 or p > total_pages - 3 or (p >= page - 2 and p <= page + 2) %}
+            <a class="pagination-item" href="?page={{ p }}&category={{ selected_category or '' }}&status={{ selected_status or '' }}&search={{ search }}">{{ p }}</a>
+        {% elif p == 4 or p == total_pages - 3 %}
+            <span class="pagination-ellipsis">...</span>
         {% endif %}
-        {% for p in range(1, total_pages + 1) %}
-            {% if p == page %}
-                <li class="page-item active"><span class="page-link">{{ p }}</span></li>
-            {% elif p <= 3 or p > total_pages - 3 or (p >= page - 2 and p <= page + 2) %}
-                <li class="page-item"><a class="page-link" href="?page={{ p }}&category={{ selected_category or '' }}&status={{ selected_status or '' }}&search={{ search }}">{{ p }}</a></li>
-            {% elif p == 4 or p == total_pages - 3 %}
-                <li class="page-item disabled"><span class="page-link">...</span></li>
-            {% endif %}
-        {% endfor %}
-        {% if page < total_pages %}
-            <li class="page-item"><a class="page-link" href="?page={{ page+1 }}&category={{ selected_category or '' }}&status={{ selected_status or '' }}&search={{ search }}">بعدی</a></li>
-        {% endif %}
-    </ul>
+    {% endfor %}
+    {% if page < total_pages %}
+    <a class="pagination-item" href="?page={{ page+1 }}&category={{ selected_category or '' }}&status={{ selected_status or '' }}&search={{ search }}">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+    </a>
+    {% endif %}
 </nav>
 {% endif %}
 
 {% else %}
-<div class="alert alert-info">فایلی یافت نشد.</div>
+<div class="empty-state">
+    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><polyline points="13 2 13 9 20 9"/></svg>
+    <h3>فایلی یافت نشد</h3>
+    <p>فایلی با فیلترهای انتخاب شده وجود ندارد.</p>
+</div>
 {% endif %}
 {% endblock %}

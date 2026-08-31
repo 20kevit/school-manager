@@ -1,45 +1,67 @@
 {% extends "base.html" %}
-{% block title %}Grade History - {{ assessment.title }}{% endblock %}
+{% block title %}تاریخچه نمره‌گذاری - {{ assessment.title }}{% endblock %}
 {% block content %}
-<h1>Grade History: {{ assessment.title }}</h1>
+{% from "macros/utils.html" import page_header %}
+{{ page_header("تاریخچه نمره‌گذاری: " ~ assessment.title) }}
 
 {% if history_data %}
 {% for item in history_data %}
-<div class="card" style="margin-bottom: 1rem;">
-    <h3>{{ item.student.student_profile.first_name }} {{ item.student.student_profile.last_name }}</h3>
-    <p><strong>Current Score:</strong> {{ item.result.score if item.result.score is not None else '-' }} / {{ item.result.max_score }}</p>
-    <p><strong>Pass/Fail:</strong> {{ item.result.pass_fail }}</p>
+<div class="detail-card" style="margin-bottom: 1rem;">
+    <div class="detail-row">
+        <span class="detail-row-label">دانش‌آموز</span>
+        <span class="detail-row-value">{{ item.student.student_profile.first_name }} {{ item.student.student_profile.last_name }}</span>
+    </div>
+    <div class="detail-row">
+        <span class="detail-row-label">نمره فعلی</span>
+        <span class="detail-row-value">{{ item.result.score if item.result.score is not None else '—' }} / {{ item.result.max_score }}</span>
+    </div>
+    <div class="detail-row">
+        <span class="detail-row-label">وضعیت قبولی</span>
+        <span class="detail-row-value">{{ item.result.pass_fail }}</span>
+    </div>
+</div>
 
-    <h4>Correction History</h4>
-    <table>
-        <thead>
-            <tr>
-                <th>Date</th>
-                <th>Previous Score</th>
-                <th>New Score</th>
-                <th>Previous Pass/Fail</th>
-                <th>New Pass/Fail</th>
-                <th>Reason</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for h in item.history %}
-            <tr>
-                <td>{{ h.corrected_at.strftime('%Y-%m-%d %H:%M') if h.corrected_at else '-' }}</td>
-                <td>{{ h.previous_score if h.previous_score is not None else '-' }}</td>
-                <td>{{ h.new_score if h.new_score is not None else '-' }}</td>
-                <td>{{ h.previous_pass_fail }}</td>
-                <td>{{ h.new_pass_fail }}</td>
-                <td>{{ h.reason or '-' }}</td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
+<div class="page-header" style="margin-top: 1rem;">
+    <div class="page-header-content">
+        <h3>تاریخچه اصلاحات</h3>
+    </div>
+</div>
+
+<div class="table-container">
+    <div class="table-scroll">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>تاریخ</th>
+                    <th>نمره قبلی</th>
+                    <th>نمره جدید</th>
+                    <th>وضعیت قبلی</th>
+                    <th>وضعیت جدید</th>
+                    <th>دلیل</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for h in item.history %}
+                <tr>
+                    <td>{{ h.corrected_at.strftime('%Y-%m-%d %H:%M') if h.corrected_at else '—' }}</td>
+                    <td>{{ h.previous_score if h.previous_score is not None else '—' }}</td>
+                    <td>{{ h.new_score if h.new_score is not None else '—' }}</td>
+                    <td>{{ h.previous_pass_fail }}</td>
+                    <td>{{ h.new_pass_fail }}</td>
+                    <td>{{ h.reason or '—' }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
 </div>
 {% endfor %}
 {% else %}
-<p>No grading history found for this assessment.</p>
+<div class="empty-state">
+    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+    <h3>تاریخچه نمره‌گذاری‌ای برای این ارزیابی یافت نشد</h3>
+</div>
 {% endif %}
 
-<a href="{{ url_for('assessment.teacher_assessment_detail', assessment_id=assessment.id) }}">Back to assessment</a>
+<a href="{{ url_for('assessment.teacher_assessment_detail', assessment_id=assessment.id) }}" class="btn btn-secondary" style="margin-top: 1rem;">بازگشت به ارزیابی</a>
 {% endblock %}

@@ -1,34 +1,26 @@
 {% extends "base.html" %}
+{% from "macros/utils.html" import page_header, status_badge %}
 {% block title %}{{ course.title }}{% endblock %}
 {% block content %}
-<div class="page-header">
-    <h1>{{ course.title }}</h1>
-    <div class="header-actions">
-        <a href="{{ url_for('academy.course_edit', course_id=course.id) }}" class="btn btn-outline">ویرایش</a>
-        <a href="{{ url_for('academy.class_create') }}?course_id={{ course.id }}" class="btn btn-primary">ایجاد کلاس</a>
-    </div>
-</div>
+{{ page_header(course.title) }}
 
-{% with messages = get_flashed_messages(with_categories=true) %}
-    {% if messages %}
-        {% for category, message in messages %}
-            <div class="alert alert-{{ category }}">{{ message }}</div>
-        {% endfor %}
-    {% endif %}
-{% endwith %}
+<div class="page-header-actions" style="margin-bottom: 1.5rem;">
+    <a href="{{ url_for('academy.course_edit', course_id=course.id) }}" class="btn btn-outline">ویرایش</a>
+    <a href="{{ url_for('academy.class_create') }}?course_id={{ course.id }}" class="btn btn-primary">ایجاد کلاس</a>
+</div>
 
 <div class="detail-card">
     <div class="detail-row">
-        <strong>توضیحات:</strong>
-        <span>{{ course.description or '—' }}</span>
+        <span class="detail-row-label">توضیحات:</span>
+        <span class="detail-row-value">{{ course.description or '—' }}</span>
     </div>
     <div class="detail-row">
-        <strong>تعداد جلسات:</strong>
-        <span>{{ course.num_sessions }}</span>
+        <span class="detail-row-label">تعداد جلسات:</span>
+        <span class="detail-row-value">{{ course.num_sessions }}</span>
     </div>
     <div class="detail-row">
-        <strong>محدوده سنی:</strong>
-        <span>
+        <span class="detail-row-label">محدوده سنی:</span>
+        <span class="detail-row-value">
             {% if course.min_age is not none or course.max_age is not none %}
                 {{ course.min_age or '—' }} تا {{ course.max_age or '—' }}
             {% else %}
@@ -37,8 +29,8 @@
         </span>
     </div>
     <div class="detail-row">
-        <strong>پیش‌نیازها:</strong>
-        <span>{{ course.prerequisites or '—' }}</span>
+        <span class="detail-row-label">پیش‌نیازها:</span>
+        <span class="detail-row-value">{{ course.prerequisites or '—' }}</span>
     </div>
 </div>
 
@@ -48,29 +40,29 @@
 
 <div class="form-card">
     <h3>افزودن آیتم جدید</h3>
-    <form method="POST" action="{{ url_for('academy.syllabus_add', course_id=course.id) }}" class="auth-form">
-        <div class="form-row">
+    <form method="POST" action="{{ url_for('academy.syllabus_add', course_id=course.id) }}">
+        <div class="form-grid">
             <div class="form-group">
-                <label for="order">ترتیب</label>
-                <input type="number" id="order" name="order" min="1" required>
+                <label class="form-label" for="order">ترتیب</label>
+                <input class="form-input" type="number" id="order" name="order" min="1" required>
             </div>
             <div class="form-group" style="flex: 2;">
-                <label for="title">عنوان</label>
-                <input type="text" id="title" name="title" required>
+                <label class="form-label" for="title">عنوان</label>
+                <input class="form-input" type="text" id="title" name="title" required>
             </div>
         </div>
         <div class="form-group">
-            <label for="description">توضیحات</label>
-            <textarea id="description" name="description" rows="2"></textarea>
+            <label class="form-label" for="description">توضیحات</label>
+            <textarea class="form-textarea" id="description" name="description" rows="2"></textarea>
         </div>
-        <div class="form-row">
+        <div class="form-grid">
             <div class="form-group">
-                <label for="homework">تکلیف</label>
-                <input type="text" id="homework" name="homework">
+                <label class="form-label" for="homework">تکلیف</label>
+                <input class="form-input" type="text" id="homework" name="homework">
             </div>
             <div class="form-group">
-                <label for="assessment">ارزیابی</label>
-                <input type="text" id="assessment" name="assessment">
+                <label class="form-label" for="assessment">ارزیابی</label>
+                <input class="form-input" type="text" id="assessment" name="assessment">
             </div>
         </div>
         <button type="submit" class="btn btn-primary">افزودن</button>
@@ -79,35 +71,39 @@
 
 {% if syllabus %}
 <div class="table-container">
-    <table class="data-table">
-        <thead>
-            <tr>
-                <th>ترتیب</th>
-                <th>عنوان</th>
-                <th>توضیحات</th>
-                <th>تکلیف</th>
-                <th>عملیات</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for item in syllabus %}
-            <tr>
-                <td>{{ item.order }}</td>
-                <td>{{ item.title }}</td>
-                <td>{{ item.description or '—' }}</td>
-                <td>{{ item.homework or '—' }}</td>
-                <td>
-                    <form method="POST" action="{{ url_for('academy.syllabus_delete', item_id=item.id) }}" style="display:inline;">
-                        <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('آیا مطمئن هستید؟')">حذف</button>
-                    </form>
-                </td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
+    <div class="table-scroll">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>ترتیب</th>
+                    <th>عنوان</th>
+                    <th>توضیحات</th>
+                    <th>تکلیف</th>
+                    <th>عملیات</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in syllabus %}
+                <tr>
+                    <td>{{ item.order }}</td>
+                    <td>{{ item.title }}</td>
+                    <td>{{ item.description or '—' }}</td>
+                    <td>{{ item.homework or '—' }}</td>
+                    <td>
+                        <form method="POST" action="{{ url_for('academy.syllabus_delete', item_id=item.id) }}" style="display:inline;">
+                            <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('آیا مطمئن هستید؟')">حذف</button>
+                        </form>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
 </div>
 {% else %}
-<p class="empty-state">برنامه درسی تعریف نشده است.</p>
+<div class="empty-state">
+    <h3>برنامه درسی تعریف نشده است.</h3>
+</div>
 {% endif %}
 
 <div class="section-header" style="margin-top: 2rem;">
@@ -116,28 +112,32 @@
 {% set class_list = course.classes %}
 {% if class_list %}
 <div class="table-container">
-    <table class="data-table">
-        <thead>
-            <tr>
-                <th>عنوان</th>
-                <th>تاریخ شروع</th>
-                <th>ظرفیت</th>
-                <th>وضعیت</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for cls in class_list %}
-            <tr>
-                <td><a href="{{ url_for('academy.class_detail', class_id=cls.id) }}">{{ cls.title }}</a></td>
-                <td>{{ cls.start_date }}</td>
-                <td>{{ cls.capacity }}</td>
-                <td><span class="status-badge status-{{ cls.status|lower }}">{{ cls.status }}</span></td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
+    <div class="table-scroll">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>عنوان</th>
+                    <th>تاریخ شروع</th>
+                    <th>ظرفیت</th>
+                    <th>وضعیت</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for cls in class_list %}
+                <tr>
+                    <td><a href="{{ url_for('academy.class_detail', class_id=cls.id) }}">{{ cls.title }}</a></td>
+                    <td>{{ cls.start_date }}</td>
+                    <td>{{ cls.capacity }}</td>
+                    <td>{{ status_badge(cls.status) }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
 </div>
 {% else %}
-<p class="empty-state">کلاسی برای این درس ثبت نشده است.</p>
+<div class="empty-state">
+    <h3>کلاسی برای این درس ثبت نشده است.</h3>
+</div>
 {% endif %}
 {% endblock %}

@@ -3,50 +3,57 @@
 {% block page_title %}فایل‌های یتیم{% endblock %}
 
 {% block page_content %}
-<div class="d-flex justify-content-between align-items-center mb-4">
-    <h4>فایل‌های یتیم</h4>
-    <a href="{{ url_for('file_management.admin_file_list') }}" class="btn btn-outline-secondary btn-sm">بازگشت به لیست</a>
-</div>
+{% from "macros/utils.html" import page_header %}
 
-<p class="text-muted">
+{{ page_header("فایل‌های یتیم", action_url=url_for('file_management.admin_file_list'), action_label="بازگشت به لیست") }}
+
+<p class="text-muted text-sm" style="margin-bottom: var(--space-4);">
     فایل‌هایی که بدون اتصال به موجودیت یا بدون فایل ذخیره شده در دیسک هستند.
 </p>
 
 {% if orphans %}
-<div class="table-responsive">
-    <table class="table table-hover table-sm">
-        <thead>
-            <tr>
-                <th>#</th>
-                <th>نام فایل</th>
-                <th>نوع</th>
-                <th>اندازه</th>
-                <th>دسته</th>
-                <th>موجودیت</th>
-                <th>عملیات</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for f in orphans %}
-            <tr>
-                <td>{{ f.id }}</td>
-                <td>{{ f.original_filename[:30] }}{% if f.original_filename|length > 30 %}...{% endif %}</td>
-                <td><code>{{ f.extension }}</code></td>
-                <td>{{ f.file_size }}</td>
-                <td><span class="badge bg-secondary">{{ f.category }}</span></td>
-                <td>{{ f.entity_type or 'ندارد' }} {{ f.entity_id or '' }}</td>
-                <td>
-                    <a href="{{ url_for('file_management.admin_file_detail', file_id=f.id) }}" class="btn btn-outline-info btn-xs">جزئیات</a>
-                    <form method="POST" action="{{ url_for('file_management.admin_delete_file', file_id=f.id) }}" style="display:inline" onsubmit="return confirm('حذف این فایل یتیم؟')">
-                        <button type="submit" class="btn btn-outline-danger btn-xs">حذف</button>
-                    </form>
-                </td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
+<div class="table-container">
+    <div class="table-scroll">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>نام فایل</th>
+                    <th>نوع</th>
+                    <th>اندازه</th>
+                    <th>دسته</th>
+                    <th>موجودیت</th>
+                    <th>عملیات</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for f in orphans %}
+                <tr>
+                    <td>{{ f.id }}</td>
+                    <td class="truncate" style="max-width: 200px;" title="{{ f.original_filename }}">{{ f.original_filename }}</td>
+                    <td><code>{{ f.extension }}</code></td>
+                    <td>{{ f.file_size }}</td>
+                    <td><span class="badge badge-secondary">{{ f.category }}</span></td>
+                    <td>{{ f.entity_type or 'ندارد' }} {{ f.entity_id or '' }}</td>
+                    <td>
+                        <div class="actions">
+                            <a href="{{ url_for('file_management.admin_file_detail', file_id=f.id) }}" class="btn btn-sm btn-outline">جزئیات</a>
+                            <form method="POST" action="{{ url_for('file_management.admin_delete_file', file_id=f.id) }}" style="display:inline">
+                                <button type="submit" class="btn btn-sm btn-danger" data-confirm="حذف این فایل یتیم؟">حذف</button>
+                            </form>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
 </div>
 {% else %}
-<div class="alert alert-success">فایل یتیمی یافت نشد.</div>
+<div class="empty-state">
+    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+    <h3>فایل یتیمی یافت نشد</h3>
+    <p>تمام فایل‌ها به درستی به موجودیت‌ها متصل هستند.</p>
+</div>
 {% endif %}
 {% endblock %}

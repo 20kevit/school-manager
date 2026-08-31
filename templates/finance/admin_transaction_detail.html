@@ -1,80 +1,70 @@
 {% extends "base.html" %}
+{% from "macros/utils.html" import page_header, status_badge %}
 {% block title %}جزئیات تراکنش{% endblock %}
 {% block content %}
-<div class="page-header">
-    <h1>جزئیات تراکنش #{{ transaction.id }}</h1>
-    <a href="{{ url_for('finance.admin_transactions') }}" class="btn btn-outline">بازگشت</a>
-</div>
-
-{% with messages = get_flashed_messages(with_categories=true) %}
-    {% if messages %}
-        {% for category, message in messages %}
-            <div class="alert alert-{{ category }}">{{ message }}</div>
-        {% endfor %}
-    {% endif %}
-{% endwith %}
+{{ page_header("جزئیات تراکنش #" ~ transaction.id) }}
 
 <div class="detail-card">
     <div class="detail-row">
-        <span class="detail-label">شناسه:</span>
-        <span class="detail-value">{{ transaction.id }}</span>
+        <span class="detail-row-label">شناسه:</span>
+        <span class="detail-row-value">{{ transaction.id }}</span>
     </div>
     <div class="detail-row">
-        <span class="detail-label">دانش‌آموز:</span>
-        <span class="detail-value">{{ transaction.student.login }}</span>
+        <span class="detail-row-label">دانش‌آموز:</span>
+        <span class="detail-row-value">{{ transaction.student.login }}</span>
     </div>
     <div class="detail-row">
-        <span class="detail-label">نوع تراکنش:</span>
-        <span class="detail-value"><span class="status-badge status-{{ transaction.transaction_type|lower }}">{{ transaction.transaction_type }}</span></span>
+        <span class="detail-row-label">نوع تراکنش:</span>
+        <span class="detail-row-value">{{ status_badge(transaction.transaction_type) }}</span>
     </div>
     <div class="detail-row">
-        <span class="detail-label">دسته‌بندی:</span>
-        <span class="detail-value">{{ transaction.category }}</span>
+        <span class="detail-row-label">دسته‌بندی:</span>
+        <span class="detail-row-value">{{ transaction.category }}</span>
     </div>
     <div class="detail-row">
-        <span class="detail-label">مبلغ:</span>
-        <span class="detail-value">{{ "{:,.0f}".format(transaction.amount) }} تومان</span>
+        <span class="detail-row-label">مبلغ:</span>
+        <span class="detail-row-value">{{ "{:,.0f}".format(transaction.amount) }} تومان</span>
     </div>
     <div class="detail-row">
-        <span class="detail-label">روش پرداخت:</span>
-        <span class="detail-value">{{ transaction.payment_method or '-' }}</span>
+        <span class="detail-row-label">روش پرداخت:</span>
+        <span class="detail-row-value">{{ transaction.payment_method or '-' }}</span>
     </div>
     <div class="detail-row">
-        <span class="detail-label">وضعیت:</span>
-        <span class="detail-value"><span class="status-badge status-{{ transaction.status|lower }}">{{ transaction.status }}</span></span>
+        <span class="detail-row-label">وضعیت:</span>
+        <span class="detail-row-value">{{ status_badge(transaction.status) }}</span>
     </div>
     <div class="detail-row">
-        <span class="detail-label">توضیحات:</span>
-        <span class="detail-value">{{ transaction.description or '-' }}</span>
+        <span class="detail-row-label">توضیحات:</span>
+        <span class="detail-row-value">{{ transaction.description or '-' }}</span>
     </div>
     <div class="detail-row">
-        <span class="detail-label">شماره مرجع:</span>
-        <span class="detail-value">{{ transaction.reference_number or '-' }}</span>
+        <span class="detail-row-label">شماره مرجع:</span>
+        <span class="detail-row-value">{{ transaction.reference_number or '-' }}</span>
     </div>
     <div class="detail-row">
-        <span class="detail-label">تاریخ ایجاد:</span>
-        <span class="detail-value">{{ transaction.created_at.strftime('%Y-%m-%d %H:%M') }}</span>
+        <span class="detail-row-label">تاریخ ایجاد:</span>
+        <span class="detail-row-value">{{ transaction.created_at.strftime('%Y-%m-%d %H:%M') }}</span>
     </div>
     <div class="detail-row">
-        <span class="detail-label">ایجاد شده توسط:</span>
-        <span class="detail-value">{{ transaction.creator.login if transaction.creator else '-' }}</span>
+        <span class="detail-row-label">ایجاد شده توسط:</span>
+        <span class="detail-row-value">{{ transaction.creator.login if transaction.creator else '-' }}</span>
     </div>
     {% if transaction.enrollment_id %}
     <div class="detail-row">
-        <span class="detail-label">ثبت‌نام مرتبط:</span>
-        <span class="detail-value">#{{ transaction.enrollment_id }}</span>
+        <span class="detail-row-label">ثبت‌نام مرتبط:</span>
+        <span class="detail-row-value">#{{ transaction.enrollment_id }}</span>
     </div>
     {% endif %}
     {% if transaction.class_id %}
     <div class="detail-row">
-        <span class="detail-label">کلاس مرتبط:</span>
-        <span class="detail-value">{{ transaction.academy_class.title }}</span>
+        <span class="detail-row-label">کلاس مرتبط:</span>
+        <span class="detail-row-value">{{ transaction.academy_class.title }}</span>
     </div>
     {% endif %}
     {% if transaction.related_transaction_id %}
     <div class="detail-row">
-        <span class="detail-label">تراکنش مرتبط:</span>
-        <span class="detail-value">#{{ transaction.related_transaction_id }}</span>
+        <span class="detail-row-label">تراکنش مرتبط:</span>
+        <span class="detail-row-value">#{{ transaction.related_transaction_id }}</span>
     </div>
     {% endif %}
 </div>
@@ -84,8 +74,8 @@
     <h3>عملیات</h3>
     <form method="POST" action="{{ url_for('finance.admin_correct_transaction', transaction_id=transaction.id) }}" style="display:inline;">
         <div class="form-inline">
-            <input type="number" name="new_amount" step="0.01" placeholder="مبلغ جدید" required>
-            <input type="text" name="new_description" placeholder="توضیحات جدید">
+            <input class="form-input" type="number" name="new_amount" step="0.01" placeholder="مبلغ جدید" required>
+            <input class="form-input" type="text" name="new_description" placeholder="توضیحات جدید">
             <button type="submit" class="btn btn-sm btn-primary" onclick="return confirm('آیا مطمئن هستید؟')">اصلاح تراکنش</button>
         </div>
     </form>

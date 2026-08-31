@@ -1,61 +1,106 @@
 {% extends "base.html" %}
+{% from "macros/utils.html" import page_header, status_badge %}
 {% block title %}جزئیات اعلان {{ notification.id }}{% endblock %}
 {% block content %}
-<h1>جزئیات اعلان</h1>
+{{ page_header("جزئیات اعلان #" ~ notification.id) }}
 
-<table>
-    <tr><th>شناسه</th><td>{{ notification.id }}</td></tr>
-    <tr><th>نوع</th><td>{{ notification.notification_type }}</td></tr>
-    <tr><th>عنوان</th><td>{{ notification.title }}</td></tr>
-    <tr><th>پیام</th><td>{{ notification.message }}</td></tr>
-    <tr><th>گیرنده</th><td>{{ recipient.login if recipient else notification.recipient_user_id }}</td></tr>
-    <tr><th>اولویت</th><td>{{ notification.priority }}</td></tr>
-    <tr><th>وضعیت</th><td>{{ notification.status }}</td></tr>
-    <tr><th>تعداد تلاش</th><td>{{ notification.retry_count }}</td></tr>
-    <tr><th>دلیل خطا</th><td>{{ notification.failure_reason or '-' }}</td></tr>
-    <tr><th>تاریخ ایجاد</th><td>{{ notification.created_at.strftime('%Y-%m-%d %H:%M') if notification.created_at else '' }}</td></tr>
-    <tr><th>تاریخ ارسال</th><td>{{ notification.sent_at.strftime('%Y-%m-%d %H:%M') if notification.sent_at else '-' }}</td></tr>
-</table>
+<div class="detail-card">
+    <div class="detail-row">
+        <span class="detail-label">شناسه:</span>
+        <span class="detail-value">{{ notification.id }}</span>
+    </div>
+    <div class="detail-row">
+        <span class="detail-label">نوع:</span>
+        <span class="detail-value">{{ notification.notification_type }}</span>
+    </div>
+    <div class="detail-row">
+        <span class="detail-label">عنوان:</span>
+        <span class="detail-value">{{ notification.title }}</span>
+    </div>
+    <div class="detail-row">
+        <span class="detail-label">پیام:</span>
+        <span class="detail-value">{{ notification.message }}</span>
+    </div>
+    <div class="detail-row">
+        <span class="detail-label">گیرنده:</span>
+        <span class="detail-value">{{ recipient.login if recipient else notification.recipient_user_id }}</span>
+    </div>
+    <div class="detail-row">
+        <span class="detail-label">اولویت:</span>
+        <span class="detail-value">{{ notification.priority }}</span>
+    </div>
+    <div class="detail-row">
+        <span class="detail-label">وضعیت:</span>
+        <span class="detail-value">{{ status_badge(notification.status) }}</span>
+    </div>
+    <div class="detail-row">
+        <span class="detail-label">تعداد تلاش:</span>
+        <span class="detail-value">{{ notification.retry_count }}</span>
+    </div>
+    <div class="detail-row">
+        <span class="detail-label">دلیل خطا:</span>
+        <span class="detail-value">{{ notification.failure_reason or '-' }}</span>
+    </div>
+    <div class="detail-row">
+        <span class="detail-label">تاریخ ایجاد:</span>
+        <span class="detail-value">{{ notification.created_at.strftime('%Y-%m-%d %H:%M') if notification.created_at else '' }}</span>
+    </div>
+    <div class="detail-row">
+        <span class="detail-label">تاریخ ارسال:</span>
+        <span class="detail-value">{{ notification.sent_at.strftime('%Y-%m-%d %H:%M') if notification.sent_at else '-' }}</span>
+    </div>
+</div>
 
-<h2>وضعیت ارسال</h2>
-<table>
-    <thead>
-        <tr>
-            <th>کانال</th>
-            <th>وضعیت</th>
-            <th>ارائه‌دهنده</th>
-            <th>شناسه پیام</th>
-            <th>تعداد تلاش</th>
-            <th>خطا</th>
-            <th>تاریخ ارسال</th>
-        </tr>
-    </thead>
-    <tbody>
-        {% for d in deliveries %}
-        <tr>
-            <td>{{ d.channel }}</td>
-            <td>{{ d.status }}</td>
-            <td>{{ d.provider_name or '-' }}</td>
-            <td>{{ d.provider_message_id or '-' }}</td>
-            <td>{{ d.attempt_count }}</td>
-            <td>{{ d.failure_reason or '-' }}</td>
-            <td>{{ d.sent_at.strftime('%Y-%m-%d %H:%M') if d.sent_at else '-' }}</td>
-        </tr>
-        {% endfor %}
-    </tbody>
-</table>
+<h2 style="margin-top: 1.5rem;">وضعیت ارسال</h2>
+{% if deliveries %}
+<div class="table-container">
+    <div class="table-scroll">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>کانال</th>
+                    <th>وضعیت</th>
+                    <th>ارائه‌دهنده</th>
+                    <th>شناسه پیام</th>
+                    <th>تعداد تلاش</th>
+                    <th>خطا</th>
+                    <th>تاریخ ارسال</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for d in deliveries %}
+                <tr>
+                    <td>{{ d.channel }}</td>
+                    <td>{{ status_badge(d.status) }}</td>
+                    <td>{{ d.provider_name or '-' }}</td>
+                    <td>{{ d.provider_message_id or '-' }}</td>
+                    <td>{{ d.attempt_count }}</td>
+                    <td>{{ d.failure_reason or '-' }}</td>
+                    <td>{{ d.sent_at.strftime('%Y-%m-%d %H:%M') if d.sent_at else '-' }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% else %}
+<div class="empty-state">
+    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 17H2a3 3 0 0 0 3-3V9a7 7 0 0 1 14 0v5a3 3 0 0 0 3 3zm-8.27 4a2 2 0 0 1-3.46 0"/></svg>
+    <h3>اطلاعات ارسالی موجود نیست</h3>
+</div>
+{% endif %}
 
-<div style="margin-top:15px;">
+<div class="action-links" style="margin-top: 1.5rem;">
     {% if notification.status == "FAILED" %}
     <form method="post" action="{{ url_for('notification.admin_retry', notification_id=notification.id) }}" style="display:inline;">
-        <button type="submit" class="btn">تلاش مجدد</button>
+        <button type="submit" class="btn btn-primary">تلاش مجدد</button>
     </form>
     {% endif %}
     {% if notification.status in ["PENDING", "SENDING"] %}
     <form method="post" action="{{ url_for('notification.admin_cancel', notification_id=notification.id) }}" style="display:inline;">
-        <button type="submit" class="btn">لغو</button>
+        <button type="submit" class="btn btn-danger">لغو</button>
     </form>
     {% endif %}
-    <a href="{{ url_for('notification.admin_dashboard') }}">بازگشت</a>
+    <a href="{{ url_for('notification.admin_dashboard') }}" class="btn btn-secondary">بازگشت</a>
 </div>
 {% endblock %}

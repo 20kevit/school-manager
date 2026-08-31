@@ -1,6 +1,6 @@
 {% extends "reporting/base_report.html" %}
 
-{% block title %}گزارش مالی - Academy{% endblock %}
+{% block title %}گزارش مالی - آکادمی{% endblock %}
 
 {% block report_title %}گزارش مالی{% endblock %}
 
@@ -10,69 +10,71 @@
 {% endblock %}
 
 {% block report_content %}
-<div class="report-filters">
-    <form method="GET" action="{{ url_for('reporting.admin_finance_report') }}">
-        <div class="filter-group">
-            <label for="start_date">از تاریخ:</label>
-            <input type="date" name="start_date" id="start_date" value="{{ start_date or '' }}">
+<div class="filter-bar">
+    <form class="filter-form" method="GET" action="{{ url_for('reporting.admin_finance_report') }}">
+        <div class="form-group">
+            <label class="form-label" for="start_date">از تاریخ:</label>
+            <input class="form-input" type="date" name="start_date" id="start_date" value="{{ start_date or '' }}">
         </div>
-        <div class="filter-group">
-            <label for="end_date">تا تاریخ:</label>
-            <input type="date" name="end_date" id="end_date" value="{{ end_date or '' }}">
+        <div class="form-group">
+            <label class="form-label" for="end_date">تا تاریخ:</label>
+            <input class="form-input" type="date" name="end_date" id="end_date" value="{{ end_date or '' }}">
         </div>
         <button type="submit" class="btn btn-primary">اعمال فیلتر</button>
     </form>
 </div>
 
-<div class="report-card">
-    <h2>آمار کلی مالی</h2>
-    <div class="report-stats">
-        <div class="stat-item">
-            <span class="stat-value">{{ "{:,.0f}".format(report.total_payments) }}</span>
-            <span class="stat-label">کل پرداختی‌ها (تومان)</span>
-        </div>
-        <div class="stat-item">
-            <span class="stat-value">{{ "{:,.0f}".format(report.total_charges) }}</span>
-            <span class="stat-label">کل هزینه‌ها (تومان)</span>
-        </div>
-        <div class="stat-item">
-            <span class="stat-value">{{ "{:,.0f}".format(report.total_discounts) }}</span>
-            <span class="stat-label">کل تخفیف‌ها (تومان)</span>
-        </div>
-        <div class="stat-item">
-            <span class="stat-value">{{ "{:,.0f}".format(report.total_refunds) }}</span>
-            <span class="stat-label">کل بازپرداخت‌ها (تومان)</span>
-        </div>
-        <div class="stat-item">
-            <span class="stat-value">{{ "{:,.0f}".format(report.net_revenue) }}</span>
-            <span class="stat-label">درآمد خالص (تومان)</span>
-        </div>
+<div class="detail-card">
+    <div class="detail-header"><h3>آمار کلی مالی</h3></div>
+    <div class="detail-row">
+        <span class="detail-row-label">کل پرداختی‌ها (تومان)</span>
+        <span class="detail-row-value">{{ "{:,.0f}".format(report.total_payments) }}</span>
+    </div>
+    <div class="detail-row">
+        <span class="detail-row-label">کل هزینه‌ها (تومان)</span>
+        <span class="detail-row-value">{{ "{:,.0f}".format(report.total_charges) }}</span>
+    </div>
+    <div class="detail-row">
+        <span class="detail-row-label">کل تخفیف‌ها (تومان)</span>
+        <span class="detail-row-value">{{ "{:,.0f}".format(report.total_discounts) }}</span>
+    </div>
+    <div class="detail-row">
+        <span class="detail-row-label">کل بازپرداخت‌ها (تومان)</span>
+        <span class="detail-row-value">{{ "{:,.0f}".format(report.total_refunds) }}</span>
+    </div>
+    <div class="detail-row">
+        <span class="detail-row-label">درآمد خالص (تومان)</span>
+        <span class="detail-row-value">{{ "{:,.0f}".format(report.net_revenue) }}</span>
     </div>
 </div>
 
 {% if report.debt_by_student %}
-<div class="report-card">
-    <h2>بدهی دانش‌آموزان</h2>
-    <table class="report-table">
-        <thead>
-            <tr>
-                <th>دانش‌آموز</th>
-                <th>بدهی (تومان)</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for item in report.debt_by_student %}
-            <tr>
-                <td>
-                    <a href="{{ url_for('reporting.admin_student_report', student_id=item.student_id) }}">
-                        {{ item.student_name }}
-                    </a>
-                </td>
-                <td>{{ "{:,.0f}".format(item.balance) }}</td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
+<div class="detail-card">
+    <div class="detail-header"><h3>بدهی دانش‌آموزان</h3></div>
+    <div class="table-container">
+        <div class="table-scroll">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>دانش‌آموز</th>
+                        <th>بدهی (تومان)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in report.debt_by_student %}
+                    <tr>
+                        <td>
+                            <a href="{{ url_for('reporting.admin_student_report', student_id=item.student_id) }}">
+                                {{ item.student_name }}
+                            </a>
+                        </td>
+                        <td>{{ "{:,.0f}".format(item.balance) }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
 </div>
 {% endif %}
 {% endblock %}
