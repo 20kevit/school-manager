@@ -1,6 +1,7 @@
 {% extends "base.html" %}
 {% block title %}صورت حساب دانش‌آموز - {{ student.login }}{% endblock %}
 {% block content %}
+{% from "macros/utils.html" import status_badge %}
 <div class="page-header">
     <h1>صورت حساب {{ student.student_profile.first_name }} {{ student.student_profile.last_name }}</h1>
     <a href="{{ url_for('finance.admin_transactions') }}" class="btn btn-outline">بازگشت</a>
@@ -38,9 +39,9 @@
         <tbody>
             {% for tx in transactions %}
             <tr>
-                <td>{{ tx.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
-                <td><span class="status-badge status-{{ tx.transaction_type|lower }}">{{ tx.transaction_type }}</span></td>
-                <td>{{ tx.category }}</td>
+                <td>{{ tx.created_at|jalali_datetime }}</td>
+                <td>{{ status_badge(tx.transaction_type.value) }}</td>
+                <td>{{ status_badge(tx.category.value) }}</td>
                 <td class="{{ 'positive' if tx.transaction_type in ['PAYMENT', 'DISCOUNT'] else 'negative' }}">
                     {{ '+' if tx.transaction_type in ['PAYMENT', 'DISCOUNT'] else '-' }}{{ "{:,.0f}".format(tx.amount) }}
                 </td>

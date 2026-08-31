@@ -16,6 +16,7 @@ from app.application.academy.class_service import (
     shift_sessions_after_cancellation,
     update_class,
     update_class_schedule,
+    update_session,
 )
 from app.application.academy.course_service import (
     CourseError,
@@ -24,6 +25,7 @@ from app.application.academy.course_service import (
     delete_course,
     delete_syllabus_item,
     get_course,
+    get_next_syllabus_order,
     get_syllabus_items,
     list_courses,
     update_course,
@@ -77,8 +79,12 @@ def course_detail(course_id):
         flash("Course not found.", "error")
         return redirect(url_for("academy.course_list"))
     syllabus = get_syllabus_items(course_id)
+    next_order = get_next_syllabus_order(course_id)
     return render_template(
-        "academy/course_detail.html", course=course, syllabus=syllabus
+        "academy/course_detail.html",
+        course=course,
+        syllabus=syllabus,
+        next_order=next_order,
     )
 
 
@@ -354,6 +360,36 @@ def session_detail(session_id):
     academy_class = get_class(session.class_id)
     return render_template(
         "academy/session_detail.html",
+        session=session,
+        class_obj=academy_class,
+    )
+
+
+@academy_bp.route("/sessions/<int:session_id>/edit", methods=["GET", "POST"])
+@login_required
+@role_required("ADMIN")
+def session_edit(session_id):
+    session = get_session(session_id)
+    if session is None:
+        flash("Session not found.", "error")
+        return redirect(url_for("academy.class_list"))
+    academy_class = get_class(session.class_id)
+    if request.method == "POST":
+        try:
+            update_session(
+                session,
+                title=request.form.get("title"),
+                description=request.form.get("description"),
+                scheduled_date=_parse_date(request.form["scheduled_date"]),
+                start_time=_parse_time(request.form["start_time"]),
+                end_time=_parse_time(request.form["end_time"]),
+            )
+            flash("Session updated successfully.", "success")
+            return redirect(url_for("academy.session_detail", session_id=session_id))
+        except (ClassError, ValueError) as e:
+            flash(str(e), "error")
+    return render_template(
+        "academy/session_edit.html",
         session=session,
         class_obj=academy_class,
     )

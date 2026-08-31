@@ -1,13 +1,14 @@
 {% extends "base.html" %}
 {% block title %}اعلان‌های من - آکادمی{% endblock %}
 {% block content %}
-{% from "macros/utils.html" import page_header %}
+{% from "macros/utils.html" import page_header, status_badge %}
 {{ page_header("اعلان‌های من") }}
 
 {% if unread_count > 0 %}
 <div style="margin-bottom: var(--space-4); display: flex; justify-content: space-between; align-items: center;">
     <span class="text-sm text-muted">{{ unread_count }} اعلان خوانده نشده</span>
     <form method="post" action="{{ url_for('notification.my_mark_all_read') }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <button type="submit" class="btn btn-sm btn-outline">خواندن همه</button>
     </form>
 </div>
@@ -32,18 +33,13 @@
                 <tr style="{% if n.read_status == 'UNREAD' %}font-weight: var(--font-weight-semibold);{% endif %}">
                     <td>{{ n.title }}</td>
                     <td class="truncate" style="max-width: 300px;">{{ n.message }}</td>
-                    <td><span class="badge badge-secondary">{{ n.notification_type }}</span></td>
-                    <td>
-                        {% if n.read_status == 'UNREAD' %}
-                        <span class="badge badge-info">خوانده نشده</span>
-                        {% else %}
-                        <span class="badge badge-secondary">خوانده شده</span>
-                        {% endif %}
-                    </td>
-                    <td>{{ n.created_at.strftime('%Y-%m-%d %H:%M') if n.created_at else '—' }}</td>
+                    <td>{{ status_badge(n.notification_type.value) }}</td>
+                    <td>{{ status_badge(n.read_status) }}</td>
+                    <td>{{ n.created_at|jalali_datetime }}</td>
                     <td>
                         {% if n.read_status == 'UNREAD' %}
                         <form method="post" action="{{ url_for('notification.my_mark_read', in_app_id=n.id) }}" style="display:inline;">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                             <button type="submit" class="btn btn-sm btn-outline">خواندم</button>
                         </form>
                         {% endif %}

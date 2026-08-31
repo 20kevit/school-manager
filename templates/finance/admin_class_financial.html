@@ -1,6 +1,7 @@
 {% extends "base.html" %}
 {% block title %}وضعیت مالی کلاس - {{ academy_class.title }}{% endblock %}
 {% block content %}
+{% from "macros/utils.html" import status_badge %}
 <div class="page-header">
     <h1>وضعیت مالی کلاس: {{ academy_class.title }}</h1>
     <a href="{{ url_for('finance.admin_transactions', class_id=academy_class.id) }}" class="btn btn-outline">لیست تراکنش‌ها</a>
@@ -52,7 +53,7 @@
                 <td class="{{ 'positive' if s.balance > 0 else ('negative' if s.balance < 0 else '') }}">
                     {{ "{:,.0f}".format(s.balance) }} تومان
                 </td>
-                <td><span class="status-badge status-{{ s.status|lower }}">{{ s.status }}</span></td>
+                <td>{{ status_badge(s.status) }}</td>
                 <td>
                     <a href="{{ url_for('finance.admin_student_statement', student_user_id=s.student_user_id) }}" class="btn btn-sm btn-outline">صورت حساب</a>
                 </td>

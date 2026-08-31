@@ -20,6 +20,7 @@
 </div>
 
 <form method="POST">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
     <div class="table-container">
         <div class="table-scroll">
             <table class="data-table">
@@ -38,7 +39,7 @@
                         <td>{{ item.student.student_profile.first_name }} {{ item.student.student_profile.last_name }}</td>
                         <td>
                             <input type="number" name="grade_{{ item.enrollment.id }}_score"
-                                   value="{{ float(r.score) if r and r.score is not None else '' }}"
+                                   value="{{ float(r.score) if r and r.score is not none else '' }}"
                                    min="0" max="{{ assessment.max_score }}" step="0.01"
                                    placeholder="نمره" class="form-input">
                         </td>

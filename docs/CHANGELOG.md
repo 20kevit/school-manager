@@ -413,3 +413,44 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 - Form macros provide standardized form layouts and validation states
 - Error pages provide Persian UI with navigation back to dashboard
 - All templates follow the same design system for visual consistency
+
+## P13 — MVP Stabilization, Core UX Completion & Production-Grade Foundation (2026-08-31)
+
+### Added
+
+- Persian date infrastructure: `jdatetime` library, centralized `date_utils.py`, Jinja template filters (`jalali`, `jalali_datetime`, `jalali_time`, `to_jalali`, `currency`)
+- User profile management: view/edit profile page at `/auth/profile`
+- Homepage landing page with feature cards and login CTA
+- CSRF protection via Flask-WTF on all 38+ POST forms
+- Session editing: update title, description, date, time via `/academy/session/<id>/edit`
+- Curriculum auto-numbering: syllabus order auto-suggested as next available
+- Age eligibility check enforced during enrollment (student birth_date vs course age range)
+- Seed script expansion: courses, classes, sessions, enrollment, attendance, activities, assessments, finance records
+- 17 new regression tests (age restrictions, session editing, enrollment eligibility, syllabus numbering)
+
+### Fixed
+
+- Jinja `TemplateRuntimeError: No test named 'None'` (43 occurrences across 15 assessment templates — `is not None` → `is not none`)
+- `update_session` `is_rescheduled` flag now correctly detects date changes
+- `update_course` now correctly allows clearing age restrictions by passing `None`
+- Raw English enum values in assessment, finance, notification, and file management templates replaced with `status_badge` macro
+- English confirm dialog text replaced with Persian
+
+### Changed
+
+- All 28+ template files migrated from `strftime` to Jalali date filters
+- Finance filter UI redesigned with proper form-card layout, consistent inputs, clear filter button
+- All `status_badge` macro labels expanded: DEBTOR, CREDIT, LOCAL, PUBLIC, PRIVATE, YES, NO, INACTIVE
+- Production config: SESSION_COOKIE_SECURE, SESSION_COOKIE_SAMESITE, PERMANENT_SESSION_LIFETIME
+- TestingConfig: WTF_CSRF_ENABLED = False (test compatibility)
+
+### Dependencies
+
+- Added `jdatetime>=6,<7` (Persian/Jalali calendar)
+- Added `Flask-WTF>=1.2,<2` (CSRF protection)
+
+### Metrics
+
+- 594 tests passing
+- Ruff check and format clean
+- Database migrations in sync

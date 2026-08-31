@@ -1,13 +1,35 @@
 # Project Status
 
-**Current Phase:** P12 — UI/UX, Frontend & User Experience Overhaul — Completed
-**Current Objective:** P12 — UI/UX complete, ready for P13.
+**Current Phase:** P13 — MVP Stabilization, Core UX Completion & Production-Grade Foundation — Completed
+**Current Objective:** P13 — Stabilization complete, ready for P14.
 
-**Previous Phase:** P11 — File & Document Management
+**Previous Phase:** P12 — UI/UX, Frontend & User Experience Overhaul
 
 ## Status
 
-P11 — File & Document Management is complete.
+P13 — MVP Stabilization is complete. All reported bugs fixed, core UX completed, security hardened.
+
+## Completed
+
+### P13 — MVP Stabilization, Core UX Completion & Production-Grade Foundation
+- [x] Fixed Jinja `TemplateRuntimeError: No test named 'None'` (43 occurrences across 15 assessment templates)
+- [x] Age restriction semantics: nullable min_age/max_age with proper validation
+- [x] Age eligibility check enforced during enrollment (student birth_date vs course age range)
+- [x] Curriculum auto-numbering: syllabus order auto-suggested as next available
+- [x] Session editing: title, description, date, time can be updated safely
+- [x] Persian date infrastructure: jdatetime library installed, centralized date utilities, Jinja filters (jalali, jalali_datetime, jalali_time, to_jalali, currency)
+- [x] All 28+ template files updated from strftime to Jalali filters
+- [x] User profile management: view/edit first_name, last_name, mobile_phone, birth_date, gender
+- [x] Profile link added to sidebar navigation
+- [x] Centralized Persian labels: 100+ enum/status values translated in status_badge macro and persian_label filter
+- [x] Finance filter UX improved: proper form-card styling, consistent form inputs, clear filter button
+- [x] Finance transaction types display as proper status badges with Persian labels
+- [x] Homepage redesigned: professional landing page with feature cards and login CTA
+- [x] CSRF protection enabled via Flask-WTF on all POST forms (38+ templates)
+- [x] Production security: SESSION_COOKIE_SECURE, SESSION_COOKIE_SAMESITE, PERMANENT_SESSION_LIFETIME configured
+- [x] Seed script expanded: creates courses, classes, sessions, enrollment, attendance, activities, assessments, finance records
+- [x] 17 new regression tests for age restrictions, syllabus auto-numbering, session editing, enrollment age eligibility
+- [x] 594 total tests passing, Ruff check/format clean
 
 ## Completed
 

@@ -27,16 +27,18 @@
                 <tr>
                     <td>{{ session.session_number }}</td>
                     <td>{{ session.scheduled_date }}</td>
-                    <td>{{ session.start_time.strftime('%H:%M') }} — {{ session.end_time.strftime('%H:%M') }}</td>
+                    <td>{{ session.start_time|jalali_time }} — {{ session.end_time|jalali_time }}</td>
                     <td>{{ session.title or '—' }}</td>
                     <td>{{ status_badge(session.status) }}</td>
                     <td>
                         <a href="{{ url_for('academy.session_detail', session_id=session.id) }}" class="btn btn-sm btn-outline">جزئیات</a>
                         {% if session.status == 'SCHEDULED' %}
                         <form method="POST" action="{{ url_for('academy.session_complete', session_id=session.id) }}" style="display:inline;">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                             <button type="submit" class="btn btn-sm btn-primary">تکمیل</button>
                         </form>
-                        <form method="POST" action="{{ url_for('academy.session_cancel', session_id=session.id) }}" style="display:inline;">
+                        <form method="POST" action="{{ url_for('a
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">cademy.session_cancel', session_id=session.id) }}" style="display:inline;">
                             <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('آیا مطمئن هستید؟')">لغو</button>
                         </form>
                         {% endif %}

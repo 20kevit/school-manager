@@ -1,8 +1,10 @@
 Flask>=3.1,<4
 Flask-SQLAlchemy>=3.1,<4
 Flask-Login>=0.6,<1
+Flask-WTF>=1.2,<2
 SQLAlchemy>=2.0,<3
 Flask-Migrate>=4,<5
 psycopg2-binary>=2.9,<3
 python-dotenv>=1,<2
 gunicorn>=22,<23
+jdatetime>=6,<7

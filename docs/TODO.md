@@ -200,10 +200,34 @@
 - [x] All module templates redesigned with new design system
 - [x] 577 tests passing, Ruff clean
 
-## P13 — Future
+## P13 — MVP Stabilization, Core UX Completion & Production-Grade Foundation
+
+- [x] Fix Jinja `is not None` template errors (43 instances across 15 files)
+- [x] Course age restriction semantics (nullable min/max_age, validation)
+- [x] Age eligibility check during enrollment
+- [x] Curriculum auto-numbering (syllabus order)
+- [x] Session editing (title, description, date, time)
+- [x] Persian calendar infrastructure (jdatetime, Jalali filters)
+- [x] All templates migrated to Jalali date filters
+- [x] User profile management (view/edit)
+- [x] Centralized Persian labels (100+ enum/status values)
+- [x] Finance filter UX improvement
+- [x] Homepage redesign (landing page)
+- [x] CSRF protection (Flask-WTF)
+- [x] Production security (session cookies, lifetime)
+- [x] Seed script expansion
+- [x] UX consistency audit (status_badge, Persian labels, raw English fixes)
+- [x] Database migration integrity verified
+- [x] 17 new regression tests (age, session editing, enrollment eligibility)
+- [x] 594 tests passing, Ruff clean
+
+## P14 — Future
 
 - [ ] Mobile application
 - [ ] Advanced permissions
 - [ ] Advanced analytics
 - [ ] AI features
 - [ ] Multi-branch support
+- [ ] Payment gateway integration (ZarinPal)
+- [ ] Payment receipt upload
+- [ ] Attendance reports

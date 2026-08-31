@@ -26,13 +26,7 @@
                 <tr>
                     <td>{{ p.name }}</td>
                     <td>{{ p.channel }}</td>
-                    <td>
-                        {% if p.available %}
-                        <span class="badge badge-success">فعال</span>
-                        {% else %}
-                        <span class="badge badge-danger">غیرفعال</span>
-                        {% endif %}
-                    </td>
+                    <td>{{ status_badge('ACTIVE' if p.available else 'INACTIVE') }}</td>
                 </tr>
                 {% endfor %}
             </tbody>
@@ -130,7 +124,7 @@
                     <td>{{ n.recipient_user_id }}</td>
                     <td>{{ n.priority }}</td>
                     <td>{{ status_badge(n.status) }}</td>
-                    <td>{{ n.created_at.strftime('%Y-%m-%d %H:%M') if n.created_at else '' }}</td>
+                    <td>{{ n.created_at|jalali_datetime }}</td>
                     <td>
                         <a href="{{ url_for('notification.admin_detail', notification_id=n.id) }}" class="btn btn-sm btn-outline">جزئیات</a>
                     </td>

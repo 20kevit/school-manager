@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% from "macros/utils.html" import page_header %}
+{% from "macros/utils.html" import page_header, status_badge %}
 {% block title %}قالب‌های اعلان{% endblock %}
 {% block content %}
 {{ page_header("قالب‌های اعلان", action_url=url_for('notification.admin_template_create'), action_label="ایجاد قالب جدید") }}
@@ -21,19 +21,14 @@
                 {% for t in templates %}
                 <tr>
                     <td>{{ t.name }}</td>
-                    <td>{{ t.notification_type }}</td>
-                    <td>{{ t.channel }}</td>
-                    <td>
-                        {% if t.is_active %}
-                        <span class="badge badge-success">بله</span>
-                        {% else %}
-                        <span class="badge badge-secondary">خیر</span>
-                        {% endif %}
-                    </td>
+                    <td>{{ status_badge(t.notification_type.value) }}</td>
+                    <td>{{ status_badge(t.channel.value) }}</td>
+                    <td>{{ status_badge('YES' if t.is_active else 'NO') }}</td>
                     <td>
                         <a href="{{ url_for('notification.admin_template_edit', template_id=t.id) }}" class="btn btn-sm btn-outline">ویرایش</a>
                         <form method="post" action="{{ url_for('notification.admin_template_delete', template_id=t.id) }}" style="display:inline;">
-                            <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('Delete this template?')">حذف</button>
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('آیا از حذف این الگو اطمینان دارید؟')">حذف</button>
                         </form>
                     </td>
                 </tr>

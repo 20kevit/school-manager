@@ -449,3 +449,115 @@ class TestQueries:
 
     def test_get_nonexistent_enrollment(self, db):
         assert get_enrollment(9999) is None
+
+
+class TestAgeEligibility:
+    """Tests for age eligibility checks during enrollment."""
+
+    def test_underage_student_rejected(self, db):
+        from datetime import date as date_type
+
+        young_user = UserModel(login="young")
+        young_user.set_password("pass123")
+        from app.infrastructure.database.models import RoleModel, StudentProfileModel
+
+        role = RoleModel(name="STUDENT")
+        db.session.add(role)
+        db.session.flush()
+        young_user.roles.append(role)
+        db.session.add(young_user)
+        db.session.flush()
+
+        profile = StudentProfileModel(
+            user_id=young_user.id,
+            first_name="Young",
+            last_name="Student",
+            national_id="1111111111",
+            mobile_phone="09111111111",
+            birth_date=date_type(2018, 1, 1),  # 8 years old
+            gender="MALE",
+        )
+        db.session.add(profile)
+        db.session.flush()
+
+        restrictive_course = create_course(
+            title="Adults Only", min_age=18, num_sessions=4
+        )
+        cls = create_class(
+            course_id=restrictive_course.id,
+            title="Adult Class",
+            start_date=date_type(2026, 9, 1),
+            schedule=[
+                {
+                    "weekday": "SATURDAY",
+                    "start_time": time(10, 0),
+                    "end_time": time(12, 0),
+                }
+            ],
+        )
+
+        with pytest.raises(EnrollmentError, match="under the minimum age"):
+            request_enrollment(young_user.id, cls.id)
+
+    def test_overage_student_rejected(self, db):
+        from datetime import date as date_type
+
+        old_user = UserModel(login="oldstudent")
+        old_user.set_password("pass123")
+        from app.infrastructure.database.models import RoleModel, StudentProfileModel
+
+        role = RoleModel(name="STUDENT")
+        db.session.add(role)
+        db.session.flush()
+        old_user.roles.append(role)
+        db.session.add(old_user)
+        db.session.flush()
+
+        profile = StudentProfileModel(
+            user_id=old_user.id,
+            first_name="Old",
+            last_name="Student",
+            national_id="2222222222",
+            mobile_phone="09222222222",
+            birth_date=date_type(2000, 1, 1),  # 26 years old
+            gender="MALE",
+        )
+        db.session.add(profile)
+        db.session.flush()
+
+        kids_course = create_course(title="Kids Only", max_age=10, num_sessions=4)
+        cls = create_class(
+            course_id=kids_course.id,
+            title="Kids Class",
+            start_date=date_type(2026, 9, 1),
+            schedule=[
+                {
+                    "weekday": "SATURDAY",
+                    "start_time": time(10, 0),
+                    "end_time": time(12, 0),
+                }
+            ],
+        )
+
+        with pytest.raises(EnrollmentError, match="exceeds the maximum age"):
+            request_enrollment(old_user.id, cls.id)
+
+    def test_eligible_student_enrolled(self, db, student_user):
+        from datetime import date as date_type
+
+        eligible_course = create_course(title="All Ages", num_sessions=4)
+        cls = create_class(
+            course_id=eligible_course.id,
+            title="Open Class",
+            start_date=date_type(2026, 9, 1),
+            schedule=[
+                {
+                    "weekday": "SATURDAY",
+                    "start_time": time(10, 0),
+                    "end_time": time(12, 0),
+                }
+            ],
+        )
+
+        enrollment = request_enrollment(student_user.id, cls.id)
+        assert enrollment.status == "PENDING"

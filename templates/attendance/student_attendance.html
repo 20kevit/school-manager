@@ -30,7 +30,7 @@
                 <tr>
                     <td>{{ record.session.academy_class.title }}</td>
                     <td>{{ record.session.session_number }}</td>
-                    <td>{{ record.session.scheduled_date.strftime('%Y-%m-%d') }}</td>
+                    <td>{{ record.session.scheduled_date|jalali }}</td>
                     <td>{{ status_badge(record.status) }}</td>
                     <td>{{ record.note if record.note else '—' }}</td>
                 </tr>

@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% block title %}نتایج تحصیلی {{ student.student_profile.first_name }} {{ student.student_profile.last_name }}{% endblock %}
 {% block content %}
-{% from "macros/utils.html" import page_header, stat_card %}
+{% from "macros/utils.html" import page_header, stat_card, status_badge %}
 {{ page_header("نتایج تحصیلی: " ~ student.student_profile.first_name ~ " " ~ student.student_profile.last_name) }}
 
 <div class="dashboard-grid">
@@ -15,7 +15,7 @@
 <div class="detail-card" style="margin-top: 1rem;">
     <div class="detail-row">
         <span class="detail-row-label">میانگین نمرات</span>
-        <span class="detail-row-value">{{ summary.average if summary.average is not None else '—' }}</span>
+        <span class="detail-row-value">{{ summary.average if summary.average is not none else '—' }}</span>
     </div>
 </div>
 
@@ -43,11 +43,11 @@
                 {% for r in summary.results %}
                 <tr>
                     <td>{{ r.assessment.title }}</td>
-                    <td>{{ r.score if r.score is not None else '—' }}</td>
+                    <td>{{ r.score if r.score is not none else '—' }}</td>
                     <td>{{ r.max_score }}</td>
-                    <td>{{ r.percentage if r.percentage is not None else '—' }}</td>
-                    <td>{{ r.pass_fail }}</td>
-                    <td>{{ r.presence_status }}</td>
+                    <td>{{ r.percentage if r.percentage is not none else '—' }}</td>
+                    <td>{{ status_badge(r.pass_fail.value) }}</td>
+                    <td>{{ status_badge(r.presence_status.value) }}</td>
                 </tr>
                 {% endfor %}
             </tbody>

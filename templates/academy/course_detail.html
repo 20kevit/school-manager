@@ -41,10 +41,11 @@
 <div class="form-card">
     <h3>افزودن آیتم جدید</h3>
     <form method="POST" action="{{ url_for('academy.syllabus_add', course_id=course.id) }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <div class="form-grid">
             <div class="form-group">
                 <label class="form-label" for="order">ترتیب</label>
-                <input class="form-input" type="number" id="order" name="order" min="1" required>
+                <input class="form-input" type="number" id="order" name="order" min="1" value="{{ next_order }}" required>
             </div>
             <div class="form-group" style="flex: 2;">
                 <label class="form-label" for="title">عنوان</label>
@@ -91,6 +92,7 @@
                     <td>{{ item.homework or '—' }}</td>
                     <td>
                         <form method="POST" action="{{ url_for('academy.syllabus_delete', item_id=item.id) }}" style="display:inline;">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                             <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('آیا مطمئن هستید؟')">حذف</button>
                         </form>
                     </td>

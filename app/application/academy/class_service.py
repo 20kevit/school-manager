@@ -332,6 +332,38 @@ def reschedule_session(
     return session
 
 
+def update_session(
+    session: SessionModel,
+    title: str | None = None,
+    description: str | None = None,
+    scheduled_date: date | None = None,
+    start_time: time | None = None,
+    end_time: time | None = None,
+) -> SessionModel:
+    """Update session properties safely.
+
+    Only updates provided fields. Preserves session identity and history.
+    """
+    if title is not None:
+        session.title = title.strip() if title else None
+    if description is not None:
+        session.description = description.strip() if description else None
+    if scheduled_date is not None:
+        if scheduled_date != session.scheduled_date:
+            session.is_rescheduled = True
+        session.scheduled_date = scheduled_date
+    if start_time is not None:
+        session.start_time = start_time
+    if end_time is not None:
+        session.end_time = end_time
+
+    if session.start_time >= session.end_time:
+        raise ClassError("Start time must be before end time.")
+
+    db.session.commit()
+    return session
+
+
 def cancel_session(session: SessionModel) -> SessionModel:
     """Cancel a session.
 

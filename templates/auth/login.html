@@ -12,6 +12,7 @@
         </div>
 
         <form method="POST" action="{{ url_for('auth.login') }}" class="auth-form">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <div class="form-group">
                 <label class="form-label" for="login">نام کاربری</label>
                 <input type="text" id="login" name="login" required autocomplete="username"

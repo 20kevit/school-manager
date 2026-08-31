@@ -6,6 +6,7 @@
 
 <div class="form-card">
     <form method="POST">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <div class="form-group">
             <label class="form-label" for="student_user_id">دانش‌آموز</label>
             <select id="student_user_id" name="student_user_id" class="form-select" required>

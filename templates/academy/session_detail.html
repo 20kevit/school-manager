@@ -19,11 +19,11 @@
     </div>
     <div class="detail-row">
         <span class="detail-row-label">ساعت شروع:</span>
-        <span class="detail-row-value">{{ session.start_time.strftime('%H:%M') }}</span>
+        <span class="detail-row-value">{{ session.start_time|jalali_time }}</span>
     </div>
     <div class="detail-row">
         <span class="detail-row-label">ساعت پایان:</span>
-        <span class="detail-row-value">{{ session.end_time.strftime('%H:%M') }}</span>
+        <span class="detail-row-value">{{ session.end_time|jalali_time }}</span>
     </div>
     <div class="detail-row">
         <span class="detail-row-label">عنوان:</span>
@@ -49,16 +49,20 @@
 </div>
 
 <div class="action-buttons">
+    <a href="{{ url_for('academy.session_edit', session_id=session.id) }}" class="btn btn-outline">ویرایش جلسه</a>
     <form method="POST" action="{{ url_for('academy.session_complete', session_id=session.id) }}" style="display:inline;">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <button type="submit" class="btn btn-primary">تکمیل جلسه</button>
     </form>
-    <form method="POST" action="{{ url_for('academy.session_cancel', session_id=session.id) }}" style="display:inline;">
+    <form method="POST" action="{{ url_for('a
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">cademy.session_cancel', session_id=session.id) }}" style="display:inline;">
         <button type="submit" class="btn btn-danger" onclick="return confirm('آیا مطمئن هستید؟')">لغو جلسه</button>
     </form>
 </div>
 
 <div class="section-header">
-    <h2>تغییر زمان</h2>
+    <h
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">2>تغییر زمان</h2>
 </div>
 
 <div class="form-card">

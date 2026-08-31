@@ -23,7 +23,7 @@
                     <td>{{ s.version }}</td>
                     <td>{{ status_badge(s.status) }}</td>
                     <td>{% if s.score is not none %}{{ s.score }}{% else %}-{% endif %}</td>
-                    <td>{% if s.submitted_at %}{{ s.submitted_at.strftime('%Y-%m-%d %H:%M') }}{% else %}-{% endif %}</td>
+                    <td>{% if s.submitted_at %}{{ s.submitted_at|jalali_datetime }}{% else %}-{% endif %}</td>
                     <td>{% if s.feedback %}{{ s.feedback[:50] }}{% if s.feedback|length > 50 %}...{% endif %}{% else %}-{% endif %}</td>
                 </tr>
                 {% endfor %}

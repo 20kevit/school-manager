@@ -19,7 +19,7 @@
     </div>
     <div class="detail-row">
         <strong>مهلت:</strong>
-        <span>{% if activity.deadline %}{{ activity.deadline.strftime('%Y-%m-%d %H:%M') }}{% else %}ندارد{% endif %}</span>
+        <span>{% if activity.deadline %}{{ activity.deadline|jalali_datetime }}{% else %}ندارد{% endif %}</span>
     </div>
     {% if activity.description %}
     <div class="detail-row">
@@ -42,7 +42,7 @@
     </div>
     <div class="detail-row">
         <strong>تاریخ ارسال:</strong>
-        <span>{% if latest.submitted_at %}{{ latest.submitted_at.strftime('%Y-%m-%d %H:%M') }}{% else %}-{% endif %}</span>
+        <span>{% if latest.submitted_at %}{{ latest.submitted_at|jalali_datetime }}{% else %}-{% endif %}</span>
     </div>
     {% if latest.score is not none %}
     <div class="detail-row">
@@ -80,6 +80,7 @@
 <h2>{% if latest %}ارسال مجدد{% else %}ارسال فعالیت{% endif %}</h2>
 <div class="form-card">
     <form method="POST" action="{{ url_for('activity.student_submit_activity', activity_id=activity.id) }}" enctype="multipart/form-data">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <div class="form-group">
             <label for="text_content">متن پاسخ</label>
             <textarea id="text_content" name="text_content" class="form-textarea" rows="6">{{ latest.text_content if latest else '' }}</textarea>

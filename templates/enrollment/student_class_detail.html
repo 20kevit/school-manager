@@ -59,8 +59,8 @@
                 {% for schedule in academy_class.schedule_entries %}
                 <tr>
                     <td>{{ schedule.weekday }}</td>
-                    <td>{{ schedule.start_time.strftime('%H:%M') }}</td>
-                    <td>{{ schedule.end_time.strftime('%H:%M') }}</td>
+                    <td>{{ schedule.start_time|jalali_time }}</td>
+                    <td>{{ schedule.end_time|jalali_time }}</td>
                 </tr>
                 {% endfor %}
             </tbody>
@@ -78,6 +78,7 @@
         {% endif %}
     {% elif academy_class.status in ['PLANNED', 'ACTIVE'] and available_capacity > 0 %}
     <form method="POST" action="{{ url_for('enrollment.student_request_enrollment', class_id=academy_class.id) }}" style="display: inline;">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <button type="submit" class="btn btn-primary">درخواست ثبت‌نام</button>
     </form>
     {% else %}

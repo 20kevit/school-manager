@@ -6,6 +6,7 @@
 
 <div class="form-card">
     <form method="post">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <div class="form-group">
             <label for="title" class="form-label">عنوان:</label>
             <input type="text" id="title" name="title" class="form-input" required>

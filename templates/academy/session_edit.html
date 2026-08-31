@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% from "macros/utils.html" import page_header %}
+{% block title %}ویرایش جلسه {{ session.session_number }}{% endblock %}
+{% block content %}
+{{ page_header('ویرایش جلسه ' ~ session.session_number ~ ' — ' ~ class_obj.title) }}
+
+<div class="page-header-actions" style="margin-bottom: 1.5rem;">
+    <a href="{{ url_for('academy.session_detail', session_id=session.id) }}" class="btn btn-outline">بازگشت</a>
+</div>
+
+<div class="form-card">
+    <form method="POST">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <div class="form-grid">
+            <div class="form-group">
+                <label class="form-label" for="scheduled_date">تاریخ</label>
+                <input class="form-input" type="date" id="scheduled_date" name="scheduled_date" value="{{ session.scheduled_date }}" required>
+            </div>
+            <div class="form-group">
+                <label class="form-label" for="start_time">ساعت شروع</label>
+                <input class="form-input" type="time" id="start_time" name="start_time" value="{{ session.start_time|jalali_time }}" required>
+            </div>
+            <div class="form-group">
+                <label class="form-label" for="end_time">ساعت پایان</label>
+                <input class="form-input" type="time" id="end_time" name="end_time" value="{{ session.end_time|jalali_time }}" required>
+            </div>
+        </div>
+        <div class="form-group">
+            <label class="form-label" for="title">عنوان</label>
+            <input class="form-input" type="text" id="title" name="title" value="{{ session.title or '' }}">
+        </div>
+        <div class="form-group">
+            <label class="form-label" for="description">توضیحات</label>
+            <textarea class="form-textarea" id="description" name="description" rows="3">{{ session.description or '' }}</textarea>
+        </div>
+        <div class="form-actions">
+            <button type="submit" class="btn btn-primary">ذخیره تغییرات</button>
+            <a href="{{ url_for('academy.session_detail', session_id=session.id) }}" class="btn btn-secondary">لغو</a>
+        </div>
+    </form>
+</div>
+{% endblock %}

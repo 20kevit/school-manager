@@ -15,16 +15,17 @@
     </div>
     <div class="detail-row">
         <span class="detail-row-label">نمره فعلی</span>
-        <span class="detail-row-value">{{ result.score if result.score is not None else 'نمره‌گذاری نشده' }}</span>
+        <span class="detail-row-value">{{ result.score if result.score is not none else 'نمره‌گذاری نشده' }}</span>
     </div>
 </div>
 
 <div class="form-card">
     <form method="POST">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <div class="form-grid">
             <div class="form-group">
                 <label class="form-label" for="score">نمره (از {{ assessment.max_score }})</label>
-                <input type="number" name="score" id="score" class="form-input" value="{{ float(result.score) if result.score is not None else '' }}" min="0" max="{{ assessment.max_score }}" step="0.01">
+                <input type="number" name="score" id="score" class="form-input" value="{{ float(result.score) if result.score is not none else '' }}" min="0" max="{{ assessment.max_score }}" step="0.01">
             </div>
 
             <div class="form-group">

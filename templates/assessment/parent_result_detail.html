@@ -24,11 +24,11 @@
 <div class="detail-card" style="margin-top: 1rem;">
     <div class="detail-row">
         <span class="detail-row-label">نمره</span>
-        <span class="detail-row-value">{{ (result.score if result.score is not None else 'نمره‌گذاری نشده') ~ ' / ' ~ result.max_score }}</span>
+        <span class="detail-row-value">{{ (result.score if result.score is not none else 'نمره‌گذاری نشده') ~ ' / ' ~ result.max_score }}</span>
     </div>
     <div class="detail-row">
         <span class="detail-row-label">درصد</span>
-        <span class="detail-row-value">{{ (result.percentage ~ '%') if result.percentage is not None else '—' }}</span>
+        <span class="detail-row-value">{{ (result.percentage ~ '%') if result.percentage is not none else '—' }}</span>
     </div>
     <div class="detail-row">
         <span class="detail-row-label">وضعیت قبولی</span>

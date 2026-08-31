@@ -6,6 +6,7 @@
 
 <div class="form-card">
     <form method="post">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <div class="table-container">
             <div class="table-scroll">
                 <table class="data-table">

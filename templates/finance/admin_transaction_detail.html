@@ -43,7 +43,7 @@
     </div>
     <div class="detail-row">
         <span class="detail-row-label">تاریخ ایجاد:</span>
-        <span class="detail-row-value">{{ transaction.created_at.strftime('%Y-%m-%d %H:%M') }}</span>
+        <span class="detail-row-value">{{ transaction.created_at|jalali_datetime }}</span>
     </div>
     <div class="detail-row">
         <span class="detail-row-label">ایجاد شده توسط:</span>
@@ -73,13 +73,15 @@
 <div class="action-links">
     <h3>عملیات</h3>
     <form method="POST" action="{{ url_for('finance.admin_correct_transaction', transaction_id=transaction.id) }}" style="display:inline;">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <div class="form-inline">
             <input class="form-input" type="number" name="new_amount" step="0.01" placeholder="مبلغ جدید" required>
             <input class="form-input" type="text" name="new_description" placeholder="توضیحات جدید">
             <button type="submit" class="btn btn-sm btn-primary" onclick="return confirm('آیا مطمئن هستید؟')">اصلاح تراکنش</button>
         </div>
     </form>
-    <form method="POST" action="{{ url_for('finance.admin_reverse_transaction', transaction_id=transaction.id) }}" style="display:inline;">
+    <form method="POST" action="{{ url_for('finance.admin_revers
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">e_transaction', transaction_id=transaction.id) }}" style="display:inline;">
         <input type="hidden" name="description" value="بازگشت تراکنش #{{ transaction.id }}">
         <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('آیا مطمئن هستید؟')">معکوس کردن</button>
     </form>

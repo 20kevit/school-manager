@@ -24,7 +24,7 @@
     </div>
     <div class="detail-row">
         <span class="detail-row-label">تاریخ ارسال</span>
-        <span class="detail-row-value">{{ submission.submitted_at.strftime('%Y-%m-%d %H:%M') if submission.submitted_at else '—' }}</span>
+        <span class="detail-row-value">{{ submission.submitted_at|jalali_datetime }}</span>
     </div>
     {% if submission.score is not none %}
     <div class="detail-row">
@@ -41,7 +41,7 @@
     {% if submission.graded_at %}
     <div class="detail-row">
         <span class="detail-row-label">تاریخ نمره‌دهی</span>
-        <span class="detail-row-value">{{ submission.graded_at.strftime('%Y-%m-%d %H:%M') }}</span>
+        <span class="detail-row-value">{{ submission.graded_at|jalali_datetime }}</span>
     </div>
     {% endif %}
 </div>
@@ -76,6 +76,7 @@
 <div class="form-card" style="margin-top: var(--space-6);">
     <h3 style="margin-bottom: var(--space-4);">نمره‌دهی</h3>
     <form method="POST" action="{{ url_for('activity.admin_grade_submission', submission_id=submission.id) }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <div class="form-grid">
             <div class="form-group">
                 <label class="form-label" for="score">امتیاز</label>
@@ -95,6 +96,7 @@
 <div class="form-card" style="margin-top: var(--space-4);">
     <h3 style="margin-bottom: var(--space-4);">برگرداندن برای اصلاح</h3>
     <form method="POST" action="{{ url_for('activity.admin_return_submission', submission_id=submission.id) }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <div class="form-group">
             <label class="form-label" for="return_feedback">بازخورد</label>
             <textarea id="return_feedback" name="feedback" class="form-textarea" rows="3" required>{{ submission.feedback or '' }}</textarea>

@@ -3,7 +3,7 @@
 {% block page_title %}فایل‌های یتیم{% endblock %}
 
 {% block page_content %}
-{% from "macros/utils.html" import page_header %}
+{% from "macros/utils.html" import page_header, status_badge %}
 
 {{ page_header("فایل‌های یتیم", action_url=url_for('file_management.admin_file_list'), action_label="بازگشت به لیست") }}
 
@@ -33,12 +33,13 @@
                     <td class="truncate" style="max-width: 200px;" title="{{ f.original_filename }}">{{ f.original_filename }}</td>
                     <td><code>{{ f.extension }}</code></td>
                     <td>{{ f.file_size }}</td>
-                    <td><span class="badge badge-secondary">{{ f.category }}</span></td>
+                    <td>{{ status_badge(f.category.value) }}</td>
                     <td>{{ f.entity_type or 'ندارد' }} {{ f.entity_id or '' }}</td>
                     <td>
                         <div class="actions">
                             <a href="{{ url_for('file_management.admin_file_detail', file_id=f.id) }}" class="btn btn-sm btn-outline">جزئیات</a>
                             <form method="POST" action="{{ url_for('file_management.admin_delete_file', file_id=f.id) }}" style="display:inline">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                 <button type="submit" class="btn btn-sm btn-danger" data-confirm="حذف این فایل یتیم؟">حذف</button>
                             </form>
                         </div>

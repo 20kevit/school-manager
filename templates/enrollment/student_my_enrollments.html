@@ -21,10 +21,11 @@
                 <tr>
                     <td>{{ enrollment.academy_class.title }}</td>
                     <td>{{ status_badge(enrollment.status) }}</td>
-                    <td>{{ enrollment.requested_at.strftime('%Y-%m-%d') }}</td>
+                    <td>{{ enrollment.requested_at|jalali }}</td>
                     <td>
                         {% if enrollment.status in ('PENDING', 'APPROVED') %}
                         <form method="POST" action="{{ url_for('enrollment.student_cancel', enrollment_id=enrollment.id) }}" style="display: inline;">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                             <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('آیا از لغو ثبت‌نام اطمینان دارید؟')">لغو</button>
                         </form>
                         {% endif %}

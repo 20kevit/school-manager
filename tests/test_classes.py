@@ -517,3 +517,76 @@ class TestClassQuery:
 
     def test_get_nonexistent_class(self, db):
         assert get_class(9999) is None
+
+
+class TestSessionEditing:
+    """Tests for session editing functionality."""
+
+    def test_update_session_title_and_description(self, db, course):
+        from app.application.academy.class_service import update_session
+
+        cls = create_class(
+            course_id=course.id,
+            title="Test",
+            start_date=date(2026, 9, 7),
+            schedule=_mon_wed_schedule(),
+        )
+        sessions = get_sessions(cls.id)
+        session = sessions[0]
+
+        updated = update_session(session, title="New Title", description="New Desc")
+        assert updated.title == "New Title"
+        assert updated.description == "New Desc"
+
+    def test_update_session_date(self, db, course):
+        from app.application.academy.class_service import update_session
+
+        cls = create_class(
+            course_id=course.id,
+            title="Test",
+            start_date=date(2026, 9, 7),
+            schedule=_mon_wed_schedule(),
+        )
+        sessions = get_sessions(cls.id)
+        session = sessions[0]
+
+        new_date = date(2026, 10, 1)
+        updated = update_session(session, scheduled_date=new_date)
+        assert updated.scheduled_date == new_date
+        assert updated.is_rescheduled is True
+
+    def test_update_session_time_validation(self, db, course):
+        from app.application.academy.class_service import update_session
+
+        cls = create_class(
+            course_id=course.id,
+            title="Test",
+            start_date=date(2026, 9, 7),
+            schedule=_mon_wed_schedule(),
+        )
+        sessions = get_sessions(cls.id)
+        session = sessions[0]
+
+        with pytest.raises(ClassError):
+            update_session(
+                session,
+                start_time=time(14, 0),
+                end_time=time(12, 0),
+            )
+
+    def test_clear_session_title(self, db, course):
+        from app.application.academy.class_service import update_session
+
+        cls = create_class(
+            course_id=course.id,
+            title="Test",
+            start_date=date(2026, 9, 7),
+            schedule=_mon_wed_schedule(),
+        )
+        sessions = get_sessions(cls.id)
+        session = sessions[0]
+
+        updated = update_session(session, title="Has Title")
+        assert updated.title == "Has Title"
+        updated2 = update_session(updated, title="")
+        assert updated2.title is None

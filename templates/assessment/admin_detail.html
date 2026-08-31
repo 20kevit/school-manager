@@ -57,23 +57,28 @@
 
     {% if assessment.status != 'CANCELLED' and assessment.status != 'GRADED' %}
     <form method="POST" action="{{ url_for('assessment.admin_cancel_assessment', assessment_id=assessment.id) }}" style="display:inline;">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('آیا از لغو این ارزیابی اطمینان دارید؟')">لغو ارزیابی</button>
     </form>
     {% endif %}
 
     {% if assessment.status == 'DRAFT' %}
-    <form method="POST" action="{{ url_for('assessment.admin_update_status', assessment_id=assessment.id) }}" style="display:inline;">
+    <form method="POST" action="{{ url_for('assessment.admi
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">n_update_status', assessment_id=assessment.id) }}" style="display:inline;">
         <input type="hidden" name="status" value="SCHEDULED">
         <button type="submit" class="btn btn-sm btn-outline btn-primary">برنامه‌ریزی</button>
     </form>
-    {% elif assessment.status == 'SCHEDULED' %}
+    {% elif assessment.status ==
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"> 'SCHEDULED' %}
     <form method="POST" action="{{ url_for('assessment.admin_update_status', assessment_id=assessment.id) }}" style="display:inline;">
         <input type="hidden" name="status" value="OPEN">
-        <button type="submit" class="btn btn-sm btn-outline btn-primary">باز کردن</button>
+        <button type="submit" class="btn btn-sm btn-out
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">line btn-primary">باز کردن</button>
     </form>
     {% elif assessment.status == 'OPEN' %}
     <form method="POST" action="{{ url_for('assessment.admin_update_status', assessment_id=assessment.id) }}" style="display:inline;">
-        <input type="hidden" name="status" value="CLOSED">
+        <input type="hidden" name="stat
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">us" value="CLOSED">
         <button type="submit" class="btn btn-sm btn-outline btn-secondary">بستن</button>
     </form>
     {% elif assessment.status == 'CLOSED' %}
@@ -100,19 +105,19 @@
 <div class="detail-card" style="margin-top: 1rem;">
     <div class="detail-row">
         <span class="detail-row-label">میانگین</span>
-        <span class="detail-row-value">{{ report.average if report.average is not None else '—' }}</span>
+        <span class="detail-row-value">{{ report.average if report.average is not none else '—' }}</span>
     </div>
     <div class="detail-row">
         <span class="detail-row-label">بالاترین نمره</span>
-        <span class="detail-row-value">{{ report.highest if report.highest is not None else '—' }}</span>
+        <span class="detail-row-value">{{ report.highest if report.highest is not none else '—' }}</span>
     </div>
     <div class="detail-row">
         <span class="detail-row-label">پایین‌ترین نمره</span>
-        <span class="detail-row-value">{{ report.lowest if report.lowest is not None else '—' }}</span>
+        <span class="detail-row-value">{{ report.lowest if report.lowest is not none else '—' }}</span>
     </div>
     <div class="detail-row">
         <span class="detail-row-label">نرخ قبولی</span>
-        <span class="detail-row-value">{{ (report.pass_rate ~ '%') if report.pass_rate is not None else '—' }}</span>
+        <span class="detail-row-value">{{ (report.pass_rate ~ '%') if report.pass_rate is not none else '—' }}</span>
     </div>
 </div>
 
@@ -141,9 +146,9 @@
                 {% for r in report.results %}
                 <tr>
                     <td>{{ r.student.student_profile.first_name }} {{ r.student.student_profile.last_name }}</td>
-                    <td>{{ r.score if r.score is not None else '—' }}</td>
+                    <td>{{ r.score if r.score is not none else '—' }}</td>
                     <td>{{ r.max_score }}</td>
-                    <td>{{ r.percentage if r.percentage is not None else '—' }}</td>
+                    <td>{{ r.percentage if r.percentage is not none else '—' }}</td>
                     <td>
                         {% if r.pass_fail == 'PASS' %}
                             {{ status_badge('PASS') }}

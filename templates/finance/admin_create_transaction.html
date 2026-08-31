@@ -5,6 +5,7 @@
 {{ page_header("ثبت تراکنش جدید") }}
 
 <form method="POST" class="form-card">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
     <div class="form-group">
         <label class="form-label" for="student_user_id">دانش‌آموز</label>
         <select class="form-select" id="student_user_id" name="student_user_id" required>

@@ -1,10 +1,11 @@
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import date, datetime
 
 from app.extensions import db
 from app.infrastructure.database.models import (
     AcademyClassModel,
+    CourseModel,
     EnrollmentModel,
     StudentProfileModel,
     UserModel,
@@ -48,6 +49,8 @@ def request_enrollment(
     if existing_active is not None:
         raise EnrollmentError("Student is already enrolled or has a pending request.")
 
+    _check_age_eligibility(profile, academy_class)
+
     enrollment = EnrollmentModel(
         student_user_id=student_user_id,
         class_id=class_id,
@@ -90,6 +93,8 @@ def admin_enroll_student(
     existing_active = _get_active_enrollment(student_user_id, class_id)
     if existing_active is not None:
         raise EnrollmentError("Student is already enrolled or has a pending request.")
+
+    _check_age_eligibility(profile, academy_class)
 
     now = datetime.now()
     status = "APPROVED" if auto_approve else "PENDING"
@@ -269,3 +274,35 @@ def _get_active_enrollment(
 def _count_approved_enrollments(class_id: int) -> int:
     """Count approved enrollments for a class."""
     return EnrollmentModel.query.filter_by(class_id=class_id, status="APPROVED").count()
+
+
+def _compute_age(birth_date: date) -> int:
+    """Compute age from birth date."""
+    today = date.today()
+    age = today.year - birth_date.year
+    if (today.month, today.day) < (birth_date.month, birth_date.day):
+        age -= 1
+    return age
+
+
+def _check_age_eligibility(
+    profile: StudentProfileModel, academy_class: AcademyClassModel
+) -> None:
+    """Check if student meets course age restrictions.
+
+    Raises EnrollmentError if the student's age is outside the allowed range.
+    """
+    course = CourseModel.query.get(academy_class.course_id)
+    if course is None:
+        return
+
+    age = _compute_age(profile.birth_date)
+
+    if course.min_age is not None and age < course.min_age:
+        raise EnrollmentError(
+            f"Student is under the minimum age requirement ({course.min_age} years)."
+        )
+    if course.max_age is not None and age > course.max_age:
+        raise EnrollmentError(
+            f"Student exceeds the maximum age limit ({course.max_age} years)."
+        )

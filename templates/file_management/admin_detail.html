@@ -44,7 +44,7 @@
             </div>
             <div class="detail-row">
                 <span class="detail-row-label">بک‌اند ذخیره‌سازی</span>
-                <span class="detail-row-value">{{ file_record.storage_backend }}</span>
+                <span class="detail-row-value">{{ status_badge(file_record.storage_backend) }}</span>
             </div>
             <div class="detail-row">
                 <span class="detail-row-label">وضعیت</span>
@@ -52,17 +52,11 @@
             </div>
             <div class="detail-row">
                 <span class="detail-row-label">نمایان‌بودن</span>
-                <span class="detail-row-value">
-                    {% if file_record.visibility == 'PUBLIC' %}
-                    <span class="badge badge-info">عمومی</span>
-                    {% else %}
-                    <span class="badge badge-warning">خصوصی</span>
-                    {% endif %}
-                </span>
+                <span class="detail-row-value">{{ status_badge(file_record.visibility) }}</span>
             </div>
             <div class="detail-row">
                 <span class="detail-row-label">دسته‌بندی</span>
-                <span class="detail-row-value"><span class="badge badge-secondary">{{ file_record.category }}</span></span>
+                <span class="detail-row-value">{{ status_badge(file_record.category.value) }}</span>
             </div>
             <div class="detail-row">
                 <span class="detail-row-label">آپلودکننده</span>
@@ -78,16 +72,16 @@
             </div>
             <div class="detail-row">
                 <span class="detail-row-label">تاریخ ایجاد</span>
-                <span class="detail-row-value">{{ file_record.created_at.strftime('%Y-%m-%d %H:%M:%S') if file_record.created_at else '—' }}</span>
+                <span class="detail-row-value">{{ file_record.created_at|jalali_datetime }}</span>
             </div>
             <div class="detail-row">
                 <span class="detail-row-label">آخرین بروزرسانی</span>
-                <span class="detail-row-value">{{ file_record.updated_at.strftime('%Y-%m-%d %H:%M:%S') if file_record.updated_at else '—' }}</span>
+                <span class="detail-row-value">{{ file_record.updated_at|jalali_datetime }}</span>
             </div>
             {% if file_record.deleted_at %}
             <div class="detail-row">
                 <span class="detail-row-label">تاریخ حذف</span>
-                <span class="detail-row-value">{{ file_record.deleted_at.strftime('%Y-%m-%d %H:%M:%S') }}</span>
+                <span class="detail-row-value">{{ file_record.deleted_at|jalali_datetime }}</span>
             </div>
             {% endif %}
         </div>
@@ -100,6 +94,7 @@
                 {% if file_record.status == 'ACTIVE' %}
                 <a href="{{ url_for('file_management.download', file_id=file_record.id) }}" class="btn btn-success btn-block" style="margin-bottom: var(--space-2);">دانلود فایل</a>
                 <form method="POST" action="{{ url_for('file_management.admin_delete_file', file_id=file_record.id) }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                     <button type="submit" class="btn btn-danger btn-block" data-confirm="آیا از حذف این فایل اطمینان دارید؟">حذف فایل</button>
                 </form>
                 {% else %}

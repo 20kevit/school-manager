@@ -33,11 +33,11 @@
 <div class="detail-card" style="margin-top: 1rem;">
     <div class="detail-row">
         <span class="detail-row-label">میانگین کلاس</span>
-        <span class="detail-row-value">{{ summary.average if summary.average is not None else '—' }}</span>
+        <span class="detail-row-value">{{ summary.average if summary.average is not none else '—' }}</span>
     </div>
     <div class="detail-row">
         <span class="detail-row-label">نرخ قبولی</span>
-        <span class="detail-row-value">{{ (summary.pass_rate ~ '%') if summary.pass_rate is not None else '—' }}</span>
+        <span class="detail-row-value">{{ (summary.pass_rate ~ '%') if summary.pass_rate is not none else '—' }}</span>
     </div>
 </div>
 

@@ -53,7 +53,7 @@
             {% set day_names = {'SATURDAY': 'شنبه', 'SUNDAY': 'یکشنبه', 'MONDAY': 'دوشنبه', 'TUESDAY': 'سه‌شنبه', 'WEDNESDAY': 'چهارشنبه', 'THURSDAY': 'پنجشنبه', 'FRIDAY': 'جمعه'} %}
             {{ day_names.get(entry.weekday, entry.weekday) }}
         </span>
-        <span class="schedule-time">{{ entry.start_time.strftime('%H:%M') }} — {{ entry.end_time.strftime('%H:%M') }}</span>
+        <span class="schedule-time">{{ entry.start_time|jalali_time }} — {{ entry.end_time|jalali_time }}</span>
     </div>
     {% endfor %}
 </div>
@@ -81,7 +81,7 @@
                 <tr>
                     <td>{{ session.session_number }}</td>
                     <td>{{ session.scheduled_date }}</td>
-                    <td>{{ session.start_time.strftime('%H:%M') }} — {{ session.end_time.strftime('%H:%M') }}</td>
+                    <td>{{ session.start_time|jalali_time }} — {{ session.end_time|jalali_time }}</td>
                     <td>{{ session.title or '—' }}</td>
                     <td>{{ status_badge(session.status) }}</td>
                     <td>

@@ -91,3 +91,76 @@ def change_password_view():
             return render_template("auth/change_password.html"), 400
 
     return render_template("auth/change_password.html")
+
+
+@auth_bp.route("/profile", methods=["GET", "POST"])
+@login_required
+def profile():
+    """View and edit user profile."""
+    from app.extensions import db
+    from app.infrastructure.database.models import (
+        ParentProfileModel,
+        StudentProfileModel,
+        TeacherProfileModel,
+    )
+
+    profile_obj = None
+    profile_type = None
+
+    if current_user.has_any_role("STUDENT"):
+        profile_obj = StudentProfileModel.query.filter_by(
+            user_id=current_user.id
+        ).first()
+        profile_type = "student"
+    elif current_user.has_any_role("TEACHER"):
+        profile_obj = TeacherProfileModel.query.filter_by(
+            user_id=current_user.id
+        ).first()
+        profile_type = "teacher"
+    elif current_user.has_any_role("PARENT"):
+        profile_obj = ParentProfileModel.query.filter_by(
+            user_id=current_user.id
+        ).first()
+        profile_type = "parent"
+
+    if request.method == "POST" and profile_obj:
+        try:
+            first_name = request.form.get("first_name", "").strip()
+            last_name = request.form.get("last_name", "").strip()
+            mobile_phone = request.form.get("mobile_phone", "").strip()
+
+            if not first_name or not last_name:
+                flash("نام و نام خانوادگی الزامی است.", "error")
+                return render_template(
+                    "auth/profile.html", profile=profile_obj, profile_type=profile_type
+                )
+
+            profile_obj.first_name = first_name
+            profile_obj.last_name = last_name
+            if mobile_phone:
+                profile_obj.mobile_phone = mobile_phone
+
+            if profile_type == "student":
+                birth_date_str = request.form.get("birth_date", "")
+                gender = request.form.get("gender", "")
+                if birth_date_str:
+                    from datetime import date as date_type
+
+                    parts = birth_date_str.split("-")
+                    if len(parts) == 3:
+                        profile_obj.birth_date = date_type(
+                            int(parts[0]), int(parts[1]), int(parts[2])
+                        )
+                if gender:
+                    profile_obj.gender = gender
+
+            db.session.commit()
+            flash("پروفایل با موفقیت به‌روزرسانی شد.", "success")
+            return redirect(url_for("auth.profile"))
+        except Exception:
+            db.session.rollback()
+            flash("خطا در به‌روزرسانی پروفایل.", "error")
+
+    return render_template(
+        "auth/profile.html", profile=profile_obj, profile_type=profile_type
+    )

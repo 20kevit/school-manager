@@ -56,6 +56,7 @@ class TestingConfig(Config):
     """Testing configuration."""
 
     TESTING = True
+    WTF_CSRF_ENABLED = False
     SQLALCHEMY_DATABASE_URI = os.getenv(
         "TEST_DATABASE_URL",
         "sqlite:///:memory:",
@@ -70,6 +71,10 @@ class ProductionConfig(Config):
 
     DEBUG = False
     SQLALCHEMY_DATABASE_URI = os.getenv("DATABASE_URL")
+    SESSION_COOKIE_SECURE = True
+    SESSION_COOKIE_HTTPONLY = True
+    SESSION_COOKIE_SAMESITE = "Lax"
+    PERMANENT_SESSION_LIFETIME = 8 * 3600  # 8 hours
 
 
 config = {

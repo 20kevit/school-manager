@@ -3,6 +3,8 @@ from __future__ import annotations
 from app.extensions import db
 from app.infrastructure.database.models import CourseModel, SyllabusItemModel
 
+_UNSET = object()
+
 
 class CourseError(Exception):
     """Raised when a course operation fails."""
@@ -21,6 +23,10 @@ def create_course(
         raise CourseError("Course title is required.")
     if num_sessions < 1:
         raise CourseError("Number of sessions must be at least 1.")
+    if min_age is not None and min_age < 0:
+        raise CourseError("Minimum age cannot be negative.")
+    if max_age is not None and max_age < 0:
+        raise CourseError("Maximum age cannot be negative.")
     if min_age is not None and max_age is not None and min_age > max_age:
         raise CourseError("Minimum age cannot be greater than maximum age.")
 
@@ -42,11 +48,14 @@ def update_course(
     title: str | None = None,
     description: str | None = None,
     num_sessions: int | None = None,
-    min_age: int | None = None,
-    max_age: int | None = None,
+    min_age: int | None = _UNSET,
+    max_age: int | None = _UNSET,
     prerequisites: str | None = None,
 ) -> CourseModel:
-    """Update an existing course."""
+    """Update an existing course.
+
+    Use _UNSET sentinel to distinguish "not provided" from "set to None".
+    """
     if title is not None:
         if not title.strip():
             raise CourseError("Course title cannot be empty.")
@@ -57,10 +66,21 @@ def update_course(
         if num_sessions < 1:
             raise CourseError("Number of sessions must be at least 1.")
         course.num_sessions = num_sessions
-    if min_age is not None:
+    if min_age is not _UNSET:
+        if min_age is not None and min_age < 0:
+            raise CourseError("Minimum age cannot be negative.")
         course.min_age = min_age
-    if max_age is not None:
+    if max_age is not _UNSET:
+        if max_age is not None and max_age < 0:
+            raise CourseError("Maximum age cannot be negative.")
         course.max_age = max_age
+
+    effective_min = course.min_age
+    effective_max = course.max_age
+    if effective_min is not None and effective_max is not None:
+        if effective_min > effective_max:
+            raise CourseError("Minimum age cannot be greater than maximum age.")
+
     if prerequisites is not None:
         course.prerequisites = prerequisites.strip()
 
@@ -168,3 +188,13 @@ def get_syllabus_items(course_id: int) -> list[SyllabusItemModel]:
         .order_by(SyllabusItemModel.order)
         .all()
     )
+
+
+def get_next_syllabus_order(course_id: int) -> int:
+    """Get the next available syllabus order number for a course."""
+    max_order = (
+        db.session.query(db.func.max(SyllabusItemModel.order))
+        .filter_by(course_id=course_id)
+        .scalar()
+    )
+    return (max_order or 0) + 1

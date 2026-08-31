@@ -47,7 +47,7 @@
                     <td>{{ enrollment.student.student_profile.first_name }} {{ enrollment.student.student_profile.last_name }}</td>
                     <td>{{ enrollment.academy_class.title }}</td>
                     <td>{{ status_badge(enrollment.status) }}</td>
-                    <td>{{ enrollment.requested_at.strftime('%Y-%m-%d') }}</td>
+                    <td>{{ enrollment.requested_at|jalali }}</td>
                     <td>
                         <a href="{{ url_for('enrollment.admin_enrollment_detail', enrollment_id=enrollment.id) }}" class="btn btn-sm btn-outline">جزئیات</a>
                     </td>

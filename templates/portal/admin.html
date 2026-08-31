@@ -79,7 +79,7 @@
                     <tr>
                         <td>{{ enrollment.student.student_profile.first_name }} {{ enrollment.student.student_profile.last_name }}</td>
                         <td>{{ enrollment.class_obj.title if enrollment.class_obj else '—' }}</td>
-                        <td>{{ enrollment.enrolled_at.strftime('%Y-%m-%d') }}</td>
+                        <td>{{ enrollment.enrolled_at|jalali }}</td>
                         <td>
                             <a href="{{ url_for('enrollment.admin_enrollment_detail', enrollment_id=enrollment.id) }}" class="btn btn-sm btn-outline">مشاهده</a>
                         </td>

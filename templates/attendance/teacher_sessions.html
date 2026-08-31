@@ -25,7 +25,7 @@
                 {% set s = session_summaries[session.id] %}
                 <tr>
                     <td>{{ session.session_number }}</td>
-                    <td>{{ session.scheduled_date.strftime('%Y-%m-%d') }}</td>
+                    <td>{{ session.scheduled_date|jalali }}</td>
                     <td>{{ status_badge(session.status) }}</td>
                     <td>{{ s.PRESENT }}</td>
                     <td>{{ s.ABSENT }}</td>

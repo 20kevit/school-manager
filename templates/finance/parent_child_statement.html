@@ -36,7 +36,7 @@
             <tbody>
                 {% for tx in transactions %}
                 <tr>
-                    <td>{{ tx.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
+                    <td>{{ tx.created_at|jalali_datetime }}</td>
                     <td>{{ status_badge(tx.transaction_type) }}</td>
                     <td>{{ tx.category }}</td>
                     <td class="{{ 'positive' if tx.transaction_type in ['PAYMENT', 'DISCOUNT'] else 'negative' }}">

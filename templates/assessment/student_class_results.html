@@ -27,9 +27,9 @@
                     <td>
                         {% if r.assessment.type == 'FINAL_EXAM' %}آزمون پایانی{% elif r.assessment.type == 'MIDTERM' %}آزمون میان‌ترم{% elif r.assessment.type == 'QUIZ' %}آزمون کلاسی{% elif r.assessment.type == 'PROJECT' %}پروژه{% elif r.assessment.type == 'PRACTICAL' %}عملی{% elif r.assessment.type == 'ORAL' %}شفاهی{% else %}سایر{% endif %}
                     </td>
-                    <td>{{ r.score if r.score is not None else '—' }}</td>
+                    <td>{{ r.score if r.score is not none else '—' }}</td>
                     <td>{{ r.max_score }}</td>
-                    <td>{{ r.percentage if r.percentage is not None else '—' }}</td>
+                    <td>{{ r.percentage if r.percentage is not none else '—' }}</td>
                     <td>
                         {% if r.pass_fail == 'PASS' %}
                             {{ status_badge('PASS') }}

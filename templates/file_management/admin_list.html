@@ -3,7 +3,7 @@
 {% block page_title %}لیست فایل‌ها{% endblock %}
 
 {% block page_content %}
-{% from "macros/utils.html" import page_header %}
+{% from "macros/utils.html" import page_header, status_badge %}
 {{ page_header("مدیریت فایل‌ها", action_url=url_for('file_management.admin_orphans'), action_label="فایل‌های یتیم") }}
 
 <div class="filter-bar">
@@ -69,15 +69,9 @@
                             {{ "%.1f"|format(f.file_size / 1048576) }} MB
                         {% endif %}
                     </td>
-                    <td><span class="badge badge-secondary">{{ f.category }}</span></td>
-                    <td>
-                        {% if f.status == 'ACTIVE' %}
-                            <span class="badge badge-success">فعال</span>
-                        {% else %}
-                            <span class="badge badge-danger">حذف شده</span>
-                        {% endif %}
-                    </td>
-                    <td>{{ f.created_at.strftime('%Y-%m-%d %H:%M') if f.created_at else '—' }}</td>
+                    <td>{{ status_badge(f.category.value) }}</td>
+                    <td>{{ status_badge(f.status.value) }}</td>
+                    <td>{{ f.created_at|jalali_datetime }}</td>
                     <td>
                         <div class="actions">
                             <a href="{{ url_for('file_management.admin_file_detail', file_id=f.id) }}" class="btn btn-sm btn-outline">جزئیات</a>

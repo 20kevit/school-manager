@@ -22,8 +22,8 @@
                 <tr>
                     <td>{{ cls.title }}</td>
                     <td>{{ status_badge(cls.status) }}</td>
-                    <td>{{ cls.start_date.strftime('%Y-%m-%d') }}</td>
-                    <td>{{ cls.end_date.strftime('%Y-%m-%d') if cls.end_date else '—' }}</td>
+                    <td>{{ cls.start_date|jalali }}</td>
+                    <td>{{ cls.end_date|jalali }}</td>
                     <td>
                         <a href="{{ url_for('attendance.teacher_class_sessions', class_id=cls.id) }}" class="btn btn-sm btn-outline">جلسات</a>
                     </td>

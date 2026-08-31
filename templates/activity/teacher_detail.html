@@ -19,7 +19,7 @@
     </div>
     <div class="detail-row">
         <strong>مهلت:</strong>
-        <span>{% if activity.deadline %}{{ activity.deadline.strftime('%Y-%m-%d %H:%M') }}{% else %}ندارد{% endif %}</span>
+        <span>{% if activity.deadline %}{{ activity.deadline|jalali_datetime }}{% else %}ندارد{% endif %}</span>
     </div>
     <div class="detail-row">
         <strong>وضعیت:</strong>
@@ -79,7 +79,7 @@
                     <td>{{ s.version }}</td>
                     <td>{{ status_badge(s.status) }}</td>
                     <td>{% if s.score is not none %}{{ s.score }}{% else %}-{% endif %}</td>
-                    <td>{% if s.submitted_at %}{{ s.submitted_at.strftime('%Y-%m-%d %H:%M') }}{% else %}-{% endif %}</td>
+                    <td>{% if s.submitted_at %}{{ s.submitted_at|jalali_datetime }}{% else %}-{% endif %}</td>
                     <td>
                         <div class="action-links">
                             <a href="{{ url_for('activity.teacher_submission_detail', submission_id=s.id) }}" class="btn btn-sm btn-outline">مشاهده</a>

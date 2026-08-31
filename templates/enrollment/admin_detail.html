@@ -19,24 +19,24 @@
     </div>
     <div class="detail-row">
         <span class="detail-row-label">تاریخ درخواست</span>
-        <span class="detail-row-value">{{ enrollment.requested_at.strftime('%Y-%m-%d %H:%M') }}</span>
+        <span class="detail-row-value">{{ enrollment.requested_at|jalali_datetime }}</span>
     </div>
     {% if enrollment.approved_at %}
     <div class="detail-row">
         <span class="detail-row-label">تاریخ تایید</span>
-        <span class="detail-row-value">{{ enrollment.approved_at.strftime('%Y-%m-%d %H:%M') }}</span>
+        <span class="detail-row-value">{{ enrollment.approved_at|jalali_datetime }}</span>
     </div>
     {% endif %}
     {% if enrollment.rejected_at %}
     <div class="detail-row">
         <span class="detail-row-label">تاریخ رد</span>
-        <span class="detail-row-value">{{ enrollment.rejected_at.strftime('%Y-%m-%d %H:%M') }}</span>
+        <span class="detail-row-value">{{ enrollment.rejected_at|jalali_datetime }}</span>
     </div>
     {% endif %}
     {% if enrollment.cancelled_at %}
     <div class="detail-row">
         <span class="detail-row-label">تاریخ لغو</span>
-        <span class="detail-row-value">{{ enrollment.cancelled_at.strftime('%Y-%m-%d %H:%M') }}</span>
+        <span class="detail-row-value">{{ enrollment.cancelled_at|jalali_datetime }}</span>
     </div>
     {% endif %}
 </div>
@@ -44,13 +44,16 @@
 <div class="action-links">
     {% if enrollment.status == 'PENDING' %}
     <form method="POST" action="{{ url_for('enrollment.admin_approve', enrollment_id=enrollment.id) }}" style="display: inline;">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <button type="submit" class="btn btn-success">تایید</button>
     </form>
-    <form method="POST" action="{{ url_for('enrollment.admin_reject', enrollment_id=enrollment.id) }}" style="display: inline;">
+    <form method="POST" action="{{ url_for('enrollmen
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">t.admin_reject', enrollment_id=enrollment.id) }}" style="display: inline;">
         <button type="submit" class="btn btn-danger">رد</button>
     </form>
     {% endif %}
-    {% if enrollment.status in ('PENDING', 'APPROVED') %}
+    {% if enrollment.status in ('PEN
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">DING', 'APPROVED') %}
     <form method="POST" action="{{ url_for('enrollment.admin_cancel', enrollment_id=enrollment.id) }}" style="display: inline;">
         <button type="submit" class="btn btn-secondary">لغو</button>
     </form>

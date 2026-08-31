@@ -193,3 +193,65 @@ class TestSyllabus:
         delete_syllabus_item(item)
         items = get_syllabus_items(course.id)
         assert len(items) == 0
+
+
+class TestAgeRestrictions:
+    """Tests for course age restriction semantics."""
+
+    def test_no_restrictions(self, db):
+        course = create_course(title="Open Course")
+        assert course.min_age is None
+        assert course.max_age is None
+
+    def test_only_min_age(self, db):
+        course = create_course(title="Adults Only", min_age=18)
+        assert course.min_age == 18
+        assert course.max_age is None
+
+    def test_only_max_age(self, db):
+        course = create_course(title="Kids Only", max_age=12)
+        assert course.min_age is None
+        assert course.max_age == 12
+
+    def test_both_restrictions(self, db):
+        course = create_course(title="Teens", min_age=13, max_age=17)
+        assert course.min_age == 13
+        assert course.max_age == 17
+
+    def test_negative_min_age_fails(self, db):
+        with pytest.raises(CourseError):
+            create_course(title="Bad", min_age=-1)
+
+    def test_negative_max_age_fails(self, db):
+        with pytest.raises(CourseError):
+            create_course(title="Bad", max_age=-1)
+
+    def test_min_greater_than_max_fails(self, db):
+        with pytest.raises(CourseError):
+            create_course(title="Bad", min_age=20, max_age=10)
+
+    def test_update_age_restrictions(self, db):
+        course = create_course(title="Test", min_age=10, max_age=20)
+        update_course(course, min_age=15)
+        assert course.min_age == 15
+        assert course.max_age == 20
+
+    def test_clear_min_age(self, db):
+        course = create_course(title="Test", min_age=10, max_age=20)
+        update_course(course, min_age=None)
+        assert course.min_age is None
+        assert course.max_age == 20
+
+
+class TestSyllabusAutoNumbering:
+    """Tests for syllabus auto-numbering helper."""
+
+    def test_get_next_syllabus_order(self, db):
+        from app.application.academy.course_service import get_next_syllabus_order
+
+        course = create_course(title="Test")
+        assert get_next_syllabus_order(course.id) == 1
+        add_syllabus_item(course, order=1, title="First")
+        assert get_next_syllabus_order(course.id) == 2
+        add_syllabus_item(course, order=2, title="Second")
+        assert get_next_syllabus_order(course.id) == 3

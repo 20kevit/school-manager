@@ -1,5 +1,13 @@
 {# === Form Field Macros === #}
 
+{# CSRF Token - include in every POST form
+   {% from "macros/forms.html" import csrf_field %}
+   {{ csrf_field() }}
+#}
+{% macro csrf_field() %}
+<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+{% endmacro %}
+
 {# Text/Password/Number/Date/Time Input
    {{ form_field("name", "نام", type="text", value=form.name, required=true, placeholder="نام را وارد کنید", hint="اختیاری", error=errors.get("name")) }}
 #}
