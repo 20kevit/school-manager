@@ -1,0 +1,116 @@
+{% extends "base.html" %}
+{% from "macros/utils.html" import page_header, status_badge %}
+
+{% block title %}مدیریت کاربران{% endblock %}
+
+{% block content %}
+{{ page_header("مدیریت کاربران", description="ایجاد، ویرایش و مدیریت کاربران سیستم", action_url=url_for('admin.user_create'), action_label="ایجاد کاربر") }}
+
+<div class="form-card" style="margin-bottom: var(--space-4);">
+    <form method="GET" class="form-grid" style="grid-template-columns: 1fr 1fr auto; align-items: end;">
+        <div class="form-group">
+            <label class="form-label" for="search">جستجو</label>
+            <input type="text" id="search" name="search" class="form-input" placeholder="نام کاربری..." value="{{ search }}">
+        </div>
+        <div class="form-group">
+            <label class="form-label" for="role">نقش</label>
+            <select id="role" name="role" class="form-select">
+                <option value="">همه نقش‌ها</option>
+                <option value="ADMIN" {% if role_filter == 'ADMIN' %}selected{% endif %}>مدیر</option>
+                <option value="TEACHER" {% if role_filter == 'TEACHER' %}selected{% endif %}>معلم</option>
+                <option value="STUDENT" {% if role_filter == 'STUDENT' %}selected{% endif %}>دانش‌آموز</option>
+                <option value="PARENT" {% if role_filter == 'PARENT' %}selected{% endif %}>والدین</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <button type="submit" class="btn btn-primary">فیلتر</button>
+        </div>
+    </form>
+</div>
+
+{% if users %}
+<div class="table-container">
+    <div class="table-scroll">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>نام کاربری</th>
+                    <th>نقش</th>
+                    <th>نام و نام خانوادگی</th>
+                    <th>وضعیت</th>
+                    <th>تاریخ ایجاد</th>
+                    <th>عملیات</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for user in users %}
+                <tr>
+                    <td>{{ user.id }}</td>
+                    <td><strong>{{ user.login }}</strong></td>
+                    <td>
+                        {% for role in user.roles %}
+                            {{ status_badge(role.name) }}
+                        {% endfor %}
+                    </td>
+                    <td>
+                        {% if user.student_profile %}
+                            {{ user.student_profile.first_name }} {{ user.student_profile.last_name }}
+                        {% elif user.teacher_profile %}
+                            {{ user.teacher_profile.first_name }} {{ user.teacher_profile.last_name }}
+                        {% elif user.parent_profile %}
+                            {{ user.parent_profile.first_name }} {{ user.parent_profile.last_name }}
+                        {% else %}
+                            —
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if user.is_active_user %}
+                            <span class="badge badge-success">فعال</span>
+                        {% else %}
+                            <span class="badge badge-danger">غیرفعال</span>
+                        {% endif %}
+                    </td>
+                    <td>{{ user.created_at|jalali_datetime }}</td>
+                    <td>
+                        <a href="{{ url_for('admin.user_edit', user_id=user.id) }}" class="btn btn-sm btn-outline">ویرایش</a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+{% if total_pages > 1 %}
+<nav class="pagination" aria-label="صفحه‌بندی">
+    {% if page > 1 %}
+    <a href="?search={{ search }}&role={{ role_filter }}&page={{ page - 1 }}" class="pagination-item">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+    </a>
+    {% endif %}
+    {% for p in range(1, total_pages + 1) %}
+        {% if p == page %}
+        <span class="pagination-item active">{{ p }}</span>
+        {% else %}
+        <a href="?search={{ search }}&role={{ role_filter }}&page={{ p }}" class="pagination-item">{{ p }}</a>
+        {% endif %}
+    {% endfor %}
+    {% if page < total_pages %}
+    <a href="?search={{ search }}&role={{ role_filter }}&page={{ page + 1 }}" class="pagination-item">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+    </a>
+    {% endif %}
+</nav>
+{% endif %}
+
+<p style="margin-top: var(--space-2); color: var(--color-text-secondary);">تعداد کل: {{ total }} کاربر</p>
+
+{% else %}
+<div class="empty-state">
+    <h3>هیچ کاربری یافت نشد.</h3>
+    <p>اولین کاربر خود را ایجاد کنید.</p>
+    <a href="{{ url_for('admin.user_create') }}" class="btn btn-primary">ایجاد کاربر</a>
+</div>
+{% endif %}
+{% endblock %}

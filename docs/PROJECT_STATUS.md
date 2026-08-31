@@ -1,13 +1,27 @@
 # Project Status
 
-**Current Phase:** P14 — Calendar, User Profiles & MVP Data UX — Completed
-**Current Objective:** P14 complete. Ready for P15.
+**Current Phase:** P16 — Admin User Management & System Seeding — Completed
+**Current Objective:** P16 complete. Ready for P17.
 
-**Previous Phase:** P13 — MVP Stabilization, Core UX Completion & Production-Grade Foundation
+**Previous Phase:** P15 — Bug Fixes & P11 File Integration
 
 ## Status
 
-P14 — Calendar, User Profiles & MVP Data UX is complete. Persian date handling, session editing with history, profile management, finance localization, and landing page all implemented.
+P16 — Admin User Management & System Seeding is complete. Admin UI for user CRUD, parent-student linking, automated `flask seed` CLI command, and 35 new tests all implemented.
+
+## Completed
+
+### P16 — Admin User Management & System Seeding
+- [x] Auth services: create_teacher_user, create_parent_user, create_admin_user, update_user_profile, link_parent_student, unlink_parent_student, get_user_profile_data, list_users
+- [x] Admin user list with search, role filter, pagination
+- [x] Admin user create form with role-based conditional profile fields (JS toggle)
+- [x] Admin user edit page: profile editing, password reset, toggle active/inactive
+- [x] Parent-student linking UI in admin edit page (link/unlink)
+- [x] `flask seed` CLI command (roles, 4 test users, parent-student link)
+- [x] Seed command idempotent (safe to run multiple times)
+- [x] Sidebar link to admin user management
+- [x] 35 new tests: auth services, seed CLI, admin routes, parent-student linking
+- [x] 691 total tests passing, Ruff check/format clean
 
 ## Completed
 
@@ -31,7 +45,7 @@ P14 — Calendar, User Profiles & MVP Data UX is complete. Persian date handling
 - [x] Session edit history preserves attendance records
 - [x] SessionEditHistory migration created and applied
 - [x] 58 new tests for calendar, profile, session editing, finance labels, landing page
-- [x] 652 total tests passing, Ruff check/format clean
+- [x] 656 total tests passing, Ruff check/format clean
 
 ## Completed
 

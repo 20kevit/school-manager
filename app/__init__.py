@@ -26,6 +26,7 @@ def create_app(config_name="development"):
     _register_extensions(app)
     _register_blueprints(app)
     _register_routes(app)
+    _register_cli(app)
 
     return app
 
@@ -55,6 +56,7 @@ def _register_blueprints(app):
     from app.interface.web import web_bp
     from app.interface.web.academy.routes import academy_bp
     from app.interface.web.activity.routes import activity_bp
+    from app.interface.web.admin.routes import admin_bp
     from app.interface.web.assessment.routes import assessment_bp
     from app.interface.web.attendance.routes import attendance_bp
     from app.interface.web.auth import auth_bp
@@ -77,6 +79,7 @@ def _register_blueprints(app):
     app.register_blueprint(notification_bp)
     app.register_blueprint(reporting_bp)
     app.register_blueprint(file_bp)
+    app.register_blueprint(admin_bp)
 
 
 def _register_routes(app):
@@ -230,3 +233,135 @@ def _register_template_filters(app):
     def weekday_filter(value):
         """Translate weekday name to Persian."""
         return persian_label_filter(value)
+
+
+def _register_cli(app):
+    """Register Flask CLI commands."""
+
+    @app.cli.command("seed")
+    def seed_command():
+        """Seed the database with initial test data.
+
+        Creates roles, 4 test users (admin, teacher, student, parent),
+        profiles, and links parent1 to student1.
+        Idempotent: running twice does not create duplicates.
+        """
+        from datetime import date
+
+        from app.extensions import db
+        from app.infrastructure.database.models import (
+            ParentProfileModel,
+            RoleModel,
+            StudentProfileModel,
+            TeacherProfileModel,
+            UserModel,
+        )
+
+        # Ensure roles exist
+        for role_name in ("ADMIN", "TEACHER", "STUDENT", "PARENT"):
+            if not RoleModel.query.get(role_name):
+                db.session.add(RoleModel(name=role_name))
+        db.session.flush()
+
+        # Admin
+        admin = UserModel.query.filter_by(login="admin").first()
+        if admin is None:
+            admin = UserModel(login="admin")
+            admin.set_password("admin123")
+            db.session.add(admin)
+            db.session.flush()
+            admin_role = RoleModel.query.get("ADMIN")
+            admin.roles.append(admin_role)
+            print("  Created: admin / admin123")
+        else:
+            print("  Already exists: admin")
+
+        # Teacher
+        teacher = UserModel.query.filter_by(login="teacher1").first()
+        if teacher is None:
+            teacher = UserModel(login="teacher1")
+            teacher.set_password("teacher123")
+            db.session.add(teacher)
+            db.session.flush()
+            teacher_role = RoleModel.query.get("TEACHER")
+            teacher.roles.append(teacher_role)
+            profile = TeacherProfileModel(
+                user_id=teacher.id,
+                first_name="Mohammad",
+                last_name="Ahmadi",
+                national_id="9876543210",
+                mobile_phone="09129876543",
+            )
+            db.session.add(profile)
+            print("  Created: teacher1 / teacher123")
+        else:
+            print("  Already exists: teacher1")
+
+        # Student
+        student = UserModel.query.filter_by(login="student1").first()
+        if student is None:
+            student = UserModel(login="student1")
+            student.set_password("student123")
+            db.session.add(student)
+            db.session.flush()
+            student_role = RoleModel.query.get("STUDENT")
+            student.roles.append(student_role)
+            profile = StudentProfileModel(
+                user_id=student.id,
+                first_name="Ali",
+                last_name="Rezaei",
+                national_id="1234567890",
+                mobile_phone="09121234567",
+                birth_date=date(2008, 5, 15),
+                gender="MALE",
+            )
+            db.session.add(profile)
+            print("  Created: student1 / student123")
+        else:
+            print("  Already exists: student1")
+
+        # Parent
+        parent = UserModel.query.filter_by(login="parent1").first()
+        if parent is None:
+            parent = UserModel(login="parent1")
+            parent.set_password("parent123")
+            db.session.add(parent)
+            db.session.flush()
+            parent_role = RoleModel.query.get("PARENT")
+            parent.roles.append(parent_role)
+            parent_profile = ParentProfileModel(
+                user_id=parent.id,
+                first_name="Reza",
+                last_name="Rezaei",
+                national_id="1122334455",
+                mobile_phone="09112233445",
+            )
+            db.session.add(parent_profile)
+            db.session.flush()
+
+            # Link parent to student
+            student_profile = StudentProfileModel.query.filter_by(
+                user_id=student.id
+            ).first()
+            if student_profile and student_profile not in parent_profile.children:
+                parent_profile.children.append(student_profile)
+            print("  Created: parent1 / parent123 (linked to student1)")
+        else:
+            # Ensure parent-student link exists
+            parent_profile = ParentProfileModel.query.filter_by(
+                user_id=parent.id
+            ).first()
+            student_profile = StudentProfileModel.query.filter_by(
+                user_id=student.id
+            ).first()
+            if parent_profile and student_profile:
+                if student_profile not in parent_profile.children:
+                    parent_profile.children.append(student_profile)
+                    print("  Linked parent1 to student1")
+                else:
+                    print("  Already exists: parent1")
+            else:
+                print("  Already exists: parent1")
+
+        db.session.commit()
+        print("\nSeed completed successfully.")

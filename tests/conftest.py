@@ -125,6 +125,8 @@ def student_user(db):
 @pytest.fixture
 def parent_user(db):
     """Create a parent user for testing."""
+    from app.infrastructure.database.models import ParentProfileModel
+
     user = UserModel(login="parent")
     user.set_password("parentpass123")
     role = RoleModel(name="PARENT")
@@ -132,5 +134,14 @@ def parent_user(db):
     db.session.flush()
     user.roles.append(role)
     db.session.add(user)
+    db.session.flush()
+    profile = ParentProfileModel(
+        user_id=user.id,
+        first_name="Reza",
+        last_name="Rezaei",
+        national_id="1122334455",
+        mobile_phone="09112233445",
+    )
+    db.session.add(profile)
     db.session.commit()
     return user

@@ -1,0 +1,195 @@
+{% extends "base.html" %}
+{% from "macros/utils.html" import page_header, status_badge %}
+
+{% block title %}ویرایش کاربر — {{ user.login }}{% endblock %}
+
+{% block content %}
+{{ page_header("ویرایش کاربر: " ~ user.login, action_url=url_for('admin.user_list'), action_label="بازگشت به لیست") }}
+
+<div class="form-grid" style="grid-template-columns: 2fr 1fr; gap: var(--space-4); align-items: start;">
+    <!-- Main Profile Edit -->
+    <div>
+        <div class="form-card">
+            <div class="form-card-title">اطلاعات کاربر</div>
+            <form method="POST">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <input type="hidden" name="action" value="update_profile">
+
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label class="form-label">نام کاربری</label>
+                        <input type="text" class="form-input" value="{{ user.login }}" readonly>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">نقش</label>
+                        <div style="padding-top: 8px;">
+                            {% for role in user.roles %}
+                                {{ status_badge(role.name) }}
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+
+                {% if profile %}
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label class="form-label" for="first_name">نام <span class="required">*</span></label>
+                        <input type="text" id="first_name" name="first_name" class="form-input" value="{{ profile.first_name }}" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="last_name">نام خانوادگی <span class="required">*</span></label>
+                        <input type="text" id="last_name" name="last_name" class="form-input" value="{{ profile.last_name }}" required>
+                    </div>
+                </div>
+
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label class="form-label" for="national_id">کد ملی</label>
+                        <input type="text" id="national_id" name="national_id" class="form-input" value="{{ profile.national_id }}" readonly>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="mobile_phone">موبایل</label>
+                        <input type="text" id="mobile_phone" name="mobile_phone" class="form-input" value="{{ profile.mobile_phone }}">
+                    </div>
+                </div>
+
+                {% if profile_type == 'student' %}
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label class="form-label" for="birth_date">تاریخ تولد (شمسی)</label>
+                        <input type="text" id="birth_date" name="birth_date" class="form-input" value="{{ profile.birth_date|to_jalali_input }}" placeholder="مثال: ۱۳۹۰/۰۵/۱۵">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="gender">جنسیت</label>
+                        <select id="gender" name="gender" class="form-select">
+                            <option value="MALE" {% if profile.gender == 'MALE' %}selected{% endif %}>پسر</option>
+                            <option value="FEMALE" {% if profile.gender == 'FEMALE' %}selected{% endif %}>دختر</option>
+                        </select>
+                    </div>
+                </div>
+                {% endif %}
+                {% endif %}
+
+                <div class="form-actions">
+                    <button type="submit" class="btn btn-primary">ذخیره تغییرات</button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Parent-Student Linking -->
+        {% if profile_type == 'parent' %}
+        <div class="form-card" style="margin-top: var(--space-4);">
+            <div class="form-card-title">مدیریت فرزندان</div>
+
+            {% if linked_students %}
+            <div style="margin-bottom: var(--space-4);">
+                <h4 style="margin-bottom: var(--space-2);">فرزندان لینک شده:</h4>
+                <div class="table-container">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>نام</th>
+                                <th>کد ملی</th>
+                                <th>عملیات</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for student in linked_students %}
+                            <tr>
+                                <td>{{ student.first_name }} {{ student.last_name }}</td>
+                                <td>{{ student.national_id }}</td>
+                                <td>
+                                    <form method="POST" style="display: inline;">
+                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                        <input type="hidden" name="action" value="unlink_student">
+                                        <input type="hidden" name="student_user_id" value="{{ student.user_id }}">
+                                        <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('آیا از حذف لینک اطمینان دارید؟')">حذف لینک</button>
+                                    </form>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            {% endif %}
+
+            {% if available_students %}
+            <div>
+                <h4 style="margin-bottom: var(--space-2);">افزودن دانش‌آموز:</h4>
+                <form method="POST" class="form-grid" style="grid-template-columns: 2fr auto; align-items: end;">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <input type="hidden" name="action" value="link_student">
+                    <div class="form-group">
+                        <label class="form-label" for="student_user_id">انتخاب دانش‌آموز</label>
+                        <select id="student_user_id" name="student_user_id" class="form-select" required>
+                            <option value="">— انتخاب کنید —</option>
+                            {% for student in available_students %}
+                            <option value="{{ student.user_id }}">{{ student.first_name }} {{ student.last_name }} ({{ student.national_id }})</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <button type="submit" class="btn btn-primary">لینک</button>
+                    </div>
+                </form>
+            </div>
+            {% else %}
+            {% if not linked_students %}
+            <p style="color: var(--color-text-secondary);">هنوز هیچ دانش‌آموزی لینک نشده است.</p>
+            {% endif %}
+            {% endif %}
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Sidebar Actions -->
+    <div>
+        <!-- Reset Password -->
+        <div class="form-card">
+            <div class="form-card-title">تغییر رمز عبور</div>
+            <form method="POST">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <input type="hidden" name="action" value="reset_password">
+                <div class="form-group">
+                    <label class="form-label" for="new_password">رمز عبور جدید</label>
+                    <input type="password" id="new_password" name="new_password" class="form-input" placeholder="حداقل ۶ کاراکتر" minlength="6">
+                </div>
+                <div class="form-actions">
+                    <button type="submit" class="btn btn-warning">تغییر رمز</button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Toggle Active -->
+        <div class="form-card" style="margin-top: var(--space-4);">
+            <div class="form-card-title">وضعیت حساب</div>
+            <form method="POST">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <input type="hidden" name="action" value="toggle_active">
+                <p>
+                    وضعیت فعلی:
+                    {% if user.is_active_user %}
+                        <span class="badge badge-success">فعال</span>
+                    {% else %}
+                        <span class="badge badge-danger">غیرفعال</span>
+                    {% endif %}
+                </p>
+                <div class="form-actions">
+                    <button type="submit" class="btn btn-outline">
+                        {{ 'غیرفعال کردن' if user.is_active_user else 'فعال کردن' }}
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <!-- User Info -->
+        <div class="form-card" style="margin-top: var(--space-4);">
+            <div class="form-card-title">اطلاعات سیستمی</div>
+            <p><strong>شناسه:</strong> {{ user.id }}</p>
+            <p><strong>تاریخ ایجاد:</strong> {{ user.created_at|jalali_datetime }}</p>
+            <p><strong>آخرین به‌روزرسانی:</strong> {{ user.updated_at|jalali_datetime }}</p>
+        </div>
+    </div>
+</div>
+{% endblock %}

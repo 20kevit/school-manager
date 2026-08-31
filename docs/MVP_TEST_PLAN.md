@@ -18,63 +18,20 @@ This creates all tables in `school_manager_dev.db` (SQLite).
 
 ### Seed Test Users
 
-Launch Flask shell and create the four role users:
-
 ```powershell
-flask shell
+flask seed
 ```
 
-Then paste:
+This creates the 4 standard roles and test users:
 
-```python
-from app import create_app
-from app.extensions import db
-from app.infrastructure.database.models import (
-    RoleModel,
-    UserModel,
-    StudentProfileModel,
-    ParentProfileModel,
-)
-from app.application.auth.services import create_user, assign_role
-from datetime import date
+| Role | Login | Password |
+|------|-------|----------|
+| Admin | `admin` | `admin123` |
+| Teacher | `teacher1` | `teacher123` |
+| Student | `student1` | `student123` |
+| Parent | `parent1` | `parent123` |
 
-app = create_app("development")
-with app.app_context():
-    db.create_all()
-
-    # Admin
-    admin = create_user("admin", "admin123")
-    assign_role(admin, "ADMIN")
-
-    # Teacher
-    teacher = create_user("teacher1", "teacher123")
-    assign_role(teacher, "TEACHER")
-
-    # Student
-    student = create_user("student1", "student123")
-    assign_role(student, "STUDENT")
-    profile = StudentProfileModel(
-        user_id=student.id,
-        first_name="Ali",
-        last_name="Rezaei",
-        national_id="1234567890",
-        mobile_phone="09121234567",
-        birth_date=date(2008, 5, 15),
-        gender="MALE",
-    )
-    db.session.add(profile)
-
-    # Parent (linked to student)
-    parent = create_user("parent1", "parent123")
-    assign_role(parent, "PARENT")
-    parent_profile = ParentProfileModel(user_id=parent.id)
-    db.session.add(parent_profile)
-    db.session.flush()
-    parent_profile.students.append(profile)
-
-    db.session.commit()
-    print("Seed data created successfully.")
-```
+The command is idempotent — running it twice will not create duplicates.
 
 ### Start the Server
 
@@ -111,6 +68,9 @@ Open `http://127.0.0.1:5000` in browser.
 
 | URL | Description |
 |-----|-------------|
+| `/admin/users` | User list with search and role filter |
+| `/admin/users/create` | Create new user |
+| `/admin/users/<id>/edit` | Edit user profile, reset password, manage parent-student links |
 | `/academy/courses` | Course list |
 | `/academy/courses/create` | Create course |
 | `/academy/classes` | Class list |
@@ -513,8 +473,6 @@ Open `http://127.0.0.1:5000` in browser.
 
 ## Known Limitations
 
-1. **No seed script** — Users must be created via Flask shell (see Setup Instructions)
-2. **No parent-student link UI** — Parent-student relationship must be created via Flask shell
-3. **No file upload UI on forms** — File upload only works via dedicated upload endpoints
-4. **External notification providers unconfigured** — SMS/Telegram/Bale/Email require credentials in `.env`
-5. **No ZarinPal integration** — Finance is cash-only (manual transaction recording)
+1. **No file upload UI on forms** — File upload only works via dedicated upload endpoints
+2. **External notification providers unconfigured** — SMS/Telegram/Bale/Email require credentials in `.env`
+3. **No ZarinPal integration** — Finance is cash-only (manual transaction recording)

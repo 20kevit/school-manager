@@ -6,6 +6,31 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 
 ## Unreleased
 
+## P16 — Admin User Management & System Seeding (2026-08-31)
+
+### Added
+- Auth services: create_teacher_user, create_parent_user, create_admin_user, update_user_profile, link_parent_student, unlink_parent_student, get_user_profile_data, list_users
+- Admin user management blueprint (`/admin/users`, `/admin/users/create`, `/admin/users/<id>/edit`)
+- Admin user list with search, role filter, and pagination
+- Admin user create form with role-based conditional profile fields (JavaScript toggle)
+- Admin user edit page: profile editing, password reset, toggle active/inactive
+- Parent-student linking UI in admin edit page (link and unlink)
+- `flask seed` CLI command (creates roles, 4 test users, links parent1 to student1)
+- Seed command is idempotent (safe to run multiple times)
+- Sidebar link to admin user management
+- 35 new tests: auth services, seed CLI, admin routes, parent-student linking UI
+
+### Fixed
+- Template nesting bug in user_edit.html (unclosed `{% if profile %}` block)
+- Seed command bug (`StudentProfileModel.query.filter_by(login=...)` — incorrect field)
+
+### Changed
+- `parent_user` test fixture now creates a `ParentProfileModel` for proper admin UI testing
+
+### Metrics
+- 691 tests passing
+- Ruff check and format clean
+
 ## P14 — Calendar, User Profiles & MVP Data UX (2026-08-31)
 
 ### Added

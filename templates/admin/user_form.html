@@ -1,0 +1,110 @@
+{% extends "base.html" %}
+{% from "macros/utils.html" import page_header %}
+
+{% block title %}ایجاد کاربر جدید{% endblock %}
+
+{% block content %}
+{{ page_header("ایجاد کاربر جدید") }}
+
+<div class="form-card">
+    <form method="POST" id="create-user-form">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+        <div class="form-grid">
+            <div class="form-group">
+                <label class="form-label" for="login">نام کاربری <span class="required">*</span></label>
+                <input type="text" id="login" name="login" class="form-input" required placeholder="نام کاربری را وارد کنید">
+            </div>
+            <div class="form-group">
+                <label class="form-label" for="password">رمز عبور <span class="required">*</span></label>
+                <input type="password" id="password" name="password" class="form-input" required placeholder="رمز عبور را وارد کنید" minlength="6">
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label class="form-label" for="role">نقش <span class="required">*</span></label>
+            <select id="role" name="role" class="form-select" required onchange="toggleProfileFields()">
+                <option value="">— انتخاب کنید —</option>
+                <option value="ADMIN" {% if role == 'ADMIN' %}selected{% endif %}>مدیر (ADMIN)</option>
+                <option value="TEACHER" {% if role == 'TEACHER' %}selected{% endif %}>معلم (TEACHER)</option>
+                <option value="STUDENT" {% if role == 'STUDENT' %}selected{% endif %}>دانش‌آموز (STUDENT)</option>
+                <option value="PARENT" {% if role == 'PARENT' %}selected{% endif %}>والدین (PARENT)</option>
+            </select>
+        </div>
+
+        <!-- Profile Fields -->
+        <div id="profile-fields" style="display: none;">
+            <div class="form-card-title" style="margin-top: var(--space-4);">اطلاعات پروفایل</div>
+
+            <div class="form-grid">
+                <div class="form-group">
+                    <label class="form-label" for="first_name">نام <span class="required">*</span></label>
+                    <input type="text" id="first_name" name="first_name" class="form-input" placeholder="نام">
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="last_name">نام خانوادگی <span class="required">*</span></label>
+                    <input type="text" id="last_name" name="last_name" class="form-input" placeholder="نام خانوادگی">
+                </div>
+            </div>
+
+            <div class="form-grid">
+                <div class="form-group">
+                    <label class="form-label" for="national_id">کد ملی <span class="required">*</span></label>
+                    <input type="text" id="national_id" name="national_id" class="form-input" placeholder="کد ملی" maxlength="10">
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="mobile_phone">موبایل <span class="required">*</span></label>
+                    <input type="text" id="mobile_phone" name="mobile_phone" class="form-input" placeholder="شماره موبایل" maxlength="15">
+                </div>
+            </div>
+
+            <div id="student-fields" style="display: none;">
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label class="form-label" for="birth_date">تاریخ تولد <span class="required">*</span></label>
+                        <input type="text" id="birth_date" name="birth_date" class="form-input" placeholder="مثال: ۱۳۹۰/۰۵/۱۵">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="gender">جنسیت <span class="required">*</span></label>
+                        <select id="gender" name="gender" class="form-select">
+                            <option value="">— انتخاب کنید —</option>
+                            <option value="MALE">پسر</option>
+                            <option value="FEMALE">دختر</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="form-actions">
+            <button type="submit" class="btn btn-primary">ایجاد کاربر</button>
+            <a href="{{ url_for('admin.user_list') }}" class="btn btn-secondary">لغو</a>
+        </div>
+    </form>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function toggleProfileFields() {
+    const role = document.getElementById('role').value;
+    const profileFields = document.getElementById('profile-fields');
+    const studentFields = document.getElementById('student-fields');
+
+    if (role === 'ADMIN') {
+        profileFields.style.display = 'none';
+    } else {
+        profileFields.style.display = 'block';
+        if (role === 'STUDENT') {
+            studentFields.style.display = 'block';
+        } else {
+            studentFields.style.display = 'none';
+        }
+    }
+}
+
+// Run on page load
+document.addEventListener('DOMContentLoaded', toggleProfileFields);
+</script>
+{% endblock %}

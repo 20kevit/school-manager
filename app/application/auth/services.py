@@ -122,3 +122,194 @@ def create_student_user(
     db.session.add(profile)
     db.session.commit()
     return user
+
+
+def create_teacher_user(
+    login: str,
+    password: str,
+    national_id: str,
+    first_name: str,
+    last_name: str,
+    mobile_phone: str,
+) -> UserModel:
+    """Create a new teacher user with profile."""
+    from app.infrastructure.database.models import TeacherProfileModel
+
+    user = create_user(login, password)
+    assign_role(user, "TEACHER")
+
+    profile = TeacherProfileModel(
+        user_id=user.id,
+        first_name=first_name,
+        last_name=last_name,
+        national_id=national_id,
+        mobile_phone=mobile_phone,
+    )
+    db.session.add(profile)
+    db.session.commit()
+    return user
+
+
+def create_parent_user(
+    login: str,
+    password: str,
+    national_id: str,
+    first_name: str,
+    last_name: str,
+    mobile_phone: str,
+) -> UserModel:
+    """Create a new parent user with profile."""
+    from app.infrastructure.database.models import ParentProfileModel
+
+    user = create_user(login, password)
+    assign_role(user, "PARENT")
+
+    profile = ParentProfileModel(
+        user_id=user.id,
+        first_name=first_name,
+        last_name=last_name,
+        national_id=national_id,
+        mobile_phone=mobile_phone,
+    )
+    db.session.add(profile)
+    db.session.commit()
+    return user
+
+
+def create_admin_user(login: str, password: str) -> UserModel:
+    """Create a new admin user."""
+    user = create_user(login, password)
+    assign_role(user, "ADMIN")
+    return user
+
+
+def update_user_profile(user: UserModel, **kwargs) -> None:
+    """Update a user's profile fields.
+
+    Supported kwargs: first_name, last_name, mobile_phone, birth_date, gender,
+    national_id (for student/teacher/parent profiles).
+    """
+    from app.infrastructure.database.models import (
+        ParentProfileModel,
+        StudentProfileModel,
+        TeacherProfileModel,
+    )
+
+    profile = None
+    if user.has_role("STUDENT"):
+        profile = StudentProfileModel.query.filter_by(user_id=user.id).first()
+    elif user.has_role("TEACHER"):
+        profile = TeacherProfileModel.query.filter_by(user_id=user.id).first()
+    elif user.has_role("PARENT"):
+        profile = ParentProfileModel.query.filter_by(user_id=user.id).first()
+
+    if profile is None:
+        raise ValueError("User does not have a profile.")
+
+    for field in ("first_name", "last_name", "mobile_phone", "national_id"):
+        if field in kwargs and kwargs[field] is not None:
+            setattr(profile, field, kwargs[field])
+
+    if "birth_date" in kwargs and kwargs["birth_date"] is not None:
+        if hasattr(profile, "birth_date"):
+            profile.birth_date = kwargs["birth_date"]
+
+    if "gender" in kwargs and kwargs["gender"] is not None:
+        if hasattr(profile, "gender"):
+            profile.gender = kwargs["gender"]
+
+    db.session.commit()
+
+
+def link_parent_student(parent_user_id: int, student_user_id: int) -> None:
+    """Link a student to a parent profile."""
+    from app.infrastructure.database.models import (
+        ParentProfileModel,
+        StudentProfileModel,
+    )
+
+    parent_profile = ParentProfileModel.query.filter_by(user_id=parent_user_id).first()
+    if parent_profile is None:
+        raise ValueError("Parent profile not found.")
+
+    student_profile = StudentProfileModel.query.filter_by(
+        user_id=student_user_id
+    ).first()
+    if student_profile is None:
+        raise ValueError("Student profile not found.")
+
+    if student_profile not in parent_profile.children:
+        parent_profile.children.append(student_profile)
+        db.session.commit()
+
+
+def unlink_parent_student(parent_user_id: int, student_user_id: int) -> None:
+    """Remove a student from a parent's linked children."""
+    from app.infrastructure.database.models import ParentProfileModel
+
+    parent_profile = ParentProfileModel.query.filter_by(user_id=parent_user_id).first()
+    if parent_profile is None:
+        raise ValueError("Parent profile not found.")
+
+    parent_profile.children = [
+        c for c in parent_profile.children if c.user_id != student_user_id
+    ]
+    db.session.commit()
+
+
+def get_user_profile_data(user_id: int) -> dict:
+    """Get user with profile data for admin editing."""
+    from app.infrastructure.database.models import (
+        ParentProfileModel,
+        StudentProfileModel,
+        TeacherProfileModel,
+    )
+
+    user = UserModel.query.get(user_id)
+    if user is None:
+        raise ValueError("User not found.")
+
+    profile = None
+    profile_type = None
+    if user.has_role("STUDENT"):
+        profile = StudentProfileModel.query.filter_by(user_id=user.id).first()
+        profile_type = "student"
+    elif user.has_role("TEACHER"):
+        profile = TeacherProfileModel.query.filter_by(user_id=user.id).first()
+        profile_type = "teacher"
+    elif user.has_role("PARENT"):
+        profile = ParentProfileModel.query.filter_by(user_id=user.id).first()
+        profile_type = "parent"
+
+    return {
+        "user": user,
+        "profile": profile,
+        "profile_type": profile_type,
+    }
+
+
+def list_users(
+    search: str = "",
+    role_filter: str = "",
+    page: int = 1,
+    per_page: int = 20,
+) -> tuple[list[UserModel], int]:
+    """List users with optional search and role filter.
+
+    Returns (users, total_count).
+    """
+    query = UserModel.query
+
+    if search:
+        search_pattern = f"%{search}%"
+        query = query.filter(UserModel.login.ilike(search_pattern))
+
+    if role_filter:
+        from app.infrastructure.database.models import user_roles
+
+        query = query.join(user_roles).filter(user_roles.c.role_name == role_filter)
+
+    query = query.order_by(UserModel.id)
+    total = query.count()
+    users = query.offset((page - 1) * per_page).limit(per_page).all()
+    return users, total

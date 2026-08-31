@@ -238,7 +238,24 @@
 - [x] 58 new tests (calendar, profile, session, finance, landing page)
 - [x] 652 tests passing, Ruff clean
 
-## P15 — Future
+## P15 — Bug Fixes & P11 File Integration
+
+- [x] Fix session edit history bug (dedicated variables before mutation)
+- [x] Refactor activity file upload/download to use P11 FileService
+- [x] Translate activity flash messages to Persian
+- [x] 4 new tests, 656 total tests passing
+
+## P16 — Admin User Management & System Seeding
+
+- [x] Admin user management services (create_teacher/parent/admin_user, update_profile, list_users)
+- [x] Admin user list with search, role filter, pagination
+- [x] Admin user create form with role-based profile fields
+- [x] Admin user edit page (profile, password, toggle active)
+- [x] Parent-student linking UI (link/unlink)
+- [x] `flask seed` CLI command (idempotent)
+- [x] 35 new tests, 691 total tests passing
+
+## P17 — Future
 
 - [ ] Mobile application
 - [ ] Advanced permissions
@@ -248,5 +265,4 @@
 - [ ] Payment gateway integration (ZarinPal)
 - [ ] Payment receipt upload
 - [ ] Attendance reports
-- [ ] Parent-student link UI
 - [ ] Academic calendar & holidays
