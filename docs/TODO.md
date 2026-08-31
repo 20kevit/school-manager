@@ -257,6 +257,22 @@
 - [x] `flask seed` CLI command (idempotent)
 - [x] 35 new tests, 691 total tests passing
 
+## P21 — Advanced Grading & Transcripts
+
+- [x] GradingTemplate domain entity and model
+- [x] GradingComponent domain entity and model
+- [x] Grading template CRUD (create, update, get)
+- [x] Weighted grade calculation (calculate_final_grade)
+- [x] Negative marking support (penalty_factor on AssessmentModel)
+- [x] wrong_count field on AssessmentResultModel
+- [x] Transcript data service (get_transcript_data)
+- [x] Grading template management UI (admin)
+- [x] Printable transcript template (A4-friendly)
+- [x] Print buttons on student/parent views
+- [x] Wrong count inputs on grading forms
+- [x] Database migration
+- [x] 23 new tests, 760 total tests passing
+
 ## P17 — Future
 
 - [ ] Mobile application

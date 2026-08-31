@@ -17,6 +17,12 @@
         <span class="detail-row-label">نمره قبولی</span>
         <span class="detail-row-value">{{ assessment.passing_score }}</span>
     </div>
+    {% if assessment.penalty_factor > 0 %}
+    <div class="detail-row">
+        <span class="detail-row-label">ضریب نمره منفی</span>
+        <span class="detail-row-value">{{ assessment.penalty_factor }}</span>
+    </div>
+    {% endif %}
 </div>
 
 <form method="POST">
@@ -28,6 +34,9 @@
                     <tr>
                         <th>دانش‌آموز</th>
                         <th>نمره (از {{ assessment.max_score }})</th>
+                        {% if assessment.penalty_factor > 0 %}
+                        <th>پاسخ‌های غلط</th>
+                        {% endif %}
                         <th>وضعیت حضور</th>
                         <th>نظرات</th>
                     </tr>
@@ -43,6 +52,14 @@
                                    min="0" max="{{ assessment.max_score }}" step="0.01"
                                    placeholder="نمره" class="form-input">
                         </td>
+                        {% if assessment.penalty_factor > 0 %}
+                        <td>
+                            <input type="number" name="grade_{{ item.enrollment.id }}_wrong_count"
+                                   value="{{ r.wrong_count if r and r.wrong_count is not none else '' }}"
+                                   min="0" step="1"
+                                   placeholder="تعداد غلط" class="form-input">
+                        </td>
+                        {% endif %}
                         <td>
                             <select name="grade_{{ item.enrollment.id }}_presence" class="form-select">
                                 {% for p in ['PRESENT', 'ABSENT', 'EXCUSED'] %}

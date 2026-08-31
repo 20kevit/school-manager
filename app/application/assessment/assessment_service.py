@@ -8,9 +8,13 @@ from app.infrastructure.database.models import (
     AcademyClassModel,
     AssessmentModel,
     AssessmentResultModel,
+    CourseModel,
     EnrollmentModel,
     GradeHistoryModel,
+    GradingComponentModel,
+    GradingTemplateModel,
     ParentProfileModel,
+    StudentProfileModel,
     UserModel,
 )
 
@@ -56,6 +60,7 @@ def create_assessment(
     duration_minutes: int | None = None,
     max_score: float = 100.0,
     passing_score: float = 60.0,
+    penalty_factor: float = 0.0,
     status: str = "DRAFT",
     created_by: int | None = None,
     notes: str = "",
@@ -75,6 +80,8 @@ def create_assessment(
         raise AssessmentError("Passing score cannot exceed maximum score.")
     if duration_minutes is not None and duration_minutes <= 0:
         raise AssessmentError("Duration must be positive.")
+    if penalty_factor < 0 or penalty_factor > 1:
+        raise AssessmentError("Penalty factor must be between 0 and 1.")
 
     academy_class = AcademyClassModel.query.get(class_id)
     if academy_class is None:
@@ -90,6 +97,7 @@ def create_assessment(
         duration_minutes=duration_minutes,
         max_score=Decimal(str(max_score)),
         passing_score=Decimal(str(passing_score)),
+        penalty_factor=Decimal(str(penalty_factor)),
         status=status,
         created_by=created_by,
         notes=notes,
@@ -264,6 +272,7 @@ def record_result(
     enrollment_id: int,
     *,
     score: float | None = None,
+    wrong_count: int | None = None,
     presence_status: str = "PRESENT",
     comments: str = "",
     graded_by: int | None = None,
@@ -271,6 +280,10 @@ def record_result(
     """Record or update a result for one student in one assessment.
 
     If a result already exists for this assessment+enrollment, it is updated.
+
+    For negative marking: if assessment.penalty_factor > 0, the teacher
+    inputs the raw correct count as score and wrong_count. The effective
+    score is calculated as: score - (wrong_count * penalty_factor), min 0.
     """
     assessment = AssessmentModel.query.get(assessment_id)
     if assessment is None:
@@ -291,22 +304,38 @@ def record_result(
 
     max_score = float(assessment.max_score)
     passing_score = float(assessment.passing_score)
+    penalty_factor = float(assessment.penalty_factor)
 
     # Validate score
     if presence_status == "ABSENT":
         score = None
+        wrong_count = None
     elif score is not None:
         if score < 0:
             raise AssessmentError("Score cannot be negative.")
         if score > max_score:
             raise AssessmentError(f"Score cannot exceed maximum score of {max_score}.")
+        if wrong_count is not None and wrong_count < 0:
+            raise AssessmentError("Wrong count cannot be negative.")
+
+    # Apply negative marking if penalty_factor > 0
+    effective_score = score
+    if (
+        score is not None
+        and penalty_factor > 0
+        and wrong_count is not None
+        and wrong_count > 0
+    ):
+        effective_score = max(0.0, score - (wrong_count * penalty_factor))
+        if effective_score > max_score:
+            effective_score = max_score
 
     # Calculate percentage and pass/fail
     percentage = None
     pass_fail = "NOT_DETERMINED"
-    if score is not None and presence_status != "ABSENT":
-        percentage = round(score / max_score * 100, 2)
-        pass_fail = "PASS" if score >= passing_score else "FAIL"
+    if effective_score is not None and presence_status != "ABSENT":
+        percentage = round(effective_score / max_score * 100, 2)
+        pass_fail = "PASS" if effective_score >= passing_score else "FAIL"
 
     now = datetime.now()
 
@@ -317,23 +346,28 @@ def record_result(
 
     if existing is not None:
         # Record grade history before updating
-        if existing.result_status == "GRADED" and score is not None:
+        if existing.result_status == "GRADED" and effective_score is not None:
             _create_grade_history(
                 result=existing,
-                new_score=score,
+                new_score=effective_score,
                 new_pass_fail=pass_fail,
                 corrected_by=graded_by,
                 reason="Grade updated",
             )
 
-        existing.score = Decimal(str(score)) if score is not None else None
+        existing.score = (
+            Decimal(str(effective_score)) if effective_score is not None else None
+        )
+        existing.wrong_count = wrong_count
         existing.max_score = Decimal(str(max_score))
         existing.percentage = (
             Decimal(str(percentage)) if percentage is not None else None
         )
         existing.presence_status = presence_status
         existing.pass_fail = pass_fail
-        existing.result_status = "GRADED" if score is not None else "NOT_GRADED"
+        existing.result_status = (
+            "GRADED" if effective_score is not None else "NOT_GRADED"
+        )
         if comments:
             existing.comments = comments
         if graded_by is not None:
@@ -347,15 +381,16 @@ def record_result(
         assessment_id=assessment_id,
         enrollment_id=enrollment_id,
         student_user_id=enrollment.student_user_id,
-        score=Decimal(str(score)) if score is not None else None,
+        score=Decimal(str(effective_score)) if effective_score is not None else None,
+        wrong_count=wrong_count,
         max_score=Decimal(str(max_score)),
         percentage=Decimal(str(percentage)) if percentage is not None else None,
-        result_status="GRADED" if score is not None else "NOT_GRADED",
+        result_status="GRADED" if effective_score is not None else "NOT_GRADED",
         presence_status=presence_status,
         pass_fail=pass_fail,
         comments=comments,
         graded_by=graded_by,
-        graded_at=now if score is not None else None,
+        graded_at=now if effective_score is not None else None,
     )
     db.session.add(result)
     db.session.commit()
@@ -372,6 +407,7 @@ def record_bulk_results(
     Args:
         assessment_id: The assessment to record results for.
         results_data: List of dicts with keys: enrollment_id, score (optional),
+                      wrong_count (optional, for negative marking),
                       presence_status (default PRESENT), comments (optional).
         graded_by: User ID of the grader.
 
@@ -392,6 +428,7 @@ def record_bulk_results(
             assessment_id=assessment_id,
             enrollment_id=enrollment_id,
             score=item.get("score"),
+            wrong_count=item.get("wrong_count"),
             presence_status=item.get("presence_status", "PRESENT"),
             comments=item.get("comments", ""),
             graded_by=graded_by,
@@ -826,3 +863,330 @@ def get_student_enrolled_classes(student_user_id: int) -> list[AcademyClassModel
         .order_by(AcademyClassModel.title)
         .all()
     )
+
+
+# ---------------------------------------------------------------------------
+# P21 — Grading Templates & Weighted Grades
+# ---------------------------------------------------------------------------
+
+VALID_GRADING_TYPES = {
+    "FINAL_EXAM",
+    "MIDTERM",
+    "QUIZ",
+    "PROJECT",
+    "PRACTICAL",
+    "ORAL",
+    "OTHER",
+}
+
+
+def create_grading_template(
+    class_id: int,
+    title: str,
+    components: list[dict],
+) -> GradingTemplateModel:
+    """Create a grading template with weight components.
+
+    Args:
+        class_id: The class this template belongs to.
+        title: Human-readable template title.
+        components: List of dicts with keys: assessment_type, weight.
+
+    Raises:
+        AssessmentError: If validation fails (weights != 100%, invalid types).
+    """
+    if not title or not title.strip():
+        raise AssessmentError("Grading template title is required.")
+
+    academy_class = AcademyClassModel.query.get(class_id)
+    if academy_class is None:
+        raise AssessmentError("Class not found.")
+
+    if not components:
+        raise AssessmentError("At least one grading component is required.")
+
+    total_weight = 0.0
+    seen_types = set()
+    for comp in components:
+        atype = comp.get("assessment_type", "")
+        weight = comp.get("weight", 0)
+
+        if atype not in VALID_GRADING_TYPES:
+            raise AssessmentError(f"Invalid assessment type: {atype}")
+        if weight <= 0:
+            raise AssessmentError(f"Weight must be positive for {atype}.")
+        if atype in seen_types:
+            raise AssessmentError(f"Duplicate assessment type: {atype}")
+
+        seen_types.add(atype)
+        total_weight += weight
+
+    if abs(total_weight - 100.0) > 0.01:
+        raise AssessmentError(f"Weights must sum to 100%, got {total_weight:.1f}%.")
+
+    template = GradingTemplateModel(
+        class_id=class_id,
+        title=title.strip(),
+    )
+    db.session.add(template)
+    db.session.flush()
+
+    for comp in components:
+        component = GradingComponentModel(
+            template_id=template.id,
+            assessment_type=comp["assessment_type"],
+            weight=Decimal(str(comp["weight"])),
+        )
+        db.session.add(component)
+
+    db.session.commit()
+    return template
+
+
+def update_grading_template(
+    template_id: int,
+    *,
+    title: str | None = None,
+    components: list[dict] | None = None,
+) -> GradingTemplateModel:
+    """Update a grading template and its components."""
+    template = GradingTemplateModel.query.get(template_id)
+    if template is None:
+        raise AssessmentError("Grading template not found.")
+
+    if title is not None:
+        if not title.strip():
+            raise AssessmentError("Grading template title cannot be empty.")
+        template.title = title.strip()
+
+    if components is not None:
+        if not components:
+            raise AssessmentError("At least one grading component is required.")
+
+        total_weight = 0.0
+        seen_types = set()
+        for comp in components:
+            atype = comp.get("assessment_type", "")
+            weight = comp.get("weight", 0)
+
+            if atype not in VALID_GRADING_TYPES:
+                raise AssessmentError(f"Invalid assessment type: {atype}")
+            if weight <= 0:
+                raise AssessmentError(f"Weight must be positive for {atype}.")
+            if atype in seen_types:
+                raise AssessmentError(f"Duplicate assessment type: {atype}")
+
+            seen_types.add(atype)
+            total_weight += weight
+
+        if abs(total_weight - 100.0) > 0.01:
+            raise AssessmentError(f"Weights must sum to 100%, got {total_weight:.1f}%.")
+
+        # Delete existing components and recreate
+        GradingComponentModel.query.filter_by(template_id=template_id).delete()
+        for comp in components:
+            component = GradingComponentModel(
+                template_id=template_id,
+                assessment_type=comp["assessment_type"],
+                weight=Decimal(str(comp["weight"])),
+            )
+            db.session.add(component)
+
+    db.session.commit()
+    return template
+
+
+def get_grading_template(template_id: int) -> GradingTemplateModel | None:
+    """Get a grading template by ID with its components."""
+    return GradingTemplateModel.query.get(template_id)
+
+
+def get_class_grading_template(
+    class_id: int,
+) -> GradingTemplateModel | None:
+    """Get the grading template for a class (most recent if multiple)."""
+    return (
+        GradingTemplateModel.query.filter_by(class_id=class_id)
+        .order_by(GradingTemplateModel.id.desc())
+        .first()
+    )
+
+
+def calculate_final_grade(enrollment_id: int) -> dict:
+    """Calculate the weighted final grade for a student in a class.
+
+    Uses the class's GradingTemplate to compute a weighted average
+    of all assessment results. Missing results are treated as 0.
+
+    Args:
+        enrollment_id: The enrollment to calculate for.
+
+    Returns:
+        dict with keys: final_grade, total_weight_covered, components, passed.
+    """
+    enrollment = EnrollmentModel.query.get(enrollment_id)
+    if enrollment is None:
+        raise AssessmentError("Enrollment not found.")
+
+    template = get_class_grading_template(enrollment.class_id)
+    if template is None:
+        raise AssessmentError("No grading template defined for this class.")
+
+    total_weighted_score = 0.0
+    total_weight = 0.0
+    component_results = []
+
+    for component in template.components:
+        weight = float(component.weight)
+
+        # Get all graded results for this assessment type in the class
+        results = (
+            AssessmentResultModel.query.join(
+                AssessmentModel,
+                AssessmentModel.id == AssessmentResultModel.assessment_id,
+            )
+            .filter(
+                AssessmentModel.class_id == enrollment.class_id,
+                AssessmentModel.type == component.assessment_type,
+                AssessmentResultModel.enrollment_id == enrollment_id,
+                AssessmentResultModel.result_status.in_(["GRADED", "CORRECTED"]),
+            )
+            .all()
+        )
+
+        if results:
+            # Average percentage for this type
+            percentages = [
+                float(r.percentage) for r in results if r.percentage is not None
+            ]
+            avg_percentage = sum(percentages) / len(percentages) if percentages else 0.0
+        else:
+            # Missing assessment = score of 0
+            avg_percentage = 0.0
+
+        weighted = avg_percentage * (weight / 100.0)
+        total_weighted_score += weighted
+        total_weight += weight
+
+        component_results.append(
+            {
+                "type": component.assessment_type,
+                "type_title": _assessment_type_title(component.assessment_type),
+                "weight": weight,
+                "avg_percentage": round(avg_percentage, 2),
+                "weighted_score": round(weighted, 2),
+                "result_count": len(results) if results else 0,
+            }
+        )
+
+    final_grade = round(total_weighted_score, 2) if total_weight > 0 else None
+
+    # Determine pass/fail based on class passing score (default 60)
+    academy_class = AcademyClassModel.query.get(enrollment.class_id)
+    passing_score = 60.0
+    if academy_class and hasattr(academy_class, "passing_score"):
+        passing_score = float(academy_class.passing_score)
+
+    passed = final_grade is not None and final_grade >= passing_score
+
+    return {
+        "final_grade": final_grade,
+        "total_weight_covered": total_weight,
+        "components": component_results,
+        "passed": passed,
+    }
+
+
+def _assessment_type_title(assessment_type: str) -> str:
+    """Return Persian title for assessment type."""
+    titles = {
+        "FINAL_EXAM": "آزمون پایانی",
+        "MIDTERM": "آزمون میان‌ترم",
+        "QUIZ": "آزمون کلاسی",
+        "PROJECT": "پروژه",
+        "PRACTICAL": "عملی",
+        "ORAL": "شفاهی",
+        "OTHER": "سایر",
+    }
+    return titles.get(assessment_type, assessment_type)
+
+
+# ---------------------------------------------------------------------------
+# P21 — Transcript
+# ---------------------------------------------------------------------------
+
+
+def get_transcript_data(enrollment_id: int) -> dict:
+    """Get comprehensive transcript data for a student in a class.
+
+    Args:
+        enrollment_id: The enrollment to generate transcript for.
+
+    Returns:
+        dict with student info, class info, assessment results, and final grade.
+    """
+    enrollment = EnrollmentModel.query.get(enrollment_id)
+    if enrollment is None:
+        raise AssessmentError("Enrollment not found.")
+
+    academy_class = AcademyClassModel.query.get(enrollment.class_id)
+    course = CourseModel.query.get(academy_class.course_id) if academy_class else None
+
+    # Get student profile
+    profile = StudentProfileModel.query.filter_by(
+        user_id=enrollment.student_user_id
+    ).first()
+
+    # Get all results for this enrollment
+    results = (
+        AssessmentResultModel.query.join(
+            AssessmentModel,
+            AssessmentModel.id == AssessmentResultModel.assessment_id,
+        )
+        .filter(AssessmentResultModel.enrollment_id == enrollment_id)
+        .order_by(AssessmentModel.scheduled_date, AssessmentModel.title)
+        .all()
+    )
+
+    # Build result details
+    result_details = []
+    for r in results:
+        assessment = AssessmentModel.query.get(r.assessment_id)
+        result_details.append(
+            {
+                "assessment_title": assessment.title if assessment else "",
+                "assessment_type": assessment.type if assessment else "",
+                "assessment_type_title": (
+                    _assessment_type_title(assessment.type) if assessment else ""
+                ),
+                "score": float(r.score) if r.score is not None else None,
+                "wrong_count": r.wrong_count,
+                "max_score": float(r.max_score),
+                "percentage": float(r.percentage) if r.percentage is not None else None,
+                "pass_fail": r.pass_fail,
+                "presence_status": r.presence_status,
+                "comments": r.comments,
+            }
+        )
+
+    # Calculate final grade
+    try:
+        final_grade_data = calculate_final_grade(enrollment_id)
+    except AssessmentError:
+        final_grade_data = {
+            "final_grade": None,
+            "total_weight_covered": 0,
+            "components": [],
+            "passed": False,
+        }
+
+    return {
+        "student_name": f"{profile.first_name} {profile.last_name}" if profile else "",
+        "student_national_id": profile.national_id if profile else "",
+        "class_title": academy_class.title if academy_class else "",
+        "course_title": course.title if course else "",
+        "results": result_details,
+        "final_grade": final_grade_data["final_grade"],
+        "passed": final_grade_data["passed"],
+        "components": final_grade_data["components"],
+    }

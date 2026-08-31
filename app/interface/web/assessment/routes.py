@@ -86,6 +86,7 @@ def admin_create_assessment():
                 duration_minutes=duration,
                 max_score=float(request.form.get("max_score", 100)),
                 passing_score=float(request.form.get("passing_score", 60)),
+                penalty_factor=float(request.form.get("penalty_factor", 0)),
                 status=request.form.get("status", "DRAFT"),
                 created_by=current_user.id,
                 notes=request.form.get("notes", ""),
@@ -611,10 +612,21 @@ def student_class_results(class_id):
 
     results = assessment_service.get_student_class_results(current_user.id, class_id)
     academy_class = AcademyClassModel.query.get(class_id)
+
+    # Get enrollment for transcript link
+    from app.infrastructure.database.models import EnrollmentModel
+
+    enrollment = EnrollmentModel.query.filter_by(
+        student_user_id=current_user.id,
+        class_id=class_id,
+        status="APPROVED",
+    ).first()
+
     return render_template(
         "assessment/student_class_results.html",
         results=results,
         academy_class=academy_class,
+        enrollment=enrollment,
     )
 
 
@@ -777,10 +789,15 @@ def _parse_grade_form(form) -> list[dict]:
             presence = form.get(f"grade_{enrollment_id}_presence", "PRESENT")
             comments = form.get(f"grade_{enrollment_id}_comments", "")
 
+            # Parse wrong_count for negative marking
+            wrong_count_str = form.get(f"grade_{enrollment_id}_wrong_count", "")
+            wrong_count = int(wrong_count_str) if wrong_count_str else None
+
             data.append(
                 {
                     "enrollment_id": enrollment_id,
                     "score": score,
+                    "wrong_count": wrong_count,
                     "presence_status": presence,
                     "comments": comments,
                 }
@@ -805,4 +822,120 @@ def _is_student_enrolled(student_user_id: int, class_id: int) -> bool:
             status="APPROVED",
         ).first()
         is not None
+    )
+
+
+# ---------------------------------------------------------------------------
+# P21 — Grading Template Management (Admin)
+# ---------------------------------------------------------------------------
+
+
+@assessment_bp.route(
+    "/admin/class/<int:class_id>/grading-template", methods=["GET", "POST"]
+)
+@login_required
+@role_required("ADMIN")
+def admin_grading_template(class_id: int):
+    """Create or edit grading template for a class."""
+    academy_class = AcademyClassModel.query.get_or_404(class_id)
+
+    existing_template = assessment_service.get_class_grading_template(class_id)
+
+    if request.method == "POST":
+        try:
+            title = request.form.get("title", "").strip()
+            if not title:
+                flash("عنوان فرمول ارزیابی الزامی است.", "error")
+                return redirect(
+                    url_for("assessment.admin_grading_template", class_id=class_id)
+                )
+
+            # Parse components from form
+            components = []
+            types = request.form.getlist("component_type[]")
+            weights = request.form.getlist("component_weight[]")
+
+            for atype, weight_str in zip(types, weights):
+                if atype and weight_str:
+                    try:
+                        weight = float(weight_str)
+                    except ValueError:
+                        continue
+                    components.append({"assessment_type": atype, "weight": weight})
+
+            if existing_template:
+                assessment_service.update_grading_template(
+                    existing_template.id, title=title, components=components
+                )
+                flash("فرمول ارزیابی با موفقیت به‌روزرسانی شد.", "success")
+            else:
+                assessment_service.create_grading_template(
+                    class_id=class_id, title=title, components=components
+                )
+                flash("فرمول ارزیابی با موفقیت ایجاد شد.", "success")
+
+            return redirect(
+                url_for("assessment.admin_grading_template", class_id=class_id)
+            )
+
+        except assessment_service.AssessmentError as e:
+            flash(str(e), "error")
+
+    return render_template(
+        "assessment/admin_grading_template.html",
+        academy_class=academy_class,
+        template=existing_template,
+    )
+
+
+@assessment_bp.route("/admin/class/<int:class_id>/grading-template/view")
+@login_required
+@role_required("ADMIN")
+def admin_grading_template_view(class_id: int):
+    """View grading template for a class."""
+    academy_class = AcademyClassModel.query_or_404(class_id)
+    template = assessment_service.get_class_grading_template(class_id)
+
+    return render_template(
+        "assessment/admin_grading_template_view.html",
+        academy_class=academy_class,
+        template=template,
+    )
+
+
+# ---------------------------------------------------------------------------
+# P21 — Transcript (Student, Parent, Admin, Teacher)
+# ---------------------------------------------------------------------------
+
+
+@assessment_bp.route("/student/<int:enrollment_id>/transcript")
+@login_required
+def student_transcript(enrollment_id: int):
+    """Generate and display transcript for a student in a class."""
+    from app.infrastructure.database.models import EnrollmentModel
+
+    enrollment = EnrollmentModel.query.get_or_404(enrollment_id)
+
+    # Authorization: student can view own, parent can view children, admin/teacher can view all
+    user_id = current_user.id
+    is_admin = any(r.name == "ADMIN" for r in current_user.roles)
+    is_teacher = any(r.name == "TEACHER" for r in current_user.roles)
+    is_student_owner = enrollment.student_user_id == user_id
+    is_parent_linked = assessment_service.is_parent_of_student(
+        user_id, enrollment.student_user_id
+    )
+
+    if not (is_admin or is_teacher or is_student_owner or is_parent_linked):
+        abort(403)
+
+    try:
+        transcript_data = assessment_service.get_transcript_data(enrollment_id)
+    except assessment_service.AssessmentError as e:
+        flash(str(e), "error")
+        return redirect(url_for("assessment.student_my_assessments"))
+
+    return render_template(
+        "assessment/transcript.html",
+        transcript=transcript_data,
+        enrollment=enrollment,
     )

@@ -769,6 +769,7 @@ class AssessmentModel(db.Model):
     duration_minutes = db.Column(db.Integer, nullable=True)
     max_score = db.Column(db.Numeric(10, 2), nullable=False, default=100)
     passing_score = db.Column(db.Numeric(10, 2), nullable=False, default=60)
+    penalty_factor = db.Column(db.Numeric(4, 2), nullable=False, default=0)
     status = db.Column(db.String(20), nullable=False, default="DRAFT")
     created_by = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=True)
     notes = db.Column(db.Text, default="")
@@ -824,6 +825,7 @@ class AssessmentResultModel(db.Model):
     )
     student_user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)
     score = db.Column(db.Numeric(10, 2), nullable=True)
+    wrong_count = db.Column(db.Integer, nullable=True)
     max_score = db.Column(db.Numeric(10, 2), nullable=False, default=100)
     percentage = db.Column(db.Numeric(5, 2), nullable=True)
     result_status = db.Column(db.String(20), nullable=False, default="NOT_GRADED")
@@ -903,6 +905,75 @@ class GradeHistoryModel(db.Model):
         return (
             f"<GradeHistoryModel id={self.id} result={self.result_id} "
             f"prev={self.previous_score} new={self.new_score}>"
+        )
+
+
+# ---------------------------------------------------------------------------
+# P21 — Advanced Grading & Transcripts
+# ---------------------------------------------------------------------------
+
+
+class GradingTemplateModel(db.Model):
+    """Grading template table — defines weight distribution for assessment types."""
+
+    __tablename__ = "grading_templates"
+
+    id = db.Column(db.Integer, primary_key=True)
+    class_id = db.Column(
+        db.Integer, db.ForeignKey("academy_classes.id"), nullable=False
+    )
+    title = db.Column(db.String(200), nullable=False)
+    created_at = db.Column(db.DateTime, server_default=db.func.now(), nullable=False)
+    updated_at = db.Column(
+        db.DateTime,
+        server_default=db.func.now(),
+        onupdate=db.func.now(),
+        nullable=False,
+    )
+
+    academy_class = db.relationship(
+        "AcademyClassModel", backref=db.backref("grading_templates", lazy="select")
+    )
+
+    __table_args__ = (db.Index("ix_grading_template_class", "class_id"),)
+
+    def __repr__(self) -> str:
+        return (
+            f"<GradingTemplateModel id={self.id} class={self.class_id} "
+            f"title={self.title!r}>"
+        )
+
+
+class GradingComponentModel(db.Model):
+    """Grading component table — a single weight in a grading template."""
+
+    __tablename__ = "grading_components"
+
+    id = db.Column(db.Integer, primary_key=True)
+    template_id = db.Column(
+        db.Integer, db.ForeignKey("grading_templates.id"), nullable=False
+    )
+    assessment_type = db.Column(db.String(20), nullable=False)
+    weight = db.Column(db.Numeric(5, 2), nullable=False)
+
+    template = db.relationship(
+        "GradingTemplateModel",
+        backref=db.backref("components", lazy="select", cascade="all, delete-orphan"),
+    )
+
+    __table_args__ = (
+        db.UniqueConstraint(
+            "template_id",
+            "assessment_type",
+            name="uq_grading_component_template_type",
+        ),
+        db.Index("ix_grading_component_template", "template_id"),
+    )
+
+    def __repr__(self) -> str:
+        return (
+            f"<GradingComponentModel id={self.id} template={self.template_id} "
+            f"type={self.assessment_type!r} weight={self.weight}>"
         )
 
 

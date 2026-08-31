@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>کارنامه - {{ transcript.student_name }}</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Vazirmatn:wght@300;400;500;600;700&display=swap');
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Vazirmatn', sans-serif;
+            background: #f5f5f5;
+            color: #333;
+            line-height: 1.6;
+        }
+
+        .transcript-container {
+            max-width: 800px;
+            margin: 2rem auto;
+            background: white;
+            padding: 2rem;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .transcript-header {
+            text-align: center;
+            border-bottom: 3px solid #1a5276;
+            padding-bottom: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .academy-name {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #1a5276;
+            margin-bottom: 0.5rem;
+        }
+
+        .transcript-title {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: #2c3e50;
+            margin: 1rem 0;
+        }
+
+        .student-info {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+            padding: 1rem;
+            background: #f8f9fa;
+            border-radius: 6px;
+        }
+
+        .info-item {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .info-label {
+            font-weight: 600;
+            color: #555;
+        }
+
+        .info-value {
+            color: #333;
+        }
+
+        .results-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 1.5rem 0;
+        }
+
+        .results-table th,
+        .results-table td {
+            padding: 0.75rem;
+            text-align: center;
+            border: 1px solid #ddd;
+        }
+
+        .results-table th {
+            background: #1a5276;
+            color: white;
+            font-weight: 600;
+        }
+
+        .results-table tr:nth-child(even) {
+            background: #f8f9fa;
+        }
+
+        .results-table tr:hover {
+            background: #e9ecef;
+        }
+
+        .pass {
+            color: #27ae60;
+            font-weight: 600;
+        }
+
+        .fail {
+            color: #e74c3c;
+            font-weight: 600;
+        }
+
+        .final-grade {
+            margin-top: 1.5rem;
+            padding: 1.5rem;
+            background: #1a5276;
+            color: white;
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        .final-grade-label {
+            font-size: 1.1rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .final-grade-value {
+            font-size: 2.5rem;
+            font-weight: 700;
+        }
+
+        .final-grade-status {
+            margin-top: 0.5rem;
+            font-size: 1.2rem;
+            font-weight: 600;
+        }
+
+        .print-btn {
+            display: block;
+            margin: 2rem auto;
+            padding: 0.75rem 2rem;
+            background: #1a5276;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-family: 'Vazirmatn', sans-serif;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .print-btn:hover {
+            background: #154360;
+        }
+
+        .back-link {
+            display: block;
+            text-align: center;
+            margin-top: 1rem;
+            color: #1a5276;
+            text-decoration: none;
+        }
+
+        .back-link:hover {
+            text-decoration: underline;
+        }
+
+        /* Print Styles */
+        @media print {
+            body {
+                background: white;
+            }
+
+            .transcript-container {
+                margin: 0;
+                padding: 1rem;
+                box-shadow: none;
+                border-radius: 0;
+                max-width: 100%;
+            }
+
+            .print-btn,
+            .back-link {
+                display: none !important;
+            }
+
+            .transcript-header {
+                border-bottom-width: 2px;
+            }
+
+            .results-table th {
+                background: #1a5276 !important;
+                color: white !important;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+
+            .final-grade {
+                background: #1a5276 !important;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+
+            @page {
+                size: A4;
+                margin: 1cm;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="transcript-container">
+        <div class="transcript-header">
+            <div class="academy-name">آکادمی مدیریت</div>
+            <div class="transcript-title">کارنامه تحصیلی</div>
+        </div>
+
+        <div class="student-info">
+            <div class="info-item">
+                <span class="info-label">نام دانش‌آموز:</span>
+                <span class="info-value">{{ transcript.student_name }}</span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">کد ملی:</span>
+                <span class="info-value">{{ transcript.student_national_id }}</span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">کلاس:</span>
+                <span class="info-value">{{ transcript.class_title }}</span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">درس:</span>
+                <span class="info-value">{{ transcript.course_title }}</span>
+            </div>
+        </div>
+
+        {% if transcript.results %}
+        <table class="results-table">
+            <thead>
+                <tr>
+                    <th>ارزیابی</th>
+                    <th>نوع</th>
+                    <th>نمره خام</th>
+                    <th>پاسخ غلط</th>
+                    <th>نمره مؤثر</th>
+                    <th>حداکثر</th>
+                    <th>درصد</th>
+                    <th>وضعیت</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for r in transcript.results %}
+                <tr>
+                    <td>{{ r.assessment_title }}</td>
+                    <td>{{ r.assessment_type_title }}</td>
+                    <td>{{ r.score if r.score is not none else '—' }}</td>
+                    <td>{{ r.wrong_count if r.wrong_count is not none else '—' }}</td>
+                    <td>{{ r.score if r.score is not none else '—' }}</td>
+                    <td>{{ r.max_score }}</td>
+                    <td>{{ r.percentage if r.percentage is not none else '—' }}</td>
+                    <td class="{{ 'pass' if r.pass_fail == 'PASS' else ('fail' if r.pass_fail == 'FAIL' else '') }}">
+                        {% if r.pass_fail == 'PASS' %}قبول{% elif r.pass_fail == 'FAIL' %}مردود{% else %}—{% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <p style="text-align:center;padding:2rem;color:#666;">هنوز نتیجه‌ای ثبت نشده است.</p>
+        {% endif %}
+
+        {% if transcript.final_grade is not none %}
+        <div class="final-grade">
+            <div class="final-grade-label">نمره نهایی (میانگین وزنی)</div>
+            <div class="final-grade-value">{{ transcript.final_grade }}</div>
+            <div class="final-grade-status">
+                {% if transcript.passed %}
+                    ✅ قبول
+                {% else %}
+                    ❌ مردود
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+
+        <button class="print-btn" onclick="window.print()">چاپ کارنامه</button>
+        <a href="javascript:history.back()" class="back-link">بازگشت</a>
+    </div>
+</body>
+</html>

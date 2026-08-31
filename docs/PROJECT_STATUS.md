@@ -1,13 +1,35 @@
 # Project Status
 
-**Current Phase:** P20 — Timetable, Conflict Detection & Rich Demo Seeder — Completed
-**Current Objective:** Schedule conflict detection, weekly timetable UI, and rich demo data generator implemented.
+**Current Phase:** P21 — Advanced Grading & Transcripts — Completed
+**Current Objective:** Weighted grading, negative marking, and printable transcripts implemented.
 
-**Previous Phase:** P19 — Payment Receipts, Notifications & Admin Visibility
+**Previous Phase:** P20 — Timetable, Conflict Detection & Rich Demo Seeder
 
 ## Status
 
-P20 is complete. Students and teachers can view their weekly timetable, enrollment now checks for schedule conflicts (blocks for student self-enrollment, warns for admin), and `flask seed-demo` generates a comprehensive demo dataset. All tests pass.
+P21 is complete. The grading system now supports weighted grade calculation per class, negative marking for objective tests, and formal printable transcripts (کارنامه). All tests pass.
+
+## Completed
+
+### P21 — Advanced Grading & Transcripts
+- [x] `GradingTemplate` domain entity and model — defines weight distribution for assessment types per class
+- [x] `GradingComponent` domain entity and model — maps assessment types to weight percentages
+- [x] Grading template CRUD: `create_grading_template()`, `update_grading_template()`, `get_grading_template()`, `get_class_grading_template()`
+- [x] Weight validation: weights must sum to exactly 100%, clear error messages
+- [x] `calculate_final_grade(enrollment_id)` — computes weighted average across all assessment types
+- [x] Missing results treated as 0 (unless excused, which is ignored for now)
+- [x] Negative marking: `penalty_factor` field on `AssessmentModel` (0-1 range)
+- [x] `wrong_count` field on `AssessmentResultModel` for audit trail
+- [x] Effective score formula: `max(0, raw_score - (wrong_count * penalty_factor))`
+- [x] Grading template management UI (admin) — dynamic form with real-time weight validation
+- [x] Printable transcript template (`transcript.html`) — A4-friendly with `@media print`
+- [x] Transcript route: `/assessment/student/<enrollment_id>/transcript`
+- [x] Print buttons on student class results and admin class report pages
+- [x] Wrong count inputs on teacher and admin grading forms (when penalty_factor > 0)
+- [x] `get_transcript_data(enrollment_id)` — comprehensive transcript data service
+- [x] Database migration: 2 new tables, 2 altered tables
+- [x] 23 new tests: grading templates, weighted grades, negative marking, transcripts
+- [x] 760 total tests passing, Ruff check/format clean
 
 ## Completed
 

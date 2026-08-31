@@ -6,6 +6,40 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 
 ## Unreleased
 
+## P21 — Advanced Grading & Transcripts (2026-08-31)
+
+### Added
+- `GradingTemplate` domain entity and model for defining weight distribution per class
+- `GradingComponent` domain entity and model for mapping assessment types to weights
+- Grading template CRUD functions: `create_grading_template()`, `update_grading_template()`, `get_grading_template()`, `get_class_grading_template()`
+- `calculate_final_grade(enrollment_id)` — weighted grade calculation across assessment types
+- Negative marking support: `penalty_factor` field on `AssessmentModel` (0-1 range)
+- `wrong_count` field on `AssessmentResultModel` for negative marking audit trail
+- Effective score formula: `max(0, raw_score - (wrong_count * penalty_factor))`
+- `get_transcript_data(enrollment_id)` — comprehensive transcript data service
+- Grading template management route (`/assessment/admin/class/<class_id>/grading-template`)
+- Printable transcript route (`/assessment/student/<enrollment_id>/transcript`)
+- Print transcript button on student class results page
+- Grading template link on admin class report page
+- Wrong count inputs on teacher and admin grading forms (when penalty_factor > 0)
+- Grading template form with dynamic component rows and real-time weight validation
+- Printable transcript template with A4-friendly `@media print` CSS
+- 23 new tests for grading templates, weighted grades, negative marking, and transcripts
+
+### Changed
+- `create_assessment()` now accepts `penalty_factor` parameter (default 0)
+- `record_result()` now accepts `wrong_count` parameter and applies negative marking
+- `record_bulk_results()` now passes `wrong_count` to `record_result()`
+- Teacher and admin grading forms show wrong count column when assessment has penalty_factor > 0
+- Assessment create form includes penalty_factor input field
+
+### Database
+- New table: `grading_templates` (id, class_id, title, created_at, updated_at)
+- New table: `grading_components` (id, template_id, assessment_type, weight)
+- Altered table: `assessments` — added `penalty_factor` column (NUMERIC(4,2), default 0)
+- Altered table: `assessment_results` — added `wrong_count` column (INTEGER, nullable)
+- Migration: `a2b3c4d5e6f7_add_grading_templates_and_negative_marking`
+
 ## P19 — Payment Receipts, Notifications & Admin Visibility (2026-08-31)
 
 ### Added

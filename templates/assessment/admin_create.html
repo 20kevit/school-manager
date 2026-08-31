@@ -64,6 +64,13 @@
             </div>
 
             <div class="form-group">
+                <label class="form-label" for="penalty_factor">ضریب نمره منفی</label>
+                <input type="number" name="penalty_factor" id="penalty_factor" class="form-input" value="0" min="0" max="1" step="0.01"
+                       placeholder="0 = بدون نمره منفی، 0.33 = یک سوم">
+                <small class="form-help">برای آزمون‌های چندگزینه‌ای: هر ۳ پاسخ غلط ۱ نمره صحیح کم می‌کند (0.33)</small>
+            </div>
+
+            <div class="form-group">
                 <label class="form-label" for="status">وضعیت</label>
                 <select name="status" id="status" class="form-select">
                     {% for s in ['DRAFT', 'SCHEDULED', 'OPEN', 'CLOSED', 'GRADED'] %}

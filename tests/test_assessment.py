@@ -997,3 +997,376 @@ class TestIntegration:
         results = assessment_service.get_assessment_results(assessment.id)
         assert len(results) == 1
         assert results[0].score == Decimal("85")
+
+
+# ---------------------------------------------------------------------------
+# P21 — Advanced Grading & Transcripts
+# ---------------------------------------------------------------------------
+
+
+class TestGradingTemplate:
+    """Tests for grading template CRUD."""
+
+    def test_create_grading_template(self, db, admin_user, academy_class):
+        template = assessment_service.create_grading_template(
+            class_id=academy_class.id,
+            title="فرمول ارزیابی پاییز",
+            components=[
+                {"assessment_type": "FINAL_EXAM", "weight": 50},
+                {"assessment_type": "MIDTERM", "weight": 30},
+                {"assessment_type": "QUIZ", "weight": 20},
+            ],
+        )
+        assert template.id is not None
+        assert template.class_id == academy_class.id
+        assert template.title == "فرمول ارزیابی پاییز"
+
+    def test_create_grading_template_weights_not_100_raises(
+        self, db, admin_user, academy_class
+    ):
+        with pytest.raises(assessment_service.AssessmentError, match="100%"):
+            assessment_service.create_grading_template(
+                class_id=academy_class.id,
+                title="Invalid",
+                components=[
+                    {"assessment_type": "FINAL_EXAM", "weight": 50},
+                    {"assessment_type": "MIDTERM", "weight": 30},
+                ],
+            )
+
+    def test_create_grading_template_empty_title_raises(
+        self, db, admin_user, academy_class
+    ):
+        with pytest.raises(assessment_service.AssessmentError, match="title"):
+            assessment_service.create_grading_template(
+                class_id=academy_class.id,
+                title="",
+                components=[{"assessment_type": "FINAL_EXAM", "weight": 100}],
+            )
+
+    def test_create_grading_template_no_components_raises(
+        self, db, admin_user, academy_class
+    ):
+        with pytest.raises(assessment_service.AssessmentError, match="component"):
+            assessment_service.create_grading_template(
+                class_id=academy_class.id,
+                title="Empty",
+                components=[],
+            )
+
+    def test_create_grading_template_invalid_type_raises(
+        self, db, admin_user, academy_class
+    ):
+        with pytest.raises(assessment_service.AssessmentError, match="Invalid"):
+            assessment_service.create_grading_template(
+                class_id=academy_class.id,
+                title="Invalid Type",
+                components=[{"assessment_type": "INVALID", "weight": 100}],
+            )
+
+    def test_create_grading_template_duplicate_type_raises(
+        self, db, admin_user, academy_class
+    ):
+        with pytest.raises(assessment_service.AssessmentError, match="Duplicate"):
+            assessment_service.create_grading_template(
+                class_id=academy_class.id,
+                title="Duplicate",
+                components=[
+                    {"assessment_type": "FINAL_EXAM", "weight": 50},
+                    {"assessment_type": "FINAL_EXAM", "weight": 50},
+                ],
+            )
+
+    def test_create_grading_template_negative_weight_raises(
+        self, db, admin_user, academy_class
+    ):
+        with pytest.raises(assessment_service.AssessmentError, match="positive"):
+            assessment_service.create_grading_template(
+                class_id=academy_class.id,
+                title="Negative",
+                components=[{"assessment_type": "FINAL_EXAM", "weight": -10}],
+            )
+
+    def test_update_grading_template(self, db, admin_user, academy_class):
+        template = assessment_service.create_grading_template(
+            class_id=academy_class.id,
+            title="Original",
+            components=[{"assessment_type": "FINAL_EXAM", "weight": 100}],
+        )
+        updated = assessment_service.update_grading_template(
+            template.id,
+            title="Updated",
+            components=[
+                {"assessment_type": "FINAL_EXAM", "weight": 60},
+                {"assessment_type": "QUIZ", "weight": 40},
+            ],
+        )
+        assert updated.title == "Updated"
+        assert len(updated.components) == 2
+
+    def test_get_grading_template(self, db, academy_class):
+        template = assessment_service.create_grading_template(
+            class_id=academy_class.id,
+            title="Test",
+            components=[{"assessment_type": "FINAL_EXAM", "weight": 100}],
+        )
+        result = assessment_service.get_grading_template(template.id)
+        assert result is not None
+        assert result.id == template.id
+
+    def test_get_class_grading_template(self, db, academy_class):
+        template = assessment_service.create_grading_template(
+            class_id=academy_class.id,
+            title="Test",
+            components=[{"assessment_type": "FINAL_EXAM", "weight": 100}],
+        )
+        result = assessment_service.get_class_grading_template(academy_class.id)
+        assert result is not None
+        assert result.id == template.id
+
+
+class TestCalculateFinalGrade:
+    """Tests for weighted grade calculation."""
+
+    def test_calculate_final_grade_basic(self, db, academy_class, enrollment):
+        # Create grading template
+        assessment_service.create_grading_template(
+            class_id=academy_class.id,
+            title="Test",
+            components=[
+                {"assessment_type": "FINAL_EXAM", "weight": 60},
+                {"assessment_type": "QUIZ", "weight": 40},
+            ],
+        )
+
+        # Create assessments
+        final = assessment_service.create_assessment(
+            class_id=academy_class.id,
+            assessment_type="FINAL_EXAM",
+            title="Final",
+            max_score=100,
+            passing_score=60,
+        )
+        quiz = assessment_service.create_assessment(
+            class_id=academy_class.id,
+            assessment_type="QUIZ",
+            title="Quiz",
+            max_score=100,
+            passing_score=60,
+        )
+
+        # Record results
+        assessment_service.record_result(final.id, enrollment.id, score=80)
+        assessment_service.record_result(quiz.id, enrollment.id, score=90)
+
+        # Calculate final grade
+        result = assessment_service.calculate_final_grade(enrollment.id)
+        # 80 * 0.6 + 90 * 0.4 = 48 + 36 = 84
+        assert result["final_grade"] == 84.0
+        assert result["passed"] is True
+
+    def test_calculate_final_grade_missing_scores(self, db, academy_class, enrollment):
+        # Create grading template
+        assessment_service.create_grading_template(
+            class_id=academy_class.id,
+            title="Test",
+            components=[
+                {"assessment_type": "FINAL_EXAM", "weight": 50},
+                {"assessment_type": "MIDTERM", "weight": 50},
+            ],
+        )
+
+        # Create assessments
+        final = assessment_service.create_assessment(
+            class_id=academy_class.id,
+            assessment_type="FINAL_EXAM",
+            title="Final",
+            max_score=100,
+            passing_score=60,
+        )
+        # Only record final exam result (missing midterm)
+        assessment_service.record_result(final.id, enrollment.id, score=80)
+
+        result = assessment_service.calculate_final_grade(enrollment.id)
+        # 80 * 0.5 + 0 * 0.5 = 40
+        assert result["final_grade"] == 40.0
+        assert result["passed"] is False
+
+    def test_calculate_final_grade_multiple_assessments_per_type(
+        self, db, academy_class, enrollment
+    ):
+        assessment_service.create_grading_template(
+            class_id=academy_class.id,
+            title="Test",
+            components=[{"assessment_type": "QUIZ", "weight": 100}],
+        )
+
+        quiz1 = assessment_service.create_assessment(
+            class_id=academy_class.id,
+            assessment_type="QUIZ",
+            title="Quiz 1",
+            max_score=100,
+            passing_score=60,
+        )
+        quiz2 = assessment_service.create_assessment(
+            class_id=academy_class.id,
+            assessment_type="QUIZ",
+            title="Quiz 2",
+            max_score=100,
+            passing_score=60,
+        )
+
+        assessment_service.record_result(quiz1.id, enrollment.id, score=80)
+        assessment_service.record_result(quiz2.id, enrollment.id, score=100)
+
+        result = assessment_service.calculate_final_grade(enrollment.id)
+        # Average of 80 and 100 = 90
+        assert result["final_grade"] == 90.0
+
+    def test_calculate_final_grade_no_template(self, db, academy_class, enrollment):
+        with pytest.raises(assessment_service.AssessmentError, match="template"):
+            assessment_service.calculate_final_grade(enrollment.id)
+
+
+class TestNegativeMarking:
+    """Tests for negative marking calculation."""
+
+    def test_negative_marking_basic(self, db, academy_class, enrollment):
+        assessment = assessment_service.create_assessment(
+            class_id=academy_class.id,
+            assessment_type="QUIZ",
+            title="MCQ Quiz",
+            max_score=100,
+            passing_score=40,
+            penalty_factor=0.33,
+        )
+
+        # 30 correct, 10 wrong: effective = 30 - (10 * 0.33) = 26.7
+        result = assessment_service.record_result(
+            assessment.id, enrollment.id, score=30, wrong_count=10
+        )
+        assert float(result.score) == 26.7
+        assert float(result.percentage) == 26.7
+
+    def test_negative_marking_score_floors_to_zero(self, db, academy_class, enrollment):
+        assessment = assessment_service.create_assessment(
+            class_id=academy_class.id,
+            assessment_type="QUIZ",
+            title="MCQ Quiz",
+            max_score=100,
+            passing_score=40,
+            penalty_factor=0.33,
+        )
+
+        # 10 correct, 50 wrong: effective = 10 - (50 * 0.33) = negative -> 0
+        result = assessment_service.record_result(
+            assessment.id, enrollment.id, score=10, wrong_count=50
+        )
+        assert float(result.score) == 0.0
+
+    def test_negative_marking_zero_penalty(self, db, academy_class, enrollment):
+        assessment = assessment_service.create_assessment(
+            class_id=academy_class.id,
+            assessment_type="QUIZ",
+            title="Regular Quiz",
+            max_score=100,
+            passing_score=60,
+            penalty_factor=0,
+        )
+
+        result = assessment_service.record_result(
+            assessment.id, enrollment.id, score=80, wrong_count=5
+        )
+        # No penalty applied
+        assert float(result.score) == 80.0
+
+    def test_negative_marking_no_wrong_count(self, db, academy_class, enrollment):
+        assessment = assessment_service.create_assessment(
+            class_id=academy_class.id,
+            assessment_type="QUIZ",
+            title="MCQ Quiz",
+            max_score=100,
+            passing_score=60,
+            penalty_factor=0.33,
+        )
+
+        # Score only, no wrong_count
+        result = assessment_service.record_result(
+            assessment.id, enrollment.id, score=80
+        )
+        assert float(result.score) == 80.0
+
+    def test_negative_marking_wrong_count_validation(
+        self, db, academy_class, enrollment
+    ):
+        assessment = assessment_service.create_assessment(
+            class_id=academy_class.id,
+            assessment_type="QUIZ",
+            title="MCQ Quiz",
+            max_score=100,
+            passing_score=60,
+            penalty_factor=0.33,
+        )
+
+        with pytest.raises(assessment_service.AssessmentError, match="negative"):
+            assessment_service.record_result(
+                assessment.id, enrollment.id, score=30, wrong_count=-5
+            )
+
+
+class TestAssessmentPenaltyFactor:
+    """Tests for assessment penalty_factor field."""
+
+    def test_create_assessment_with_penalty_factor(self, db, academy_class, admin_user):
+        assessment = assessment_service.create_assessment(
+            class_id=academy_class.id,
+            assessment_type="QUIZ",
+            title="MCQ Quiz",
+            max_score=100,
+            passing_score=60,
+            penalty_factor=0.33,
+            created_by=admin_user.id,
+        )
+        assert float(assessment.penalty_factor) == 0.33
+
+    def test_create_assessment_invalid_penalty_factor(self, db, academy_class):
+        with pytest.raises(assessment_service.AssessmentError, match="between 0 and 1"):
+            assessment_service.create_assessment(
+                class_id=academy_class.id,
+                assessment_type="QUIZ",
+                title="Invalid",
+                penalty_factor=1.5,
+            )
+
+
+class TestTranscript:
+    """Tests for transcript generation."""
+
+    def test_get_transcript_data(self, db, academy_class, enrollment):
+        # Create grading template
+        assessment_service.create_grading_template(
+            class_id=academy_class.id,
+            title="Test",
+            components=[{"assessment_type": "FINAL_EXAM", "weight": 100}],
+        )
+
+        # Create assessment and result
+        assessment = assessment_service.create_assessment(
+            class_id=academy_class.id,
+            assessment_type="FINAL_EXAM",
+            title="Final",
+            max_score=100,
+            passing_score=60,
+        )
+        assessment_service.record_result(assessment.id, enrollment.id, score=85)
+
+        # Get transcript
+        transcript = assessment_service.get_transcript_data(enrollment.id)
+        assert transcript["student_name"] == "Ali Rezaei"
+        assert transcript["final_grade"] == 85.0
+        assert transcript["passed"] is True
+        assert len(transcript["results"]) == 1
+
+    def test_get_transcript_data_no_template(self, db, academy_class, enrollment):
+        transcript = assessment_service.get_transcript_data(enrollment.id)
+        assert transcript["final_grade"] is None

@@ -64,5 +64,10 @@
 </div>
 {% endif %}
 
-<a href="{{ url_for('assessment.student_my_assessments') }}" class="btn btn-secondary" style="margin-top: 1rem;">بازگشت به ارزیابی‌های من</a>
+<div style="margin-top: 1rem; display: flex; gap: 0.5rem;">
+    <a href="{{ url_for('assessment.student_my_assessments') }}" class="btn btn-secondary">بازگشت به ارزیابی‌های من</a>
+    {% if enrollment %}
+    <a href="{{ url_for('assessment.student_transcript', enrollment_id=enrollment.id) }}" class="btn btn-primary" target="_blank">چاپ کارنامه</a>
+    {% endif %}
+</div>
 {% endblock %}

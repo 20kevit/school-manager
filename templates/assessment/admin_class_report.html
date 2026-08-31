@@ -4,6 +4,12 @@
 {% from "macros/utils.html" import page_header, stat_card %}
 {{ page_header("گزارش تحصیلی کلاس: " ~ summary.class.title) }}
 
+<div style="margin-bottom: 1rem;">
+    <a href="{{ url_for('assessment.admin_grading_template', class_id=summary.class.id) }}" class="btn btn-primary">
+        فرمول ارزیابی
+    </a>
+</div>
+
 <div class="detail-card">
     <div class="detail-row">
         <span class="detail-row-label">دوره</span>

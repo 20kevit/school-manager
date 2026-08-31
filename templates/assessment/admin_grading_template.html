@@ -1,0 +1,143 @@
+{% extends "base.html" %}
+{% block title %}فرمول ارزیابی - {{ academy_class.title }}{% endblock %}
+{% block content %}
+{% from "macros/utils.html" import page_header %}
+{{ page_header("فرمول ارزیابی: " ~ academy_class.title) }}
+
+<div class="form-card">
+    <form method="POST" id="gradingTemplateForm">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+        <div class="form-group">
+            <label class="form-label" for="title">عنوان فرمول <span class="required">*</span></label>
+            <input type="text" name="title" id="title" class="form-input"
+                   value="{{ template.title if template else '' }}" required
+                   placeholder="مثال: فرمول ارزیابی ترم پاییز">
+        </div>
+
+        <div class="form-section">
+            <h3 class="form-section-title">اجزای ارزیابی</h3>
+            <p class="text-muted">وزن اجزا باید در مجموع ۱۰۰٪ باشد.</p>
+
+            <div id="componentsContainer">
+                {% if template and template.components %}
+                    {% for comp in template.components %}
+                    <div class="component-row" style="display:flex;gap:1rem;align-items:center;margin-bottom:0.5rem;">
+                        <select name="component_type[]" class="form-select" style="flex:2;" required>
+                            {% for t in ['FINAL_EXAM', 'MIDTERM', 'QUIZ', 'PROJECT', 'PRACTICAL', 'ORAL', 'OTHER'] %}
+                            <option value="{{ t }}" {% if comp.assessment_type == t %}selected{% endif %}>
+                                {% if t == 'FINAL_EXAM' %}آزمون پایانی{% elif t == 'MIDTERM' %}آزمون میان‌ترم{% elif t == 'QUIZ' %}آزمون کلاسی{% elif t == 'PROJECT' %}پروژه{% elif t == 'PRACTICAL' %}عملی{% elif t == 'ORAL' %}شفاهی{% else %}سایر{% endif %}
+                            </option>
+                            {% endfor %}
+                        </select>
+                        <input type="number" name="component_weight[]" class="form-input"
+                               style="flex:1;" value="{{ comp.weight }}" min="0" max="100"
+                               step="0.01" required placeholder="وزن (%)">
+                        <button type="button" class="btn btn-sm btn-danger remove-component" onclick="removeComponent(this)">حذف</button>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <div class="component-row" style="display:flex;gap:1rem;align-items:center;margin-bottom:0.5rem;">
+                        <select name="component_type[]" class="form-select" style="flex:2;" required>
+                            {% for t in ['FINAL_EXAM', 'MIDTERM', 'QUIZ', 'PROJECT', 'PRACTICAL', 'ORAL', 'OTHER'] %}
+                            <option value="{{ t }}">
+                                {% if t == 'FINAL_EXAM' %}آزمون پایانی{% elif t == 'MIDTERM' %}آزمون میان‌ترم{% elif t == 'QUIZ' %}آزمون کلاسی{% elif t == 'PROJECT' %}پروژه{% elif t == 'PRACTICAL' %}عملی{% elif t == 'ORAL' %}شفاهی{% else %}سایر{% endif %}
+                            </option>
+                            {% endfor %}
+                        </select>
+                        <input type="number" name="component_weight[]" class="form-input"
+                               style="flex:1;" min="0" max="100" step="0.01" required placeholder="وزن (%)">
+                        <button type="button" class="btn btn-sm btn-danger remove-component" onclick="removeComponent(this)">حذف</button>
+                    </div>
+                {% endif %}
+            </div>
+
+            <button type="button" class="btn btn-sm btn-secondary" onclick="addComponent()" style="margin-top:0.5rem;">
+                + افزودن جزء
+            </button>
+
+            <div style="margin-top:1rem;padding:0.75rem;background:var(--color-bg-secondary);border-radius:var(--radius-md);">
+                <strong>مجموع وزن: <span id="totalWeight">0</span>%</strong>
+                <span id="weightStatus" style="margin-right:1rem;"></span>
+            </div>
+        </div>
+
+        <div class="form-actions" style="margin-top:1.5rem;">
+            <button type="submit" class="btn btn-primary" id="submitBtn">ذخیره فرمول</button>
+            <a href="{{ url_for('assessment.admin_assessment_list') }}" class="btn btn-secondary">بازگشت</a>
+        </div>
+    </form>
+</div>
+
+<script>
+function addComponent() {
+    const container = document.getElementById('componentsContainer');
+    const row = document.createElement('div');
+    row.className = 'component-row';
+    row.style.cssText = 'display:flex;gap:1rem;align-items:center;margin-bottom:0.5rem;';
+
+    const types = [
+        ['FINAL_EXAM', 'آزمون پایانی'],
+        ['MIDTERM', 'آزمون میان‌ترم'],
+        ['QUIZ', 'آزمون کلاسی'],
+        ['PROJECT', 'پروژه'],
+        ['PRACTICAL', 'عملی'],
+        ['ORAL', 'شفاهی'],
+        ['OTHER', 'سایر']
+    ];
+
+    let options = '';
+    for (const [value, label] of types) {
+        options += `<option value="${value}">${label}</option>`;
+    }
+
+    row.innerHTML = `
+        <select name="component_type[]" class="form-select" style="flex:2;" required>${options}</select>
+        <input type="number" name="component_weight[]" class="form-input"
+               style="flex:1;" min="0" max="100" step="0.01" required placeholder="وزن (%)"
+               oninput="calculateTotal()">
+        <button type="button" class="btn btn-sm btn-danger remove-component" onclick="removeComponent(this)">حذف</button>
+    `;
+    container.appendChild(row);
+    calculateTotal();
+}
+
+function removeComponent(btn) {
+    const container = document.getElementById('componentsContainer');
+    if (container.children.length > 1) {
+        btn.closest('.component-row').remove();
+        calculateTotal();
+    }
+}
+
+function calculateTotal() {
+    const weights = document.querySelectorAll('input[name="component_weight[]"]');
+    let total = 0;
+    weights.forEach(w => {
+        total += parseFloat(w.value) || 0;
+    });
+    total = Math.round(total * 100) / 100;
+    document.getElementById('totalWeight').textContent = total.toFixed(1);
+
+    const status = document.getElementById('weightStatus');
+    const submitBtn = document.getElementById('submitBtn');
+    if (Math.abs(total - 100) < 0.01) {
+        status.textContent = '✓ معتبر';
+        status.style.color = 'var(--color-success)';
+        submitBtn.disabled = false;
+    } else {
+        status.textContent = `(${total < 100 ? 'کمتر' : 'بیشتر'} از ۱۰۰٪)`;
+        status.style.color = 'var(--color-error)';
+        submitBtn.disabled = true;
+    }
+}
+
+// Add oninput to existing weight inputs
+document.querySelectorAll('input[name="component_weight[]"]').forEach(input => {
+    input.oninput = calculateTotal;
+});
+
+// Initial calculation
+calculateTotal();
+</script>
+{% endblock %}
