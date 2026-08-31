@@ -13,6 +13,8 @@ from app.application.enrollment.enrollment_service import (
     cancel_enrollment,
     count_approved_enrollments,
     get_enrollment,
+    get_schedule_conflict_details,
+    has_schedule_conflict,
     list_enrollments_by_class,
     list_enrollments_by_student,
     reject_enrollment,
@@ -561,3 +563,209 @@ class TestAgeEligibility:
 
         enrollment = request_enrollment(student_user.id, cls.id)
         assert enrollment.status == "PENDING"
+
+
+class TestScheduleConflictDetection:
+    """Tests for has_schedule_conflict service."""
+
+    def _make_class_with_schedule(self, db, course, teacher, weekday, start_h, end_h):
+        """Helper to create a class with a single schedule entry."""
+        cls = create_class(
+            course_id=course.id,
+            title=f"Class {weekday} {start_h}-{end_h}",
+            start_date=date(2026, 9, 7),
+            capacity=20,
+            num_sessions=5,
+            schedule=[
+                {
+                    "weekday": weekday,
+                    "start_time": time(start_h, 0),
+                    "end_time": time(end_h, 0),
+                }
+            ],
+        )
+        if teacher:
+            from app.infrastructure.database.models import AcademyClassModel
+
+            AcademyClassModel.query.get(cls.id).teacher_user_id = teacher.id
+            db.session.commit()
+        return cls
+
+    def test_no_conflict_different_days(self, db, student_user, course, teacher_user):
+        cls_a = self._make_class_with_schedule(
+            db, course, teacher_user, "SATURDAY", 8, 10
+        )
+        cls_b = self._make_class_with_schedule(
+            db, course, teacher_user, "MONDAY", 8, 10
+        )
+
+        admin_enroll_student(student_user.id, cls_a.id, auto_approve=True)
+        conflicts = has_schedule_conflict(student_user.id, cls_b.id)
+        assert conflicts == []
+
+    def test_no_conflict_same_day_different_time(
+        self, db, student_user, course, teacher_user
+    ):
+        cls_a = self._make_class_with_schedule(
+            db, course, teacher_user, "SATURDAY", 8, 10
+        )
+        cls_b = self._make_class_with_schedule(
+            db, course, teacher_user, "SATURDAY", 10, 12
+        )
+
+        admin_enroll_student(student_user.id, cls_a.id, auto_approve=True)
+        conflicts = has_schedule_conflict(student_user.id, cls_b.id)
+        assert conflicts == []
+
+    def test_conflict_same_day_overlapping_time(
+        self, db, student_user, course, teacher_user
+    ):
+        cls_a = self._make_class_with_schedule(
+            db, course, teacher_user, "SATURDAY", 8, 10
+        )
+        cls_b = self._make_class_with_schedule(
+            db, course, teacher_user, "SATURDAY", 9, 11
+        )
+
+        admin_enroll_student(student_user.id, cls_a.id, auto_approve=True)
+        conflicts = has_schedule_conflict(student_user.id, cls_b.id)
+        assert len(conflicts) == 1
+        assert conflicts[0].id == cls_a.id
+
+    def test_conflict_exact_same_time(self, db, student_user, course, teacher_user):
+        cls_a = self._make_class_with_schedule(
+            db, course, teacher_user, "SATURDAY", 8, 10
+        )
+        cls_b = self._make_class_with_schedule(
+            db, course, teacher_user, "SATURDAY", 8, 10
+        )
+
+        admin_enroll_student(student_user.id, cls_a.id, auto_approve=True)
+        conflicts = has_schedule_conflict(student_user.id, cls_b.id)
+        assert len(conflicts) == 1
+
+    def test_no_conflict_contiguous_times(self, db, student_user, course, teacher_user):
+        cls_a = self._make_class_with_schedule(
+            db, course, teacher_user, "SATURDAY", 8, 10
+        )
+        cls_b = self._make_class_with_schedule(
+            db, course, teacher_user, "SATURDAY", 10, 12
+        )
+
+        admin_enroll_student(student_user.id, cls_a.id, auto_approve=True)
+        conflicts = has_schedule_conflict(student_user.id, cls_b.id)
+        assert conflicts == []
+
+    def test_conflict_partial_overlap(self, db, student_user, course, teacher_user):
+        cls_a = self._make_class_with_schedule(
+            db, course, teacher_user, "WEDNESDAY", 14, 16
+        )
+        cls_b = self._make_class_with_schedule(
+            db, course, teacher_user, "WEDNESDAY", 15, 17
+        )
+
+        admin_enroll_student(student_user.id, cls_a.id, auto_approve=True)
+        conflicts = has_schedule_conflict(student_user.id, cls_b.id)
+        assert len(conflicts) == 1
+
+    def test_conflict_multiple_existing_classes(
+        self, db, student_user, course, teacher_user
+    ):
+        cls_a = self._make_class_with_schedule(
+            db, course, teacher_user, "SATURDAY", 8, 10
+        )
+        cls_b = self._make_class_with_schedule(
+            db, course, teacher_user, "SATURDAY", 10, 12
+        )
+        cls_c = self._make_class_with_schedule(
+            db, course, teacher_user, "SATURDAY", 9, 11
+        )
+
+        admin_enroll_student(student_user.id, cls_a.id, auto_approve=True)
+        admin_enroll_student(student_user.id, cls_b.id, auto_approve=True)
+
+        conflicts = has_schedule_conflict(student_user.id, cls_c.id)
+        assert len(conflicts) == 2
+        conflict_ids = {c.id for c in conflicts}
+        assert cls_a.id in conflict_ids
+        assert cls_b.id in conflict_ids
+
+    def test_no_conflict_no_enrollments(self, db, student_user, course, teacher_user):
+        cls = self._make_class_with_schedule(
+            db, course, teacher_user, "SATURDAY", 8, 10
+        )
+        conflicts = has_schedule_conflict(student_user.id, cls.id)
+        assert conflicts == []
+
+    def test_no_conflict_pending_enrollment_considered(
+        self, db, student_user, course, teacher_user
+    ):
+        cls_a = self._make_class_with_schedule(
+            db, course, teacher_user, "SATURDAY", 8, 10
+        )
+        cls_b = self._make_class_with_schedule(
+            db, course, teacher_user, "SATURDAY", 9, 11
+        )
+
+        request_enrollment(student_user.id, cls_a.id)
+        conflicts = has_schedule_conflict(student_user.id, cls_b.id)
+        assert len(conflicts) == 1
+
+    def test_request_enrollment_blocks_on_conflict(
+        self, db, student_user, course, teacher_user
+    ):
+        cls_a = self._make_class_with_schedule(
+            db, course, teacher_user, "SATURDAY", 8, 10
+        )
+        cls_b = self._make_class_with_schedule(
+            db, course, teacher_user, "SATURDAY", 9, 11
+        )
+
+        admin_enroll_student(student_user.id, cls_a.id, auto_approve=True)
+        with pytest.raises(EnrollmentError, match="تداخل"):
+            request_enrollment(student_user.id, cls_b.id)
+
+    def test_exclude_enrollment_id(self, db, student_user, course, teacher_user):
+        cls_a = self._make_class_with_schedule(
+            db, course, teacher_user, "SATURDAY", 8, 10
+        )
+
+        enrollment = admin_enroll_student(student_user.id, cls_a.id, auto_approve=True)
+        conflicts = has_schedule_conflict(
+            student_user.id, cls_a.id, exclude_enrollment_id=enrollment.id
+        )
+        assert conflicts == []
+
+    def test_conflict_details(self, db, student_user, course, teacher_user):
+        cls_a = self._make_class_with_schedule(
+            db, course, teacher_user, "SATURDAY", 8, 10
+        )
+        cls_b = self._make_class_with_schedule(
+            db, course, teacher_user, "SATURDAY", 9, 11
+        )
+
+        admin_enroll_student(student_user.id, cls_a.id, auto_approve=True)
+        details = get_schedule_conflict_details(student_user.id, cls_b.id)
+        assert len(details) == 1
+        assert details[0]["class_title"] == cls_a.title
+        assert details[0]["weekday"] == "SATURDAY"
+
+    def test_times_overlap_function(self):
+        from app.application.enrollment.enrollment_service import _times_overlap
+
+        # Partial overlap
+        assert _times_overlap(time(8, 0), time(10, 0), time(9, 0), time(11, 0)) is True
+        # Contiguous (no overlap)
+        assert (
+            _times_overlap(time(8, 0), time(10, 0), time(10, 0), time(12, 0)) is False
+        )
+        # Exact same time (conflict)
+        assert _times_overlap(time(8, 0), time(10, 0), time(8, 0), time(10, 0)) is True
+        # Contiguous start/end (no overlap)
+        assert _times_overlap(time(8, 0), time(10, 0), time(7, 0), time(8, 0)) is False
+        # Partial overlap from earlier
+        assert _times_overlap(time(8, 0), time(10, 0), time(7, 0), time(9, 0)) is True
+        # No overlap (later)
+        assert (
+            _times_overlap(time(8, 0), time(10, 0), time(11, 0), time(12, 0)) is False
+        )

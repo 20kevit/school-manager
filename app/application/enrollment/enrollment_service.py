@@ -1,10 +1,11 @@
 from __future__ import annotations
 
-from datetime import date, datetime
+from datetime import date, datetime, time
 
 from app.extensions import db
 from app.infrastructure.database.models import (
     AcademyClassModel,
+    ClassScheduleModel,
     CourseModel,
     EnrollmentModel,
     StudentProfileModel,
@@ -50,6 +51,11 @@ def request_enrollment(
         raise EnrollmentError("Student is already enrolled or has a pending request.")
 
     _check_age_eligibility(profile, academy_class)
+
+    conflicts = has_schedule_conflict(student_user_id, class_id)
+    if conflicts:
+        names = ", ".join(c.title for c in conflicts)
+        raise EnrollmentError(f"تداخل برنامه با کلاس(ها): {names}")
 
     enrollment = EnrollmentModel(
         student_user_id=student_user_id,
@@ -248,6 +254,137 @@ def get_class_available_capacity(academy_class: AcademyClassModel) -> int:
     """Get remaining capacity for a class."""
     approved_count = _count_approved_enrollments(academy_class.id)
     return max(0, academy_class.capacity - approved_count)
+
+
+def has_schedule_conflict(
+    student_user_id: int,
+    new_class_id: int,
+    exclude_enrollment_id: int | None = None,
+) -> list[AcademyClassModel]:
+    """Check if a student has schedule conflicts with a new class.
+
+    Compares the WeeklySchedule of new_class_id against ALL other APPROVED
+    (or PENDING) enrollments of the student.
+
+    Returns a list of conflicting AcademyClassModel objects (empty if no conflict).
+    """
+    new_class = AcademyClassModel.query.get(new_class_id)
+    if new_class is None:
+        return []
+
+    new_schedules = ClassScheduleModel.query.filter_by(class_id=new_class_id).all()
+    if not new_schedules:
+        return []
+
+    query = EnrollmentModel.query.filter(
+        EnrollmentModel.student_user_id == student_user_id,
+        EnrollmentModel.status.in_(["APPROVED", "PENDING"]),
+        EnrollmentModel.class_id != new_class_id,
+    )
+    if exclude_enrollment_id is not None:
+        query = query.filter(EnrollmentModel.id != exclude_enrollment_id)
+
+    existing_enrollments = query.all()
+    if not existing_enrollments:
+        return []
+
+    existing_class_ids = {e.class_id for e in existing_enrollments}
+    existing_schedules = ClassScheduleModel.query.filter(
+        ClassScheduleModel.class_id.in_(existing_class_ids)
+    ).all()
+
+    conflicting_classes: list[AcademyClassModel] = []
+    seen_class_ids: set[int] = set()
+
+    for new_slot in new_schedules:
+        for existing_slot in existing_schedules:
+            if existing_slot.class_id in seen_class_ids:
+                continue
+            if new_slot.weekday != existing_slot.weekday:
+                continue
+            if _times_overlap(
+                new_slot.start_time,
+                new_slot.end_time,
+                existing_slot.start_time,
+                existing_slot.end_time,
+            ):
+                conflicting_class = AcademyClassModel.query.get(existing_slot.class_id)
+                if conflicting_class is not None:
+                    conflicting_classes.append(conflicting_class)
+                    seen_class_ids.add(existing_slot.class_id)
+
+    return conflicting_classes
+
+
+def get_schedule_conflict_details(
+    student_user_id: int,
+    new_class_id: int,
+) -> list[dict]:
+    """Get detailed schedule conflict information for admin warnings.
+
+    Returns a list of dicts with conflict details:
+    [{"class_title": ..., "weekday": ..., "existing_time": ..., "new_time": ...}]
+    """
+    new_class = AcademyClassModel.query.get(new_class_id)
+    if new_class is None:
+        return []
+
+    new_schedules = ClassScheduleModel.query.filter_by(class_id=new_class_id).all()
+    if not new_schedules:
+        return []
+
+    query = EnrollmentModel.query.filter(
+        EnrollmentModel.student_user_id == student_user_id,
+        EnrollmentModel.status.in_(["APPROVED", "PENDING"]),
+        EnrollmentModel.class_id != new_class_id,
+    )
+    existing_enrollments = query.all()
+    if not existing_enrollments:
+        return []
+
+    existing_class_ids = {e.class_id for e in existing_enrollments}
+    existing_schedules = ClassScheduleModel.query.filter(
+        ClassScheduleModel.class_id.in_(existing_class_ids)
+    ).all()
+
+    conflicts: list[dict] = []
+    seen: set[tuple[int, str]] = set()
+
+    for new_slot in new_schedules:
+        for existing_slot in existing_schedules:
+            key = (existing_slot.class_id, new_slot.weekday)
+            if key in seen:
+                continue
+            if new_slot.weekday != existing_slot.weekday:
+                continue
+            if _times_overlap(
+                new_slot.start_time,
+                new_slot.end_time,
+                existing_slot.start_time,
+                existing_slot.end_time,
+            ):
+                cls = AcademyClassModel.query.get(existing_slot.class_id)
+                if cls is not None:
+                    conflicts.append(
+                        {
+                            "class_title": cls.title,
+                            "weekday": new_slot.weekday,
+                            "existing_time": f"{existing_slot.start_time.strftime('%H:%M')}-{existing_slot.end_time.strftime('%H:%M')}",
+                            "new_time": f"{new_slot.start_time.strftime('%H:%M')}-{new_slot.end_time.strftime('%H:%M')}",
+                        }
+                    )
+                    seen.add(key)
+
+    return conflicts
+
+
+def _times_overlap(start_a: time, end_a: time, start_b: time, end_b: time) -> bool:
+    """Check if two time ranges overlap (same day).
+
+    Two intervals [start_a, end_a) and [start_b, end_b) overlap if
+    start_a < end_b AND start_b < end_a.
+    """
+    return start_a < end_b and start_b < end_a
 
 
 # ---------------------------------------------------------------------------

@@ -77,6 +77,18 @@
         <span class="btn btn-success" disabled>ثبت‌نام تایید شده</span>
         {% endif %}
     {% elif academy_class.status in ['PLANNED', 'ACTIVE'] and available_capacity > 0 %}
+        {% if conflicts %}
+        <div class="alert alert-warning" style="margin-bottom: 1rem; padding: 1rem; background: #fff3cd; border: 1px solid #ffc107; border-radius: 8px;">
+            <strong>هشدار: تداخل برنامه هفتگی</strong>
+            <p style="margin: 0.5rem 0;">این کلاس با کلاس(های زیر تداخل زمانی دارد:</p>
+            <ul style="margin: 0.5rem 0; padding-right: 1.5rem;">
+                {% for conflict in conflicts %}
+                <li><strong>{{ conflict.title }}</strong></li>
+                {% endfor %}
+            </ul>
+            <p style="margin: 0.5rem 0;">ثبت‌نام در این کلاس ممکن است مشکل ایجاد کند.</p>
+        </div>
+        {% endif %}
     <form method="POST" action="{{ url_for('enrollment.student_request_enrollment', class_id=academy_class.id) }}" style="display: inline;">
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <button type="submit" class="btn btn-primary">درخواست ثبت‌نام</button>

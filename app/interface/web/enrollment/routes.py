@@ -8,6 +8,8 @@ from app.application.enrollment.enrollment_service import (
     cancel_enrollment,
     get_class_available_capacity,
     get_enrollment,
+    get_schedule_conflict_details,
+    has_schedule_conflict,
     list_all_pending_enrollments,
     list_enrollments_by_class,
     list_enrollments_by_student,
@@ -100,6 +102,30 @@ def admin_enroll():
             student_user_id = int(request.form["student_user_id"])
             class_id = int(request.form["class_id"])
             auto_approve = request.form.get("auto_approve") == "on"
+            force = request.form.get("force") == "on"
+
+            if not force:
+                conflicts = get_schedule_conflict_details(student_user_id, class_id)
+                if conflicts:
+                    students = UserModel.query.filter(
+                        UserModel.roles.any(name="STUDENT")
+                    ).all()
+                    classes = (
+                        AcademyClassModel.query.filter(
+                            AcademyClassModel.status.in_(["PLANNED", "ACTIVE"])
+                        )
+                        .order_by(AcademyClassModel.title)
+                        .all()
+                    )
+                    return render_template(
+                        "enrollment/admin_enroll_form.html",
+                        students=students,
+                        classes=classes,
+                        conflicts=conflicts,
+                        conflict_student_id=student_user_id,
+                        conflict_class_id=class_id,
+                        auto_approve=auto_approve,
+                    )
 
             enrollment = admin_enroll_student(
                 student_user_id=student_user_id,
@@ -242,6 +268,8 @@ def student_class_detail(class_id):
 
     existing_enrollment = get_enrollment_by_student_class(current_user.id, class_id)
 
+    conflicts = has_schedule_conflict(current_user.id, class_id)
+
     return render_template(
         "enrollment/student_class_detail.html",
         academy_class=academy_class,
@@ -249,6 +277,7 @@ def student_class_detail(class_id):
         teacher=teacher,
         available_capacity=available_capacity,
         existing_enrollment=existing_enrollment,
+        conflicts=conflicts,
     )
 
 

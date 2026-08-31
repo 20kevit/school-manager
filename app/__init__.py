@@ -569,3 +569,36 @@ def _register_cli(app):
 
         db.session.commit()
         print("\nSeed completed successfully.")
+
+    @app.cli.command("seed-demo")
+    def seed_demo_command():
+        """Generate rich demo data for product demonstrations.
+
+        Creates: admin, 3 teachers, 30 students, 5 parents,
+        4 courses, 5 classes with schedules, enrollments,
+        sessions, attendance, activities, submissions,
+        assessments, results, and financial transactions.
+        """
+        from app.extensions import db
+        from app.seed_demo import seed_demo_data
+
+        print("Generating rich demo data...")
+        stats = seed_demo_data(db)
+
+        print("\n✓ Demo data generated successfully!")
+        print(f"  Users:      {stats['users']}")
+        print(f"  Courses:    {stats['courses']}")
+        print(f"  Classes:    {stats['classes']}")
+        print(f"  Enrollments:{stats['enrollments']}")
+        print(f"  Sessions:   {stats['sessions']}")
+        print(f"  Attendances:{stats['attendances']}")
+        print(f"  Activities: {stats['activities']}")
+        print(f"  Submissions:{stats['submissions']}")
+        print(f"  Assessments:{stats['assessments']}")
+        print(f"  Results:    {stats['results']}")
+        print(f"  Transactions:{stats['transactions']}")
+        print("\nTest credentials:")
+        print("  admin / admin123")
+        print("  teacher1 / teacher123")
+        print("  student1 / student123")
+        print("  parent1 / parent123")

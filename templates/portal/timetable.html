@@ -1,0 +1,141 @@
+{% extends "base.html" %}
+{% block title %}برنامه هفتگی{% endblock %}
+{% block content %}
+{% from "macros/utils.html" import page_header %}
+
+{% if role == "student" %}
+{{ page_header("برنامه هفتگی من") }}
+{% else %}
+{{ page_header("برنامه هفتگی من") }}
+{% endif %}
+
+<style>
+.timetable-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 2px;
+    background: var(--color-border, #e2e8f0);
+    border: 1px solid var(--color-border, #e2e8f0);
+    border-radius: 8px;
+    overflow: hidden;
+    min-height: 400px;
+}
+.timetable-cell {
+    background: var(--color-surface, #fff);
+    padding: 0.5rem;
+    min-height: 120px;
+    vertical-align: top;
+}
+.timetable-cell-header {
+    background: var(--color-primary, #2563eb);
+    color: #fff;
+    padding: 0.75rem 0.5rem;
+    text-align: center;
+    font-weight: 600;
+    font-size: 0.875rem;
+}
+.timetable-cell-header.empty-header {
+    background: var(--color-primary-dark, #1d4ed8);
+}
+.timetable-entry {
+    background: var(--color-primary-light, #eff6ff);
+    border: 1px solid var(--color-primary, #2563eb);
+    border-radius: 6px;
+    padding: 0.5rem;
+    margin-bottom: 0.5rem;
+    font-size: 0.8rem;
+    cursor: pointer;
+    transition: transform 0.15s, box-shadow 0.15s;
+}
+.timetable-entry:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(37, 99, 235, 0.2);
+}
+.timetable-entry .entry-class {
+    font-weight: 600;
+    color: var(--color-primary, #2563eb);
+    margin-bottom: 0.25rem;
+}
+.timetable-entry .entry-course {
+    color: var(--color-text-secondary, #64748b);
+    font-size: 0.75rem;
+}
+.timetable-entry .entry-time {
+    color: var(--color-text, #1e293b);
+    font-weight: 500;
+    margin-top: 0.25rem;
+    font-size: 0.75rem;
+}
+.timetable-empty {
+    color: var(--color-text-muted, #94a3b8);
+    text-align: center;
+    font-style: italic;
+    padding: 2rem 0.5rem;
+    font-size: 0.8rem;
+}
+.color-1 { background: #eff6ff; border-color: #2563eb; }
+.color-1 .entry-class { color: #2563eb; }
+.color-2 { background: #f0fdf4; border-color: #16a34a; }
+.color-2 .entry-class { color: #16a34a; }
+.color-3 { background: #fefce8; border-color: #ca8a04; }
+.color-3 .entry-class { color: #ca8a04; }
+.color-4 { background: #fdf2f8; border-color: #db2777; }
+.color-4 .entry-class { color: #db2777; }
+.color-5 { background: #f5f3ff; border-color: #7c3aed; }
+.color-5 .entry-class { color: #7c3aed; }
+@media (max-width: 768px) {
+    .timetable-grid {
+        grid-template-columns: 1fr;
+    }
+    .timetable-cell {
+        min-height: auto;
+    }
+}
+</style>
+
+{% set colors = ['color-1', 'color-2', 'color-3', 'color-4', 'color-5'] %}
+{% set class_color_map = {} %}
+{% set color_idx = [0] %}
+
+{% set all_class_ids = [] %}
+{% for day, entries in timetable.items() %}
+    {% for entry in entries %}
+        {% if entry.class_id not in all_class_ids %}
+            {% if all_class_ids.append(entry.class_id) %}{% endif %}
+        {% endif %}
+    {% endfor %}
+{% endfor %}
+
+{% for class_id in all_class_ids %}
+    {% if class_color_map.update({class_id: colors[loop.index0 % 5]}) %}{% endif %}
+{% endfor %}
+
+<div class="timetable-grid">
+    {% for day in ["SATURDAY", "SUNDAY", "MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY"] %}
+    <div class="timetable-cell timetable-cell-header">{{ day|weekday_fa }}</div>
+    {% endfor %}
+
+    {% for day in ["SATURDAY", "SUNDAY", "MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY"] %}
+    <div class="timetable-cell">
+        {% if timetable[day] %}
+            {% for entry in timetable[day] %}
+            <a href="{{ url_for('academy.class_detail', class_id=entry.class_id) }}" class="timetable-entry {{ class_color_map.get(entry.class_id, 'color-1') }}" style="text-decoration: none; color: inherit; display: block;">
+                <div class="entry-class">{{ entry.class_title }}</div>
+                <div class="entry-course">{{ entry.course_title }}</div>
+                <div class="entry-time">{{ entry.start_time.strftime('%H:%M') }} - {{ entry.end_time.strftime('%H:%M') }}</div>
+            </a>
+            {% endfor %}
+        {% else %}
+            <div class="timetable-empty">—</div>
+        {% endif %}
+    </div>
+    {% endfor %}
+</div>
+
+{% if not any(timetable.values()) %}
+<div style="text-align: center; padding: 3rem 1rem; color: var(--color-text-secondary, #64748b);">
+    <p style="font-size: 1.1rem;">برنامه هفتگی خالی است</p>
+    <p style="font-size: 0.9rem; margin-top: 0.5rem;">هنوز در هیچ کلاسی ثبت‌نام نشده‌اید.</p>
+</div>
+{% endif %}
+{% endblock %}

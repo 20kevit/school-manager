@@ -1,15 +1,34 @@
 # Project Status
 
-**Current Phase:** P19 — Payment Receipts, Notifications & Admin Visibility — Completed
-**Current Objective:** Payment workflow complete. Receipts, notifications, and admin visibility implemented.
+**Current Phase:** P20 — Timetable, Conflict Detection & Rich Demo Seeder — Completed
+**Current Objective:** Schedule conflict detection, weekly timetable UI, and rich demo data generator implemented.
 
-**Previous Phase:** P18 — ZarinPal Online Payment Integration
+**Previous Phase:** P19 — Payment Receipts, Notifications & Admin Visibility
 
 ## Status
 
-P19 is complete. Students and parents can view and print payment receipts, successful online payments trigger in-app notifications, and the admin dashboard now shows online payment statistics. All tests pass.
+P20 is complete. Students and teachers can view their weekly timetable, enrollment now checks for schedule conflicts (blocks for student self-enrollment, warns for admin), and `flask seed-demo` generates a comprehensive demo dataset. All tests pass.
 
 ## Completed
+
+### P20 — Timetable, Conflict Detection & Rich Demo Seeder
+- [x] `has_schedule_conflict()` function in enrollment service — compares WeeklySchedule of new class against all APPROVED/PENDING enrollments
+- [x] `_times_overlap()` helper for time range comparison
+- [x] `get_schedule_conflict_details()` returns detailed conflict info for admin warnings
+- [x] Student self-enrollment blocked with Persian error message when schedule conflicts detected
+- [x] Admin enrollment shows conflict warning with override option (force enrollment)
+- [x] Student class detail page shows conflict warning before enrollment request
+- [x] Student timetable route (`/portal/student/timetable`) — weekly grid Saturday-Friday
+- [x] Teacher timetable route (`/portal/teacher/timetable`) — weekly grid for assigned classes
+- [x] Timetable template with color-coded classes, clickable entries, Persian RTL, responsive design
+- [x] Sidebar links to timetable for both student and teacher roles
+- [x] `flask seed-demo` CLI command — generates admin, 3 teachers, 30 students, 5 parents
+- [x] 4 courses with 5 classes (including intentional schedule conflicts for testing)
+- [x] Random enrollments (approved + pending), past sessions, attendance records
+- [x] Activities with submissions and grades, assessments with bulk grading results
+- [x] Financial transactions (tuition charges, payments, partial payments, discounts)
+- [x] 13 new tests for schedule conflict detection (overlap logic, edge cases, integration)
+- [x] All 737 tests pass, Ruff check/format clean
 
 ### P19 — Payment Receipts, Notifications & Admin Visibility
 - [x] Payment receipt route (`/finance/receipt/<transaction_id>`) with authorization checks

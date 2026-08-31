@@ -42,6 +42,24 @@ The seed script also creates:
 
 The command is idempotent — running it twice will not create duplicates. No manual shell data entry is needed.
 
+### Rich Demo Data (for product demonstrations)
+
+```powershell
+flask seed-demo
+```
+
+This generates a comprehensive dataset for demo purposes:
+- 1 admin, 3 teachers, 30 students, 5 parents (with linked children)
+- 4 courses with syllabus items
+- 5 classes with varied weekly schedules (including intentional overlaps)
+- Enrollments (most approved, some pending)
+- Past sessions with attendance records
+- Activities with submissions and grades
+- Assessments with bulk grading results
+- Financial transactions (charges, payments, partial payments, discounts)
+
+Test credentials remain the same (admin/teacher1/student1/parent1).
+
 ### Start the Server
 
 ```powershell
@@ -477,6 +495,37 @@ Open `http://127.0.0.1:5000` in browser.
 | 16 | Navigate to `/` (unauthenticated) | Landing page loads with 6 feature cards, RTL, Persian |
 | 17 | Verify landing page on mobile viewport | Responsive layout, single-column features |
 | 18 | Login from landing page | Redirects to role-specific dashboard |
+
+---
+
+### Scenario N — Timetable & Conflict Detection (P20)
+
+**ID:** N-01
+**Priority:** P1
+**Preconditions:** Server running, database seeded (or `flask seed-demo`)
+
+#### Timetable View
+
+| Step | Action | Expected Result |
+|------|--------|-----------------|
+| 1 | Login as student, click "برنامه هفتگی" in sidebar | Weekly grid (Sat-Fri) loads |
+| 2 | Verify enrolled classes appear in correct time slots | Classes shown with title, course, time |
+| 3 | Click on a class entry | Redirects to class detail page |
+| 4 | Verify empty days show "—" | Correct empty state |
+| 5 | Login as teacher, click "برنامه هفتگی" in sidebar | Weekly grid for assigned classes |
+| 6 | Verify all assigned classes appear | Correct schedule entries shown |
+
+#### Conflict Detection
+
+| Step | Action | Expected Result |
+|------|--------|-----------------|
+| 1 | Login as student enrolled in Saturday 8-10 class | Student has approved enrollment |
+| 2 | Browse to a class also on Saturday 8-10 | Conflict warning displayed |
+| 3 | Click "درخواست ثبت‌نام" | Enrollment blocked with Persian error: "تداخل برنامه" |
+| 4 | Login as admin, go to `/enrollment/admin/enroll` | Enrollment form loads |
+| 5 | Select student with existing Saturday 8-10 class, select conflicting class | Conflict warning with override shown |
+| 6 | Click "بله، ثبت‌نام با وجود تداخل" | Enrollment proceeds despite conflict |
+| 7 | Select non-conflicting class | No warning, enrollment proceeds normally |
 
 ---
 

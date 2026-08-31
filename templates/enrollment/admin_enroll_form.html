@@ -4,6 +4,32 @@
 {% from "macros/utils.html" import page_header %}
 {{ page_header("ثبت‌نام مستقیم دانش‌آموز") }}
 
+{% if conflicts is defined and conflicts %}
+<div class="alert alert-warning" style="margin-bottom: 1rem; padding: 1rem; background: #fff3cd; border: 1px solid #ffc107; border-radius: 8px;">
+    <strong>هشدار: تداخل برنامه هفتگی</strong>
+    <p style="margin: 0.5rem 0;">کلاس انتخاب شده با کلاس(های زیر تداخل زمانی دارد:</p>
+    <ul style="margin: 0.5rem 0; padding-right: 1.5rem;">
+        {% for conflict in conflicts %}
+        <li>
+            <strong>{{ conflict.class_title }}</strong>
+            — روز {{ conflict.weekday|weekday_fa }}
+            ({{ conflict.existing_time }} در مقابل {{ conflict.new_time }})
+        </li>
+        {% endfor %}
+    </ul>
+    <p style="margin: 0.5rem 0;">آیا می‌خواهید با وجود تداخل ثبت‌نام کنید؟</p>
+    <form method="POST" style="display: inline;">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <input type="hidden" name="student_user_id" value="{{ conflict_student_id }}">
+        <input type="hidden" name="class_id" value="{{ conflict_class_id }}">
+        <input type="hidden" name="force" value="on">
+        {% if auto_approve %}<input type="hidden" name="auto_approve" value="on">{% endif %}
+        <button type="submit" class="btn btn-primary" style="margin-left: 0.5rem;">بله، ثبت‌نام با وجود تداخل</button>
+    </form>
+    <a href="{{ url_for('enrollment.admin_enroll') }}" class="btn btn-secondary">خیر، بازگشت</a>
+</div>
+{% endif %}
+
 <div class="form-card">
     <form method="POST">
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
@@ -12,7 +38,7 @@
             <select id="student_user_id" name="student_user_id" class="form-select" required>
                 <option value="">انتخاب دانش‌آموز</option>
                 {% for student in students %}
-                <option value="{{ student.id }}">{{ student.student_profile.first_name }} {{ student.student_profile.last_name }}</option>
+                <option value="{{ student.id }}" {% if conflicts is defined and conflict_student_id is defined and conflict_student_id == student.id %}selected{% endif %}>{{ student.student_profile.first_name }} {{ student.student_profile.last_name }}</option>
                 {% endfor %}
             </select>
         </div>
@@ -22,7 +48,7 @@
             <select id="class_id" name="class_id" class="form-select" required>
                 <option value="">انتخاب کلاس</option>
                 {% for cls in classes %}
-                <option value="{{ cls.id }}">{{ cls.title }}</option>
+                <option value="{{ cls.id }}" {% if conflicts is defined and conflict_class_id is defined and conflict_class_id == cls.id %}selected{% endif %}>{{ cls.title }}</option>
                 {% endfor %}
             </select>
         </div>
