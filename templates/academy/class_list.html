@@ -5,13 +5,22 @@
 {{ page_header("لیست کلاس‌ها", action_url=url_for('academy.class_create'), action_label="ایجاد کلاس جدید") }}
 
 <div class="filter-bar">
-    <form method="GET" class="filter-form">
+    <form method="GET" class="filter-form" style="display:flex; gap:var(--space-3); align-items:end; flex-wrap:wrap;">
         <div class="form-group">
             <label class="form-label" for="course_id">فیلتر بر اساس درس</label>
             <select id="course_id" name="course_id" class="form-select" onchange="this.form.submit()">
                 <option value="">همه دروس</option>
                 {% for course in courses %}
                 <option value="{{ course.id }}" {{ 'selected' if selected_course_id == course.id }}>{{ course.title }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="form-group">
+            <label class="form-label" for="semester_id">نیم‌سال</label>
+            <select id="semester_id" name="semester_id" class="form-select" onchange="this.form.submit()">
+                <option value="">همه نیم‌سال‌ها</option>
+                {% for sem in semesters %}
+                <option value="{{ sem.id }}" {{ 'selected' if selected_semester_id == sem.id }}>{{ sem.title }} ({{ sem.academic_year.title }})</option>
                 {% endfor %}
             </select>
         </div>

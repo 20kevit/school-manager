@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% from "macros/utils.html" import page_header %}
+{% from "macros/forms.html" import csrf_field, form_field, form_select %}
+
+{% block title %}{{ "ویرایش نیم‌سال" if semester else "ایجاد نیم‌سال" }}{% endblock %}
+
+{% block content %}
+{{ page_header("ویرایش نیم‌سال" if semester else "ایجاد نیم‌سال") }}
+
+<div class="form-card">
+    <form method="POST">
+        {{ csrf_field() }}
+
+        <div class="form-group">
+            <label class="form-label" for="academic_year_id">سال تحصیلی <span class="required">*</span></label>
+            <select id="academic_year_id" name="academic_year_id" class="form-select" required>
+                <option value="">— انتخاب کنید —</option>
+                {% for year in years %}
+                <option value="{{ year.id }}"
+                    {% if semester and semester.academic_year_id == year.id %}selected
+                    {% elif preselect_year_id == year.id %}selected
+                    {% endif %}>{{ year.title }}</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        {{ form_field("title", "عنوان", type="text", value=semester.title if semester else "", required=true, placeholder="مثال: نیم‌سال اول") }}
+
+        {{ form_field("start_date", "تاریخ شروع (شمسی)", type="text", value=semester.start_date|to_jalali_input if semester else "", required=true, placeholder="مثال: 1403/07/01") }}
+
+        {{ form_field("end_date", "تاریخ پایان (شمسی)", type="text", value=semester.end_date|to_jalali_input if semester else "", required=true, placeholder="مثال: 1404/01/15") }}
+
+        <div class="form-group">
+            <label class="form-label">
+                <input type="checkbox" name="is_active" {% if semester and semester.is_active %}checked{% endif %}>
+                فعال (پیش‌فرض هنگام ایجاد کلاس)
+            </label>
+        </div>
+
+        <div class="form-actions">
+            <button type="submit" class="btn btn-primary">{{ "ذخیره تغییرات" if semester else "ایجاد" }}</button>
+            <a href="{{ url_for('admin.semester_list') }}" class="btn btn-outline">انصراف</a>
+        </div>
+    </form>
+</div>
+{% endblock %}

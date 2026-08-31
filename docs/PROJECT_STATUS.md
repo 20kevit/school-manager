@@ -1,9 +1,9 @@
 # Project Status
 
-**Current Phase:** P22 — Public Enrollment Portal & Excel Power — Completed
-**Current Objective:** Excel bulk import/export and public online enrollment portal implemented.
+**Current Phase:** P23 — Academic Calendar & Semester Management — Completed
+**Current Objective:** Academic years, semesters, holidays, smart session generation with holiday skipping.
 
-**Previous Phase:** P21 — Advanced Grading & Transcripts
+**Previous Phase:** P22 — Public Enrollment Portal & Excel Power
 
 ## Status
 

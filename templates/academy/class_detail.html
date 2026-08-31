@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% from "macros/utils.html" import page_header, status_badge %}
+{% from "macros/forms.html" import csrf_field %}
 {% block title %}{{ class_obj.title }}{% endblock %}
 {% block content %}
 {{ page_header(class_obj.title) }}
@@ -7,6 +8,10 @@
 <div class="page-header-actions" style="margin-bottom: 1.5rem;">
     <a href="{{ url_for('academy.class_edit', class_id=class_obj.id) }}" class="btn btn-outline">ویرایش</a>
     <a href="{{ url_for('academy.session_list', class_id=class_obj.id) }}" class="btn btn-primary">لیست جلسات</a>
+    <form method="POST" action="{{ url_for('admin.class_regenerate_sessions', class_id=class_obj.id) }}" style="display:inline;" onsubmit="return confirm('آیا مطمئن هستید؟ جلسات آینده بدون سابقه حضور بازسازی خواهند شد.')">
+        {{ csrf_field() }}
+        <button type="submit" class="btn btn-warning">بازسازی جلسات</button>
+    </form>
 </div>
 
 <div class="detail-card">
@@ -38,6 +43,12 @@
     <div class="detail-row">
         <span class="detail-row-label">معلم:</span>
         <span class="detail-row-value">{{ class_obj.teacher.teacher_profile.first_name }} {{ class_obj.teacher.teacher_profile.last_name }}</span>
+    </div>
+    {% endif %}
+    {% if class_obj.semester %}
+    <div class="detail-row">
+        <span class="detail-row-label">نیم‌سال:</span>
+        <span class="detail-row-value">{{ class_obj.semester.title }} ({{ class_obj.semester.academic_year.title }})</span>
     </div>
     {% endif %}
 </div>

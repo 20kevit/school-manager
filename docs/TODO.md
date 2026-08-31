@@ -273,12 +273,33 @@
 - [x] Database migration
 - [x] 23 new tests, 760 total tests passing
 
-## P17 — Future
+## P22 — Public Enrollment Portal & Excel Power
 
-- [ ] Mobile application
-- [ ] Advanced permissions
-- [ ] Advanced analytics
-- [ ] AI features
-- [ ] Multi-branch support
-- [ ] Attendance reports
-- [ ] Academic calendar & holidays
+- [x] Excel import/export service (openpyxl)
+- [x] Excel import: student data with duplicate detection
+- [x] Admin Excel import route and UI
+- [x] Excel export for attendance, assessment, finance reports
+- [x] Public enrollment form (no login required)
+- [x] Public form creates inactive user + PENDING enrollment
+- [x] Existing student linking (no duplicate user)
+- [x] Admin "Approve and Activate" for public enrollments
+- [x] Landing page "Online Enrollment" button
+- [x] 22 new tests, 782 total tests passing
+
+## P23 — Academic Calendar & Semester Management
+
+- [x] AcademicYear domain entity and model (CRUD)
+- [x] Semester domain entity and model (CRUD, active flag, mutual exclusion)
+- [x] AcademicCalendarEvent domain entity and model (CRUD, recurring flag)
+- [x] `is_date_holiday()` — checks if a date falls within any calendar event
+- [x] `semester_id` FK on AcademyClassModel
+- [x] Smart session generation: skips holiday dates, extends schedule to fill gaps
+- [x] Session shifting skips holidays
+- [x] `regenerate_sessions()` — preserves past + attended sessions, regenerates forward
+- [x] Admin routes: year, semester, calendar CRUD, regenerate sessions
+- [x] Admin UI templates for all calendar management
+- [x] Semester filter on class list
+- [x] Semester dropdown on class form
+- [x] Sidebar links for calendar management
+- [x] Database migration (3 new tables, 1 altered)
+- [x] 46 new tests, 828 total tests passing

@@ -176,6 +176,96 @@ class ParentProfileModel(db.Model):
 
 
 # ---------------------------------------------------------------------------
+# P23 — Academic Calendar & Semester Management
+# ---------------------------------------------------------------------------
+
+
+class AcademicYearModel(db.Model):
+    """Academic year table (e.g., '1403-1404')."""
+
+    __tablename__ = "academic_years"
+
+    id = db.Column(db.Integer, primary_key=True)
+    title = db.Column(db.String(100), nullable=False)
+    start_date = db.Column(db.Date, nullable=False)
+    end_date = db.Column(db.Date, nullable=False)
+    is_active = db.Column(db.Boolean, nullable=False, default=False)
+    created_at = db.Column(db.DateTime, server_default=db.func.now(), nullable=False)
+    updated_at = db.Column(
+        db.DateTime,
+        server_default=db.func.now(),
+        onupdate=db.func.now(),
+        nullable=False,
+    )
+
+    semesters = db.relationship(
+        "SemesterModel",
+        back_populates="academic_year",
+        order_by="SemesterModel.start_date",
+        lazy="select",
+        cascade="all, delete-orphan",
+    )
+
+    def __repr__(self) -> str:
+        return f"<AcademicYearModel id={self.id} title={self.title!r}>"
+
+
+class SemesterModel(db.Model):
+    """Semester table — a term within an academic year."""
+
+    __tablename__ = "semesters"
+
+    id = db.Column(db.Integer, primary_key=True)
+    academic_year_id = db.Column(
+        db.Integer, db.ForeignKey("academic_years.id"), nullable=False
+    )
+    title = db.Column(db.String(100), nullable=False)
+    start_date = db.Column(db.Date, nullable=False)
+    end_date = db.Column(db.Date, nullable=False)
+    is_active = db.Column(db.Boolean, nullable=False, default=False)
+    created_at = db.Column(db.DateTime, server_default=db.func.now(), nullable=False)
+    updated_at = db.Column(
+        db.DateTime,
+        server_default=db.func.now(),
+        onupdate=db.func.now(),
+        nullable=False,
+    )
+
+    academic_year = db.relationship("AcademicYearModel", back_populates="semesters")
+    classes = db.relationship(
+        "AcademyClassModel",
+        back_populates="semester",
+        lazy="select",
+    )
+
+    def __repr__(self) -> str:
+        return f"<SemesterModel id={self.id} title={self.title!r}>"
+
+
+class AcademicCalendarEventModel(db.Model):
+    """Academic calendar event / holiday table."""
+
+    __tablename__ = "academic_calendar_events"
+
+    id = db.Column(db.Integer, primary_key=True)
+    title = db.Column(db.String(200), nullable=False)
+    start_date = db.Column(db.Date, nullable=False)
+    end_date = db.Column(db.Date, nullable=True)
+    is_recurring = db.Column(db.Boolean, nullable=False, default=False)
+    description = db.Column(db.Text, default="")
+    created_at = db.Column(db.DateTime, server_default=db.func.now(), nullable=False)
+    updated_at = db.Column(
+        db.DateTime,
+        server_default=db.func.now(),
+        onupdate=db.func.now(),
+        nullable=False,
+    )
+
+    def __repr__(self) -> str:
+        return f"<AcademicCalendarEventModel id={self.id} title={self.title!r}>"
+
+
+# ---------------------------------------------------------------------------
 # P2 — Academy Structure
 # ---------------------------------------------------------------------------
 
@@ -255,6 +345,7 @@ class AcademyClassModel(db.Model):
     num_sessions = db.Column(db.Integer, nullable=False, default=1)
     status = db.Column(db.String(20), nullable=False, default="PLANNED")
     teacher_user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=True)
+    semester_id = db.Column(db.Integer, db.ForeignKey("semesters.id"), nullable=True)
     created_at = db.Column(db.DateTime, server_default=db.func.now(), nullable=False)
     updated_at = db.Column(
         db.DateTime,
@@ -265,6 +356,7 @@ class AcademyClassModel(db.Model):
 
     course = db.relationship("CourseModel", back_populates="classes")
     teacher = db.relationship("UserModel", foreign_keys=[teacher_user_id])
+    semester = db.relationship("SemesterModel", back_populates="classes")
     schedule_entries = db.relationship(
         "ClassScheduleModel",
         back_populates="academy_class",

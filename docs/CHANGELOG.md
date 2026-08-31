@@ -6,6 +6,46 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 
 ## Unreleased
 
+## P23 — Academic Calendar & Semester Management (2026-09-01)
+
+### Added
+- `AcademicYear` domain entity and `AcademicYearModel` — manages academic years (e.g., "1403-1404") with title, date range, and active flag
+- `Semester` domain entity and `SemesterModel` — manages semesters within academic years with active flag
+- `AcademicCalendarEvent` domain entity and `AcademicCalendarEventModel` — manages holidays/academic events with title, date range, recurring flag, and description
+- `AcademicCalendarError` exception class for calendar operations
+- Full CRUD service: `create_academic_year`, `update_academic_year`, `get_academic_year`, `list_academic_years`, `delete_academic_year`
+- Full CRUD service: `create_semester`, `update_semester`, `get_semester`, `list_semesters`, `get_active_semester`, `delete_semester`
+- Full CRUD service: `create_calendar_event`, `update_calendar_event`, `get_calendar_event`, `list_calendar_events`, `delete_calendar_event`
+- `is_date_holiday(check_date)` — checks if a date falls within any calendar event
+- `semester_id` foreign key on `AcademyClassModel` — links classes to semesters
+- Active year/semester mutual exclusion — setting one as active deactivates others
+- Smart session generation: `_generate_sessions` now skips dates falling within calendar events and extends schedule forward to find enough valid sessions
+- `regenerate_sessions(academy_class)` — deletes future sessions without attendance, regenerates from the last preserved session forward, skipping holidays
+- Session shifting (`shift_sessions_after_cancellation`) now also skips holidays
+- Admin routes: `/admin/years` (CRUD), `/admin/semesters` (CRUD), `/admin/calendar` (CRUD)
+- Admin route: `/admin/classes/<id>/regenerate-sessions` (POST) — safe session regeneration with confirmation
+- Admin UI templates: `year_list.html`, `year_form.html`, `semester_list.html`, `semester_form.html`, `calendar_list.html`, `calendar_form.html`
+- Semester filter on class list page (`/academy/classes?semester_id=X`)
+- Semester dropdown on class creation form
+- Semester display on class detail page
+- "Regenerate Sessions" button on class detail page
+- Sidebar links: "سال تحصیلی", "نیم‌سال‌ها", "تقویم آموزشی"
+- Database migration: 3 new tables, 1 altered table (semester_id FK on academy_classes)
+- 46 new tests: AcademicYear CRUD, Semester CRUD, CalendarEvent CRUD, holiday detection, session generation with holidays, session regeneration with attendance preservation, semester-class association, admin route authorization
+
+### Changed
+- `_generate_sessions()` — now checks `_is_date_holiday()` and skips holiday dates, extending schedule forward until enough valid sessions found
+- `shift_sessions_after_cancellation()` — now checks `_is_date_holiday()` and skips holiday dates
+- `create_class()` — accepts optional `semester_id` parameter
+- `list_classes()` — accepts optional `semester_id` filter parameter
+- Class list template — added semester filter dropdown
+- Class creation form — added semester dropdown
+- Class detail template — shows semester info and "Regenerate Sessions" button
+
+### Metrics
+- 828 tests passing
+- Ruff check and format clean
+
 ## P22 — Public Enrollment Portal & Excel Power (2026-09-01)
 
 ### Added

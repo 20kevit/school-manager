@@ -5,6 +5,7 @@ from datetime import date, time, timedelta
 from app.extensions import db
 from app.infrastructure.database.models import (
     AcademyClassModel,
+    AttendanceModel,
     ClassScheduleModel,
     ClassSessionContentModel,
     CourseModel,
@@ -56,6 +57,7 @@ def create_class(
     num_sessions: int | None = None,
     end_date: date | None = None,
     teacher_user_id: int | None = None,
+    semester_id: int | None = None,
     schedule: list[dict] | None = None,
     session_contents: list[dict] | None = None,
 ) -> AcademyClassModel:
@@ -91,6 +93,7 @@ def create_class(
         capacity=capacity,
         num_sessions=effective_num_sessions,
         teacher_user_id=teacher_user_id,
+        semester_id=semester_id,
     )
     db.session.add(academy_class)
     db.session.flush()
@@ -145,13 +148,31 @@ def _validate_schedule(schedule: list[dict]) -> None:
         seen_weekdays.add(weekday)
 
 
+def _is_date_holiday(check_date: date) -> bool:
+    """Check if a date falls within any AcademicCalendarEvent."""
+    from app.infrastructure.database.models import AcademicCalendarEventModel
+
+    events = AcademicCalendarEventModel.query.filter(
+        AcademicCalendarEventModel.start_date <= check_date
+    ).all()
+    for event in events:
+        effective_end = event.end_date if event.end_date else event.start_date
+        if check_date <= effective_end:
+            return True
+    return False
+
+
 def _generate_sessions(
     academy_class: AcademyClassModel,
     schedule: list[dict],
     course: CourseModel,
     session_contents: list[dict] | None = None,
 ) -> None:
-    """Generate session records from the class schedule."""
+    """Generate session records from the class schedule.
+
+    Skips dates that fall within academic calendar events (holidays).
+    Continues extending the schedule forward until enough valid sessions are found.
+    """
     schedule_sorted = sorted(schedule, key=lambda e: WEEKDAY_TO_INDEX[e["weekday"]])
 
     content_map: dict[int, dict] = {}
@@ -169,8 +190,11 @@ def _generate_sessions(
     sessions: list[SessionModel] = []
     current_date = academy_class.start_date
     session_num = 1
+    max_iterations = academy_class.num_sessions * 3 + 52
+    iterations = 0
 
-    while session_num <= academy_class.num_sessions:
+    while session_num <= academy_class.num_sessions and iterations < max_iterations:
+        iterations += 1
         for entry in schedule_sorted:
             if session_num > academy_class.num_sessions:
                 break
@@ -180,6 +204,9 @@ def _generate_sessions(
 
             if session_date < current_date:
                 session_date = current_date
+
+            if _is_date_holiday(session_date):
+                continue
 
             override = content_map.get(session_num)
             syllabus = syllabus_map.get(session_num)
@@ -248,11 +275,15 @@ def get_class(class_id: int) -> AcademyClassModel | None:
     return AcademyClassModel.query.get(class_id)
 
 
-def list_classes(course_id: int | None = None) -> list[AcademyClassModel]:
-    """List classes, optionally filtered by course."""
+def list_classes(
+    course_id: int | None = None, semester_id: int | None = None
+) -> list[AcademyClassModel]:
+    """List classes, optionally filtered by course and/or semester."""
     query = AcademyClassModel.query
     if course_id is not None:
         query = query.filter_by(course_id=course_id)
+    if semester_id is not None:
+        query = query.filter_by(semester_id=semester_id)
     return query.order_by(AcademyClassModel.start_date.desc()).all()
 
 
@@ -488,8 +519,11 @@ def shift_sessions_after_cancellation(
     remaining = academy_class.num_sessions - cancelled_session_number + 1
     session_num = cancelled_session_number
     current_date = cancelled.scheduled_date
+    max_iterations = remaining * 3 + 52
+    iterations = 0
 
-    while remaining > 0:
+    while remaining > 0 and iterations < max_iterations:
+        iterations += 1
         for entry in schedule_sorted:
             if remaining <= 0:
                 break
@@ -497,6 +531,9 @@ def shift_sessions_after_cancellation(
             session_date = _next_weekday(current_date, entry["weekday"])
             if session_date < current_date:
                 session_date = current_date
+
+            if _is_date_holiday(session_date):
+                continue
 
             syllabus = syllabus_map.get(session_num)
             session = SessionModel(
@@ -514,6 +551,127 @@ def shift_sessions_after_cancellation(
             remaining -= 1
 
         current_date = current_date + timedelta(days=7)
+
+    db.session.commit()
+    return get_sessions(academy_class.id)
+
+
+def regenerate_sessions(academy_class: AcademyClassModel) -> list[SessionModel]:
+    """Regenerate future sessions for a class.
+
+    - Deletes future sessions that have NO attendance records.
+    - Preserves past sessions and sessions with attendance.
+    - Regenerates from the last preserved session's date forward.
+    """
+    all_sessions = get_sessions(academy_class.id)
+
+    today = date.today()
+    sessions_to_keep: list[SessionModel] = []
+    sessions_to_delete: list[SessionModel] = []
+
+    for s in all_sessions:
+        has_attendance = (
+            AttendanceModel.query.filter_by(session_id=s.id).first() is not None
+        )
+        is_past = s.scheduled_date < today
+        if is_past or has_attendance:
+            sessions_to_keep.append(s)
+        else:
+            sessions_to_delete.append(s)
+
+    for s in sessions_to_delete:
+        db.session.delete(s)
+
+    db.session.flush()
+
+    schedule_entries = get_class_schedule(academy_class.id)
+    if not schedule_entries:
+        db.session.commit()
+        return get_sessions(academy_class.id)
+
+    schedule_sorted = sorted(
+        [
+            {"weekday": s.weekday, "start_time": s.start_time, "end_time": s.end_time}
+            for s in schedule_entries
+        ],
+        key=lambda e: WEEKDAY_TO_INDEX[e["weekday"]],
+    )
+
+    course = CourseModel.query.get(academy_class.course_id)
+    syllabus_items = (
+        SyllabusItemModel.query.filter_by(course_id=course.id)
+        .order_by(SyllabusItemModel.order)
+        .all()
+    )
+    syllabus_map = {item.order: item for item in syllabus_items}
+
+    content_overrides = ClassSessionContentModel.query.filter_by(
+        class_id=academy_class.id
+    ).all()
+    content_map = {c.session_number: c for c in content_overrides}
+
+    if sessions_to_keep:
+        last_kept = max(sessions_to_keep, key=lambda s: s.session_number)
+        start_num = last_kept.session_number + 1
+        start_date = last_kept.scheduled_date + timedelta(days=1)
+    else:
+        start_num = 1
+        start_date = academy_class.start_date
+
+    remaining = academy_class.num_sessions - start_num + 1
+    session_num = start_num
+    current_date = start_date
+    max_iterations = remaining * 3 + 52
+    iterations = 0
+
+    while remaining > 0 and iterations < max_iterations:
+        iterations += 1
+        for entry in schedule_sorted:
+            if remaining <= 0:
+                break
+
+            session_date = _next_weekday(current_date, entry["weekday"])
+            if session_date < current_date:
+                session_date = current_date
+
+            if _is_date_holiday(session_date):
+                continue
+
+            override = content_map.get(session_num)
+            syllabus = syllabus_map.get(session_num)
+
+            title = None
+            description = None
+
+            if override:
+                title = override.title or (syllabus.title if syllabus else None)
+                description = override.description or (
+                    syllabus.description if syllabus else None
+                )
+            elif syllabus:
+                title = syllabus.title
+                description = syllabus.description
+
+            session = SessionModel(
+                class_id=academy_class.id,
+                session_number=session_num,
+                scheduled_date=session_date,
+                start_time=entry["start_time"],
+                end_time=entry["end_time"],
+                title=title,
+                description=description,
+                is_rescheduled=True,
+            )
+            db.session.add(session)
+            session_num += 1
+            remaining -= 1
+
+        current_date = current_date + timedelta(days=7)
+
+    all_final = get_sessions(academy_class.id)
+    if all_final:
+        last_date = max(s.scheduled_date for s in all_final)
+        academy_class.end_date = last_date
 
     db.session.commit()
     return get_sessions(academy_class.id)

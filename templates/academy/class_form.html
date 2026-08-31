@@ -61,6 +61,18 @@
             </select>
         </div>
 
+        {% if semesters is defined %}
+        <div class="form-group">
+            <label class="form-label" for="semester_id">نیم‌سال</label>
+            <select class="form-select" id="semester_id" name="semester_id">
+                <option value="">بدون نیم‌سال</option>
+                {% for sem in semesters %}
+                <option value="{{ sem.id }}" {{ 'selected' if class_obj and class_obj.semester_id == sem.id }}>{{ sem.title }} ({{ sem.academic_year.title }})</option>
+                {% endfor %}
+            </select>
+        </div>
+        {% endif %}
+
         {% if class_obj %}
         <div class="form-group">
             <label class="form-label" for="status">وضعیت</label>

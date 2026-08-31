@@ -3,6 +3,7 @@ from datetime import time
 from flask import Blueprint, flash, redirect, render_template, request, url_for
 from flask_login import current_user, login_required
 
+from app.application.academic_calendar.service import list_semesters
 from app.application.academy.class_service import (
     ClassError,
     cancel_session,
@@ -206,13 +207,17 @@ def syllabus_delete(item_id):
 @role_required("ADMIN")
 def class_list():
     course_id = request.args.get("course_id", type=int)
-    classes = list_classes(course_id=course_id)
+    semester_id = request.args.get("semester_id", type=int)
+    classes = list_classes(course_id=course_id, semester_id=semester_id)
     courses = list_courses()
+    semesters = list_semesters()
     return render_template(
         "academy/class_list.html",
         classes=classes,
         courses=courses,
+        semesters=semesters,
         selected_course_id=course_id,
+        selected_semester_id=semester_id,
     )
 
 
@@ -230,6 +235,7 @@ def class_create():
             schedule = _parse_schedule(request.form)
             teacher_id = _parse_int(request.form.get("teacher_user_id"))
             session_contents = _parse_session_contents(request.form)
+            semester_id = _parse_int(request.form.get("semester_id"))
 
             academy_class = create_class(
                 course_id=int(request.form["course_id"]),
@@ -239,6 +245,7 @@ def class_create():
                 num_sessions=_parse_int(request.form.get("num_sessions")),
                 end_date=_parse_date_optional(request.form.get("end_date")),
                 teacher_user_id=teacher_id,
+                semester_id=semester_id,
                 schedule=schedule,
                 session_contents=session_contents if session_contents else None,
             )
@@ -252,6 +259,7 @@ def class_create():
         class_obj=None,
         courses=courses,
         teachers=teachers,
+        semesters=list_semesters(),
     )
 
 

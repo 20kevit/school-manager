@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+{% from "macros/utils.html" import page_header %}
+{% from "macros/forms.html" import csrf_field %}
+
+{% block title %}تقویم آموزشی{% endblock %}
+
+{% block content %}
+{{ page_header("تقویم آموزشی", description="مدیریت تعطیلات و رویدادهای آموزشی", action_url=url_for('admin.calendar_create'), action_label="ایجاد رویداد") }}
+
+{% if events %}
+<div class="table-container">
+    <div class="table-scroll">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>عنوان</th>
+                    <th>تاریخ شروع</th>
+                    <th>تاریخ پایان</th>
+                    <th>سالانه</th>
+                    <th>توضیحات</th>
+                    <th>عملیات</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for event in events %}
+                <tr>
+                    <td>{{ event.id }}</td>
+                    <td><strong>{{ event.title }}</strong></td>
+                    <td>{{ event.start_date|jalali }}</td>
+                    <td>{{ event.end_date|jalali if event.end_date else "—" }}</td>
+                    <td>
+                        {% if event.is_recurring %}
+                            <span class="badge badge-info">سالانه</span>
+                        {% else %}
+                            <span class="badge badge-secondary">یکبار</span>
+                        {% endif %}
+                    </td>
+                    <td>{{ event.description[:50] ~ "..." if event.description|length > 50 else (event.description or "—") }}</td>
+                    <td>
+                        <a href="{{ url_for('admin.calendar_edit', event_id=event.id) }}" class="btn btn-sm btn-outline">ویرایش</a>
+                        <form method="POST" action="{{ url_for('admin.calendar_delete', event_id=event.id) }}" style="display:inline;" onsubmit="return confirm('آیا مطمئن هستید؟')">
+                            {{ csrf_field() }}
+                            <button type="submit" class="btn btn-sm btn-danger">حذف</button>
+                        </form>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% else %}
+<div class="empty-state">
+    <h3>هیچ رویدادی تعریف نشده</h3>
+    <p>تعطیلات و رویدادهای آموزشی خود را تعریف کنید.</p>
+    <a href="{{ url_for('admin.calendar_create') }}" class="btn btn-primary">ایجاد رویداد</a>
+</div>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% from "macros/utils.html" import page_header %}
+{% from "macros/forms.html" import csrf_field, form_field %}
+
+{% block title %}{{ "ویرایش سال تحصیلی" if year else "ایجاد سال تحصیلی" }}{% endblock %}
+
+{% block content %}
+{{ page_header("ویرایش سال تحصیلی" if year else "ایجاد سال تحصیلی") }}
+
+<div class="form-card">
+    <form method="POST">
+        {{ csrf_field() }}
+
+        {{ form_field("title", "عنوان", type="text", value=year.title if year else "", required=true, placeholder="مثال: 1403-1404") }}
+
+        {{ form_field("start_date", "تاریخ شروع (شمسی)", type="text", value=year.start_date|to_jalali_input if year else "", required=true, placeholder="مثال: 1403/07/01") }}
+
+        {{ form_field("end_date", "تاریخ پایان (شمسی)", type="text", value=year.end_date|to_jalali_input if year else "", required=true, placeholder="مثال: 1404/04/31") }}
+
+        <div class="form-group">
+            <label class="form-label">
+                <input type="checkbox" name="is_active" {% if year and year.is_active %}checked{% endif %}>
+                فعال (پیش‌فرض هنگام ایجاد کلاس)
+            </label>
+        </div>
+
+        <div class="form-actions">
+            <button type="submit" class="btn btn-primary">{{ "ذخیره تغییرات" if year else "ایجاد" }}</button>
+            <a href="{{ url_for('admin.year_list') }}" class="btn btn-outline">انصراف</a>
+        </div>
+    </form>
+</div>
+{% endblock %}

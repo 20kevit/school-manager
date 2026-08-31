@@ -1,0 +1,77 @@
+{% extends "base.html" %}
+{% from "macros/utils.html" import page_header %}
+{% from "macros/forms.html" import csrf_field %}
+
+{% block title %}نیم‌سال‌ها{% endblock %}
+
+{% block content %}
+{{ page_header("نیم‌سال‌ها", description="مدیریت نیم‌سال‌های تحصیلی", action_url=url_for('admin.semester_create'), action_label="ایجاد نیم‌سال") }}
+
+<div class="form-card" style="margin-bottom: var(--space-4);">
+    <form method="GET" class="form-grid" style="grid-template-columns: 1fr auto; align-items: end;">
+        <div class="form-group">
+            <label class="form-label" for="year_id">سال تحصیلی</label>
+            <select id="year_id" name="year_id" class="form-select">
+                <option value="">همه سال‌ها</option>
+                {% for year in years %}
+                <option value="{{ year.id }}" {% if selected_year_id == year.id %}selected{% endif %}>{{ year.title }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="form-group">
+            <button type="submit" class="btn btn-primary">فیلتر</button>
+        </div>
+    </form>
+</div>
+
+{% if semesters %}
+<div class="table-container">
+    <div class="table-scroll">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>عنوان</th>
+                    <th>سال تحصیلی</th>
+                    <th>تاریخ شروع</th>
+                    <th>تاریخ پایان</th>
+                    <th>وضعیت</th>
+                    <th>عملیات</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for sem in semesters %}
+                <tr>
+                    <td>{{ sem.id }}</td>
+                    <td><strong>{{ sem.title }}</strong></td>
+                    <td>{{ sem.academic_year.title }}</td>
+                    <td>{{ sem.start_date|jalali }}</td>
+                    <td>{{ sem.end_date|jalali }}</td>
+                    <td>
+                        {% if sem.is_active %}
+                            <span class="badge badge-success">فعال</span>
+                        {% else %}
+                            <span class="badge badge-secondary">غیرفعال</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <a href="{{ url_for('admin.semester_edit', semester_id=sem.id) }}" class="btn btn-sm btn-outline">ویرایش</a>
+                        <form method="POST" action="{{ url_for('admin.semester_delete', semester_id=sem.id) }}" style="display:inline;" onsubmit="return confirm('آیا مطمئن هستید؟')">
+                            {{ csrf_field() }}
+                            <button type="submit" class="btn btn-sm btn-danger">حذف</button>
+                        </form>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% else %}
+<div class="empty-state">
+    <h3>هیچ نیم‌سالی تعریف نشده</h3>
+    <p>اولین نیم‌سال خود را ایجاد کنید.</p>
+    <a href="{{ url_for('admin.semester_create') }}" class="btn btn-primary">ایجاد نیم‌سال</a>
+</div>
+{% endif %}
+{% endblock %}
