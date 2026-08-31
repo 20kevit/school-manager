@@ -109,6 +109,7 @@ def _register_template_filters(app):
     """Register Jinja template filters and globals for Persian date display."""
     from app.utils.date_utils import (
         format_jalali,
+        format_jalali_date_input,
         format_jalali_datetime,
         format_jalali_time,
     )
@@ -132,6 +133,11 @@ def _register_template_filters(app):
     def to_jalali_filter(d, fmt="%Y/%m/%d"):
         """Generic Jalali format filter with customizable format."""
         return format_jalali(d, fmt)
+
+    @app.template_filter("to_jalali_input")
+    def to_jalali_input_filter(d):
+        """Format a date for use in form inputs (Jalali YYYY/MM/DD)."""
+        return format_jalali_date_input(d)
 
     @app.template_filter("currency")
     def currency_filter(amount):

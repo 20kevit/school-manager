@@ -221,7 +221,24 @@
 - [x] 17 new regression tests (age, session editing, enrollment eligibility)
 - [x] 594 tests passing, Ruff clean
 
-## P14 — Future
+## P14 — Calendar, User Profiles & MVP Data UX
+
+- [x] Centralized Persian date system (parse/format/validate)
+- [x] Class creation with Jalali date inputs
+- [x] Session edit/reschedule with Jalali date inputs
+- [x] Session edit history model and tracking (SessionEditHistoryModel)
+- [x] Student profile management with Jalali birth_date
+- [x] Profile photo upload integration (StoredFile + StorageBackend)
+- [x] Finance template localization (category, payment_method Persian labels)
+- [x] Landing page redesign (6 feature cards, responsive)
+- [x] Auth/academy flash messages in Persian
+- [x] Class status dropdown with Persian labels
+- [x] Fixed broken HTML in session/finance templates
+- [x] Session edit preserves attendance records
+- [x] 58 new tests (calendar, profile, session, finance, landing page)
+- [x] 652 tests passing, Ruff clean
+
+## P15 — Future
 
 - [ ] Mobile application
 - [ ] Advanced permissions
@@ -231,3 +248,5 @@
 - [ ] Payment gateway integration (ZarinPal)
 - [ ] Payment receipt upload
 - [ ] Attendance reports
+- [ ] Parent-student link UI
+- [ ] Academic calendar & holidays

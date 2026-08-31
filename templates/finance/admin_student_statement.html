@@ -40,8 +40,8 @@
             {% for tx in transactions %}
             <tr>
                 <td>{{ tx.created_at|jalali_datetime }}</td>
-                <td>{{ status_badge(tx.transaction_type.value) }}</td>
-                <td>{{ status_badge(tx.category.value) }}</td>
+                <td>{{ status_badge(tx.transaction_type) }}</td>
+                <td>{{ status_badge(tx.category) }}</td>
                 <td class="{{ 'positive' if tx.transaction_type in ['PAYMENT', 'DISCOUNT'] else 'negative' }}">
                     {{ '+' if tx.transaction_type in ['PAYMENT', 'DISCOUNT'] else '-' }}{{ "{:,.0f}".format(tx.amount) }}
                 </td>

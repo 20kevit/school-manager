@@ -345,6 +345,12 @@ class SessionModel(db.Model):
     )
 
     academy_class = db.relationship("AcademyClassModel", back_populates="sessions")
+    edit_history = db.relationship(
+        "SessionEditHistoryModel",
+        back_populates="session",
+        order_by="SessionEditHistoryModel.edited_at",
+        lazy="select",
+    )
 
     __table_args__ = (
         db.UniqueConstraint(
@@ -357,6 +363,32 @@ class SessionModel(db.Model):
             f"<SessionModel id={self.id} class={self.class_id} "
             f"num={self.session_number} date={self.scheduled_date}>"
         )
+
+
+class SessionEditHistoryModel(db.Model):
+    """Session edit history — tracks changes to session date/time/content."""
+
+    __tablename__ = "session_edit_history"
+
+    id = db.Column(db.Integer, primary_key=True)
+    session_id = db.Column(db.Integer, db.ForeignKey("sessions.id"), nullable=False)
+    previous_date = db.Column(db.Date, nullable=True)
+    new_date = db.Column(db.Date, nullable=True)
+    previous_start_time = db.Column(db.Time, nullable=True)
+    new_start_time = db.Column(db.Time, nullable=True)
+    previous_end_time = db.Column(db.Time, nullable=True)
+    new_end_time = db.Column(db.Time, nullable=True)
+    previous_title = db.Column(db.String(200), nullable=True)
+    new_title = db.Column(db.String(200), nullable=True)
+    change_type = db.Column(db.String(20), nullable=False, default="EDIT")
+    edited_by = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=True)
+    edited_at = db.Column(db.DateTime, server_default=db.func.now(), nullable=False)
+
+    session = db.relationship("SessionModel", back_populates="edit_history")
+    editor = db.relationship("UserModel", foreign_keys=[edited_by])
+
+    def __repr__(self) -> str:
+        return f"<SessionEditHistoryModel id={self.id} session={self.session_id}>"
 
 
 class ClassSessionContentModel(db.Model):

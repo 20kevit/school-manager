@@ -6,6 +6,35 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 
 ## Unreleased
 
+## P14 — Calendar, User Profiles & MVP Data UX (2026-08-31)
+
+### Added
+- Centralized Persian date system: parse_jalali_date, format_jalali_date_input, parse_jalali_date_or_none
+- `to_jalali_input` template filter for form inputs
+- SessionEditHistoryModel for tracking session date/time/title changes
+- Profile photo upload integration with StoredFile + StorageBackend
+- 58 new tests for calendar, profile, session editing, finance labels, landing page
+
+### Changed
+- Class creation form uses Jalali date text inputs instead of HTML date type
+- Session edit/reschedule forms use Jalali date inputs
+- Session detail/list display Jalali dates
+- Class status dropdown shows Persian labels
+- Student profile page: Jalali birth_date input, profile photo section
+- Finance templates: all category/payment_method fields use |persian_label
+- Landing page redesigned: 6 feature cards, responsive, professional
+- Auth/academy flash messages translated to Persian
+- Session edit records history with editor reference
+- Session edit preserves attendance records
+
+### Fixed
+- Broken HTML in session_detail.html, session_list.html, admin_transaction_detail.html
+- Finance templates showing raw English enum values (category, payment_method)
+- Optional end_date parsing on class creation (was raising ValueError on empty)
+
+### Migration
+- Added session_edit_history table (eb6087341015)
+
 ### Added
 
 - Project structure with modular monolith architecture

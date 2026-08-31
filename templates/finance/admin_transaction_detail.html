@@ -19,7 +19,7 @@
     </div>
     <div class="detail-row">
         <span class="detail-row-label">دسته‌بندی:</span>
-        <span class="detail-row-value">{{ transaction.category }}</span>
+        <span class="detail-row-value">{{ transaction.category|persian_label }}</span>
     </div>
     <div class="detail-row">
         <span class="detail-row-label">مبلغ:</span>
@@ -27,7 +27,7 @@
     </div>
     <div class="detail-row">
         <span class="detail-row-label">روش پرداخت:</span>
-        <span class="detail-row-value">{{ transaction.payment_method or '-' }}</span>
+        <span class="detail-row-value">{{ transaction.payment_method|persian_label if transaction.payment_method else '-' }}</span>
     </div>
     <div class="detail-row">
         <span class="detail-row-label">وضعیت:</span>
@@ -80,8 +80,8 @@
             <button type="submit" class="btn btn-sm btn-primary" onclick="return confirm('آیا مطمئن هستید؟')">اصلاح تراکنش</button>
         </div>
     </form>
-    <form method="POST" action="{{ url_for('finance.admin_revers
-        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">e_transaction', transaction_id=transaction.id) }}" style="display:inline;">
+    <form method="POST" action="{{ url_for('finance.admin_reverse_transaction', transaction_id=transaction.id) }}" style="display:inline;">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <input type="hidden" name="description" value="بازگشت تراکنش #{{ transaction.id }}">
         <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('آیا مطمئن هستید؟')">معکوس کردن</button>
     </form>

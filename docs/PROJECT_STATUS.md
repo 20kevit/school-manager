@@ -1,35 +1,37 @@
 # Project Status
 
-**Current Phase:** P13 — MVP Stabilization, Core UX Completion & Production-Grade Foundation — Completed
-**Current Objective:** P13 — Stabilization complete, ready for P14.
+**Current Phase:** P14 — Calendar, User Profiles & MVP Data UX — Completed
+**Current Objective:** P14 complete. Ready for P15.
 
-**Previous Phase:** P12 — UI/UX, Frontend & User Experience Overhaul
+**Previous Phase:** P13 — MVP Stabilization, Core UX Completion & Production-Grade Foundation
 
 ## Status
 
-P13 — MVP Stabilization is complete. All reported bugs fixed, core UX completed, security hardened.
+P14 — Calendar, User Profiles & MVP Data UX is complete. Persian date handling, session editing with history, profile management, finance localization, and landing page all implemented.
 
 ## Completed
 
-### P13 — MVP Stabilization, Core UX Completion & Production-Grade Foundation
-- [x] Fixed Jinja `TemplateRuntimeError: No test named 'None'` (43 occurrences across 15 assessment templates)
-- [x] Age restriction semantics: nullable min_age/max_age with proper validation
-- [x] Age eligibility check enforced during enrollment (student birth_date vs course age range)
-- [x] Curriculum auto-numbering: syllabus order auto-suggested as next available
-- [x] Session editing: title, description, date, time can be updated safely
-- [x] Persian date infrastructure: jdatetime library installed, centralized date utilities, Jinja filters (jalali, jalali_datetime, jalali_time, to_jalali, currency)
-- [x] All 28+ template files updated from strftime to Jalali filters
-- [x] User profile management: view/edit first_name, last_name, mobile_phone, birth_date, gender
-- [x] Profile link added to sidebar navigation
-- [x] Centralized Persian labels: 100+ enum/status values translated in status_badge macro and persian_label filter
-- [x] Finance filter UX improved: proper form-card styling, consistent form inputs, clear filter button
-- [x] Finance transaction types display as proper status badges with Persian labels
-- [x] Homepage redesigned: professional landing page with feature cards and login CTA
-- [x] CSRF protection enabled via Flask-WTF on all POST forms (38+ templates)
-- [x] Production security: SESSION_COOKIE_SECURE, SESSION_COOKIE_SAMESITE, PERMANENT_SESSION_LIFETIME configured
-- [x] Seed script expanded: creates courses, classes, sessions, enrollment, attendance, activities, assessments, finance records
-- [x] 17 new regression tests for age restrictions, syllabus auto-numbering, session editing, enrollment age eligibility
-- [x] 594 total tests passing, Ruff check/format clean
+### P14 — Calendar, User Profiles & MVP Data UX
+- [x] Centralized Persian date system: parse_jalali_date, format_jalali_date_input, parse_jalali_date_or_none
+- [x] to_jalali_input template filter for form inputs
+- [x] Class creation form uses Jalali date inputs (text, not type="date")
+- [x] Session edit/reschedule forms use Jalali date inputs
+- [x] Session detail/list display Jalali dates via |jalali filter
+- [x] Class status dropdown shows Persian labels instead of raw English
+- [x] SessionEditHistoryModel: tracks date/time/title changes with change_type (EDIT/RESCHEDULE)
+- [x] update_session records edit history with editor reference
+- [x] Student profile: Jalali birth_date input, profile photo upload/replace
+- [x] Profile photo uses StoredFile + StorageBackend (P11 integration)
+- [x] Profile page shows role info, read-only national_id and username
+- [x] Finance templates: all category/payment_method fields use |persian_label
+- [x] Fixed broken HTML in session_detail.html, session_list.html, admin_transaction_detail.html
+- [x] Landing page redesigned: 6 feature cards, responsive, professional design
+- [x] Auth flash messages translated to Persian
+- [x] Academy flash messages translated to Persian
+- [x] Session edit history preserves attendance records
+- [x] SessionEditHistory migration created and applied
+- [x] 58 new tests for calendar, profile, session editing, finance labels, landing page
+- [x] 652 total tests passing, Ruff check/format clean
 
 ## Completed
 

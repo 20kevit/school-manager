@@ -39,7 +39,7 @@
                 <tr>
                     <td>{{ tx.created_at|jalali_datetime }}</td>
                     <td>{{ status_badge(tx.transaction_type) }}</td>
-                    <td>{{ tx.category }}</td>
+                    <td>{{ tx.category|persian_label }}</td>
                     <td class="{{ 'positive' if tx.transaction_type in ['PAYMENT', 'DISCOUNT'] else 'negative' }}">
                         {{ '+' if tx.transaction_type in ['PAYMENT', 'DISCOUNT'] else '-' }}{{ "{:,.0f}".format(tx.amount) }} تومان
                     </td>

@@ -482,6 +482,35 @@ Open `http://127.0.0.1:5000` in browser.
 
 ---
 
+### Scenario M — Calendar & Profile (P14)
+
+**ID:** M-01
+**Priority:** P0
+**Preconditions:** Server running, database seeded
+
+| Step | Action | Expected Result |
+|------|--------|-----------------|
+| 1 | Login as admin, go to `/academy/classes/create` | Class form loads with Jalali date inputs (-placeholder: ۱۴۰۵/۰۷/۰۱) |
+| 2 | Fill start_date as `1405/07/01`, submit with valid schedule | Class created successfully, dates stored as Gregorian |
+| 3 | Open class detail page | Start/end dates displayed in Jalali format |
+| 4 | Open session list for the class | All session dates displayed in Jalali format |
+| 5 | Click on a session, click "ویرایش جلسه" | Session edit form loads with Jalali date |
+| 6 | Change the session date to `1405/08/01`, submit | Session updated, rescheduled=true, edit history recorded |
+| 7 | Open session detail | Edit history shows previous and new dates |
+| 8 | Login as student, go to `/auth/profile` | Profile page loads with Jalali birth_date |
+| 9 | Edit first_name, last_name, mobile_phone, birth_date | Profile updated successfully |
+| 10 | Verify national_id and username are read-only | Cannot modify protected fields |
+| 11 | Upload profile photo (JPG) | Photo uploaded, displayed on profile page |
+| 12 | Replace profile photo | Old photo marked deleted, new photo displayed |
+| 13 | Login as admin, go to `/finance/admin/student/<id>/statement` | Category column shows Persian labels (شهریه, not TUITION) |
+| 14 | Check `/finance/admin/transaction/<id>/detail` | Category and payment_method show Persian labels |
+| 15 | Login as student, check `/finance/student/my-finance` | Category column shows Persian labels |
+| 16 | Navigate to `/` (unauthenticated) | Landing page loads with 6 feature cards, RTL, Persian |
+| 17 | Verify landing page on mobile viewport | Responsive layout, single-column features |
+| 18 | Login from landing page | Redirects to role-specific dashboard |
+
+---
+
 ## Known Limitations
 
 1. **No seed script** — Users must be created via Flask shell (see Setup Instructions)

@@ -15,7 +15,7 @@
     </div>
     <div class="detail-row">
         <span class="detail-row-label">تاریخ:</span>
-        <span class="detail-row-value">{{ session.scheduled_date }}</span>
+        <span class="detail-row-value">{{ session.scheduled_date|jalali }}</span>
     </div>
     <div class="detail-row">
         <span class="detail-row-label">ساعت شروع:</span>
@@ -54,30 +54,31 @@
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <button type="submit" class="btn btn-primary">تکمیل جلسه</button>
     </form>
-    <form method="POST" action="{{ url_for('a
-        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">cademy.session_cancel', session_id=session.id) }}" style="display:inline;">
+    <form method="POST" action="{{ url_for('academy.session_cancel', session_id=session.id) }}" style="display:inline;">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <button type="submit" class="btn btn-danger" onclick="return confirm('آیا مطمئن هستید؟')">لغو جلسه</button>
     </form>
 </div>
 
 <div class="section-header">
-    <h
-        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">2>تغییر زمان</h2>
+    <h2>تغییر زمان</h2>
 </div>
 
 <div class="form-card">
     <form method="POST" action="{{ url_for('academy.session_reschedule', session_id=session.id) }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <div class="form-grid">
             <div class="form-group">
-                <label class="form-label" for="new_date">تاریخ جدید</label>
-                <input class="form-input" type="date" id="new_date" name="new_date" required>
+                <label class="form-label" for="new_date">تاریخ جدید <span class="required">*</span></label>
+                <input class="form-input jalali-date-input" type="text" id="new_date" name="new_date" required placeholder="مثال: ۱۴۰۵/۰۶/۱۰" autocomplete="off">
+                <span class="form-hint">فرمت: ۱۴۰۵/۰۶/۱۰</span>
             </div>
             <div class="form-group">
-                <label class="form-label" for="new_start_time">ساعت شروع جدید</label>
+                <label class="form-label" for="new_start_time">ساعت شروع جدید <span class="required">*</span></label>
                 <input class="form-input" type="time" id="new_start_time" name="new_start_time" required>
             </div>
             <div class="form-group">
-                <label class="form-label" for="new_end_time">ساعت پایان جدید</label>
+                <label class="form-label" for="new_end_time">ساعت پایان جدید <span class="required">*</span></label>
                 <input class="form-input" type="time" id="new_end_time" name="new_end_time" required>
             </div>
         </div>

@@ -20,7 +20,7 @@ def login():
         remember = request.form.get("remember") == "on"
 
         if not login_id or not password:
-            flash("Please enter login and password.", "error")
+            flash("لطفاً نام کاربری و رمز عبور را وارد کنید.", "error")
             return render_template("auth/login.html"), 400
 
         try:
@@ -28,10 +28,10 @@ def login():
 
             user = authenticate(login_id, password)
             login_authenticated_user(user, remember=remember)
-            flash("Login successful.", "success")
+            flash("ورود با موفقیت انجام شد.", "success")
             return redirect(url_for("auth.dashboard"))
         except AuthenticationError:
-            flash("Invalid login or password.", "error")
+            flash("نام کاربری یا رمز عبور نادرست است.", "error")
             return render_template("auth/login.html"), 401
 
     return render_template("auth/login.html")
@@ -42,7 +42,7 @@ def login():
 def logout():
     """Log out the current user."""
     logout_current_user()
-    flash("You have been logged out.", "success")
+    flash("شما با موفقیت خارج شدید.", "success")
     return redirect(url_for("auth.login"))
 
 
@@ -71,23 +71,23 @@ def change_password_view():
         confirm_password = request.form.get("confirm_password", "")
 
         if not current_password or not new_password:
-            flash("Please fill in all fields.", "error")
+            flash("لطفاً تمام فیلدها را پر کنید.", "error")
             return render_template("auth/change_password.html"), 400
 
         if new_password != confirm_password:
-            flash("New passwords do not match.", "error")
+            flash("رمزهای عبور جدید مطابقت ندارند.", "error")
             return render_template("auth/change_password.html"), 400
 
         if len(new_password) < 6:
-            flash("New password must be at least 6 characters.", "error")
+            flash("رمز عبور جدید باید حداقل ۶ کاراکتر باشد.", "error")
             return render_template("auth/change_password.html"), 400
 
         try:
             change_password(current_user, current_password, new_password)
-            flash("Password changed successfully.", "success")
+            flash("رمز عبور با موفقیت تغییر کرد.", "success")
             return redirect(url_for("auth.dashboard"))
         except AuthenticationError:
-            flash("Current password is incorrect.", "error")
+            flash("رمز عبور فعلی نادرست است.", "error")
             return render_template("auth/change_password.html"), 400
 
     return render_template("auth/change_password.html")
@@ -106,6 +106,7 @@ def profile():
 
     profile_obj = None
     profile_type = None
+    profile_photo_url = None
 
     if current_user.has_any_role("STUDENT"):
         profile_obj = StudentProfileModel.query.filter_by(
@@ -123,6 +124,18 @@ def profile():
         ).first()
         profile_type = "parent"
 
+    if profile_obj and profile_type == "student":
+        from app.infrastructure.database.models import StoredFileModel
+
+        photo = StoredFileModel.query.filter_by(
+            entity_type="student_profile",
+            entity_id=profile_obj.id,
+            category="PROFILE_PHOTO",
+            status="ACTIVE",
+        ).first()
+        if photo:
+            profile_photo_url = f"/files/download/{photo.id}"
+
     if request.method == "POST" and profile_obj:
         try:
             first_name = request.form.get("first_name", "").strip()
@@ -132,7 +145,10 @@ def profile():
             if not first_name or not last_name:
                 flash("نام و نام خانوادگی الزامی است.", "error")
                 return render_template(
-                    "auth/profile.html", profile=profile_obj, profile_type=profile_type
+                    "auth/profile.html",
+                    profile=profile_obj,
+                    profile_type=profile_type,
+                    profile_photo=profile_photo_url,
                 )
 
             profile_obj.first_name = first_name
@@ -141,20 +157,32 @@ def profile():
                 profile_obj.mobile_phone = mobile_phone
 
             if profile_type == "student":
+                from app.utils.date_utils import parse_jalali_date_or_none
+
                 birth_date_str = request.form.get("birth_date", "")
                 gender = request.form.get("gender", "")
                 if birth_date_str:
-                    from datetime import date as date_type
-
-                    parts = birth_date_str.split("-")
-                    if len(parts) == 3:
-                        profile_obj.birth_date = date_type(
-                            int(parts[0]), int(parts[1]), int(parts[2])
+                    try:
+                        profile_obj.birth_date = parse_jalali_date_or_none(
+                            birth_date_str
+                        )
+                    except ValueError as e:
+                        flash(str(e), "error")
+                        return render_template(
+                            "auth/profile.html",
+                            profile=profile_obj,
+                            profile_type=profile_type,
+                            profile_photo=profile_photo_url,
                         )
                 if gender:
                     profile_obj.gender = gender
 
             db.session.commit()
+
+            photo_file = request.files.get("profile_photo")
+            if photo_file and photo_file.filename:
+                _handle_profile_photo(profile_obj, profile_type, photo_file)
+
             flash("پروفایل با موفقیت به‌روزرسانی شد.", "success")
             return redirect(url_for("auth.profile"))
         except Exception:
@@ -162,5 +190,78 @@ def profile():
             flash("خطا در به‌روزرسانی پروفایل.", "error")
 
     return render_template(
-        "auth/profile.html", profile=profile_obj, profile_type=profile_type
+        "auth/profile.html",
+        profile=profile_obj,
+        profile_type=profile_type,
+        profile_photo=profile_photo_url,
     )
+
+
+def _handle_profile_photo(profile_obj, profile_type, photo_file):
+    """Handle profile photo upload."""
+    from app.extensions import db
+    from app.infrastructure.database.models import StoredFileModel
+    from app.infrastructure.storage import get_storage_backend
+
+    allowed_extensions = {"jpg", "jpeg", "png", "webp"}
+    max_size = 2 * 1024 * 1024  # 2 MB
+
+    ext = (
+        photo_file.filename.rsplit(".", 1)[-1].lower()
+        if "." in photo_file.filename
+        else ""
+    )
+    if ext not in allowed_extensions:
+        flash("فرمت فایل مجاز نیست. فرمت‌های مجاز: JPG, PNG, WebP", "error")
+        return
+
+    photo_file.seek(0, 2)
+    file_size = photo_file.tell()
+    photo_file.seek(0)
+
+    if file_size > max_size:
+        flash("حجم فایل بیش از حد مجاز است (حداکثر ۲ مگابایت).", "error")
+        return
+
+    entity_type = f"{profile_type}_profile"
+
+    old_photo = StoredFileModel.query.filter_by(
+        entity_type=entity_type,
+        entity_id=profile_obj.id,
+        category="PROFILE_PHOTO",
+        status="ACTIVE",
+    ).first()
+
+    storage = get_storage_backend()
+    from app.infrastructure.storage import generate_storage_key
+
+    storage_key = generate_storage_key("profile_photos", ext)
+    storage.save_stream(storage_key, photo_file)
+
+    import mimetypes
+
+    mime_type = (
+        mimetypes.guess_type(photo_file.filename)[0] or "application/octet-stream"
+    )
+
+    new_photo = StoredFileModel(
+        original_filename=photo_file.filename,
+        stored_filename=storage_key.split("/")[-1],
+        extension=ext,
+        mime_type=mime_type,
+        file_size=file_size,
+        storage_backend="local",
+        storage_key=storage_key,
+        status="ACTIVE",
+        visibility="PRIVATE",
+        category="PROFILE_PHOTO",
+        uploader_user_id=current_user.id,
+        entity_type=entity_type,
+        entity_id=profile_obj.id,
+    )
+    db.session.add(new_photo)
+
+    if old_photo:
+        old_photo.status = "DELETED"
+
+    db.session.commit()

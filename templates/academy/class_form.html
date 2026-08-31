@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% from "macros/utils.html" import page_header %}
+{% from "macros/forms.html" import form_field, form_select %}
 {% block title %}{{ 'ویرایش کلاس' if class_obj else 'ایجاد کلاس جدید' }}{% endblock %}
 {% block content %}
 {{ page_header('ویرایش کلاس' if class_obj else 'ایجاد کلاس جدید') }}
@@ -9,13 +10,13 @@
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <div class="form-grid">
             <div class="form-group">
-                <label class="form-label" for="title">عنوان کلاس</label>
-                <input class="form-input" type="text" id="title" name="title" value="{{ class_obj.title if class_obj else '' }}" required>
+                <label class="form-label" for="title">عنوان کلاس <span class="required">*</span></label>
+                <input class="form-input" type="text" id="title" name="title" value="{{ class_obj.title if class_obj else '' }}" required placeholder="مثال: ریاضی پایه-گروه الف">
             </div>
 
             {% if not class_obj %}
             <div class="form-group">
-                <label class="form-label" for="course_id">درس</label>
+                <label class="form-label" for="course_id">درس <span class="required">*</span></label>
                 <select class="form-select" id="course_id" name="course_id" required>
                     <option value="">انتخاب درس</option>
                     {% for course in courses %}
@@ -28,22 +29,24 @@
 
         <div class="form-grid">
             <div class="form-group">
-                <label class="form-label" for="start_date">تاریخ شروع</label>
-                <input class="form-input" type="date" id="start_date" name="start_date" value="{{ class_obj.start_date if class_obj else '' }}" required {% if class_obj %}readonly{% endif %}>
+                <label class="form-label" for="start_date">تاریخ شروع <span class="required">*</span></label>
+                <input class="form-input jalali-date-input" type="text" id="start_date" name="start_date" value="{{ class_obj.start_date|to_jalali_input if class_obj else '' }}" required placeholder="مثال: ۱۴۰۵/۰۷/۰۱" autocomplete="off" {% if class_obj %}readonly{% endif %}>
+                <span class="form-hint">فرمت: ۱۴۰۵/۰۶/۱۰</span>
             </div>
             <div class="form-group">
                 <label class="form-label" for="end_date">تاریخ پایان (اختیاری)</label>
-                <input class="form-input" type="date" id="end_date" name="end_date" value="{{ class_obj.end_date if class_obj and class_obj.end_date else '' }}" {% if class_obj %}readonly{% endif %}>
+                <input class="form-input jalali-date-input" type="text" id="end_date" name="end_date" value="{{ class_obj.end_date|to_jalali_input if class_obj and class_obj.end_date else '' }}" placeholder="مثال: ۱۴۰۵/۱۰/۰۱" autocomplete="off" {% if class_obj %}readonly{% endif %}>
+                <span class="form-hint">فرمت: ۱۴۰۵/۰۶/۱۰</span>
             </div>
         </div>
 
         <div class="form-grid">
             <div class="form-group">
-                <label class="form-label" for="capacity">ظرفیت</label>
+                <label class="form-label" for="capacity">ظرفیت <span class="required">*</span></label>
                 <input class="form-input" type="number" id="capacity" name="capacity" value="{{ class_obj.capacity if class_obj else 30 }}" min="1">
             </div>
             <div class="form-group">
-                <label class="form-label" for="num_sessions">تعداد جلسات</label>
+                <label class="form-label" for="num_sessions">تعداد جلسات <span class="required">*</span></label>
                 <input class="form-input" type="number" id="num_sessions" name="num_sessions" value="{{ class_obj.num_sessions if class_obj else '' }}" min="1" {% if class_obj %}readonly{% endif %}>
             </div>
         </div>
@@ -62,8 +65,8 @@
         <div class="form-group">
             <label class="form-label" for="status">وضعیت</label>
             <select class="form-select" id="status" name="status">
-                {% for status in ['PLANNED', 'ACTIVE', 'COMPLETED', 'CANCELLED'] %}
-                <option value="{{ status }}" {{ 'selected' if class_obj.status == status }}>{{ status }}</option>
+                {% for status_val, status_label in [('PLANNED', 'برنامه‌ریزی شده'), ('ACTIVE', 'فعال'), ('COMPLETED', 'تکمیل شده'), ('CANCELLED', 'لغو شده')] %}
+                <option value="{{ status_val }}" {{ 'selected' if class_obj.status == status_val }}>{{ status_label }}</option>
                 {% endfor %}
             </select>
         </div>

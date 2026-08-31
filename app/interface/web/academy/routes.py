@@ -1,7 +1,7 @@
 from datetime import time
 
 from flask import Blueprint, flash, redirect, render_template, request, url_for
-from flask_login import login_required
+from flask_login import current_user, login_required
 
 from app.application.academy.class_service import (
     ClassError,
@@ -237,12 +237,12 @@ def class_create():
                 start_date=_parse_date(request.form["start_date"]),
                 capacity=int(request.form.get("capacity", 30)),
                 num_sessions=_parse_int(request.form.get("num_sessions")),
-                end_date=_parse_date(request.form.get("end_date")) or None,
+                end_date=_parse_date_optional(request.form.get("end_date")),
                 teacher_user_id=teacher_id,
                 schedule=schedule,
                 session_contents=session_contents if session_contents else None,
             )
-            flash("Class created successfully.", "success")
+            flash("کلاس با موفقیت ایجاد شد.", "success")
             return redirect(url_for("academy.class_detail", class_id=academy_class.id))
         except (ClassError, ValueError, KeyError) as e:
             flash(str(e), "error")
@@ -383,6 +383,7 @@ def session_edit(session_id):
                 scheduled_date=_parse_date(request.form["scheduled_date"]),
                 start_time=_parse_time(request.form["start_time"]),
                 end_time=_parse_time(request.form["end_time"]),
+                edited_by=current_user.id,
             )
             flash("Session updated successfully.", "success")
             return redirect(url_for("academy.session_detail", session_id=session_id))
@@ -472,10 +473,15 @@ def _parse_int(value: str | None) -> int | None:
 
 
 def _parse_date(value: str):
-    from datetime import date as date_type
+    from app.utils.date_utils import parse_jalali_date
 
-    parts = value.split("-")
-    return date_type(int(parts[0]), int(parts[1]), int(parts[2]))
+    return parse_jalali_date(value)
+
+
+def _parse_date_optional(value: str | None):
+    from app.utils.date_utils import parse_jalali_date_or_none
+
+    return parse_jalali_date_or_none(value)
 
 
 def _parse_time(value: str) -> time:

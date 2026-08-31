@@ -339,26 +339,79 @@ def update_session(
     scheduled_date: date | None = None,
     start_time: time | None = None,
     end_time: time | None = None,
+    edited_by: int | None = None,
 ) -> SessionModel:
     """Update session properties safely.
 
     Only updates provided fields. Preserves session identity and history.
+    Records edit history when date/time changes occur.
     """
-    if title is not None:
+    from app.infrastructure.database.models import SessionEditHistoryModel
+
+    changes = []
+
+    if title is not None and (title.strip() if title else None) != session.title:
+        changes.append(("title", session.title, title.strip() if title else None))
         session.title = title.strip() if title else None
-    if description is not None:
+
+    if (
+        description is not None
+        and (description.strip() if description else None) != session.description
+    ):
+        changes.append(
+            (
+                "description",
+                session.description,
+                description.strip() if description else None,
+            )
+        )
         session.description = description.strip() if description else None
-    if scheduled_date is not None:
-        if scheduled_date != session.scheduled_date:
-            session.is_rescheduled = True
+
+    if scheduled_date is not None and scheduled_date != session.scheduled_date:
+        changes.append(("date", session.scheduled_date, scheduled_date))
         session.scheduled_date = scheduled_date
-    if start_time is not None:
+        session.is_rescheduled = True
+
+    if start_time is not None and start_time != session.start_time:
+        changes.append(("start_time", session.start_time, start_time))
         session.start_time = start_time
-    if end_time is not None:
+
+    if end_time is not None and end_time != session.end_time:
+        changes.append(("end_time", session.end_time, end_time))
         session.end_time = end_time
 
     if session.start_time >= session.end_time:
         raise ClassError("Start time must be before end time.")
+
+    if changes:
+        history = SessionEditHistoryModel(
+            session_id=session.id,
+            previous_date=changes[0][1]
+            if any(c[0] == "date" for c in changes)
+            else None,
+            new_date=changes[0][2] if any(c[0] == "date" for c in changes) else None,
+            previous_start_time=changes[0][1]
+            if any(c[0] == "start_time" for c in changes)
+            else None,
+            new_start_time=changes[0][2]
+            if any(c[0] == "start_time" for c in changes)
+            else None,
+            previous_end_time=changes[0][1]
+            if any(c[0] == "end_time" for c in changes)
+            else None,
+            new_end_time=changes[0][2]
+            if any(c[0] == "end_time" for c in changes)
+            else None,
+            previous_title=changes[0][1]
+            if any(c[0] == "title" for c in changes)
+            else None,
+            new_title=changes[0][2] if any(c[0] == "title" for c in changes) else None,
+            change_type="RESCHEDULE"
+            if any(c[0] == "date" for c in changes)
+            else "EDIT",
+            edited_by=edited_by,
+        )
+        db.session.add(history)
 
     db.session.commit()
     return session
