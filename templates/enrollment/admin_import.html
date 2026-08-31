@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% block title %}ورود اطلاعات دانش‌آموزان از اکسل{% endblock %}
+{% block content %}
+{% from "macros/utils.html" import page_header %}
+{% from "macros/forms.html" import csrf_field %}
+{{ page_header("ورود اطلاعات دانش‌آموزان از فایل اکسل") }}
+
+<div class="card">
+    <div class="card-body">
+        <p style="margin-bottom: 1rem; color: var(--color-muted);">
+            فایل اکسل (.xlsx) با ستون‌های زیر آپلود کنید:
+        </p>
+        <div style="margin-bottom: 1rem; padding: 1rem; background: var(--color-bg-secondary, #f1f5f9); border-radius: 8px; font-size: 0.9rem;">
+            <strong>ستون‌های الزامی:</strong> first_name, last_name, national_id, mobile_phone, birth_date<br>
+            <strong>ستون اختیاری:</strong> gender (MALE / FEMALE)<br>
+            <strong>فرمت تاریخ:</strong> شمسی (مثال: 1385/03/15)
+        </div>
+
+        <form method="POST" enctype="multipart/form-data">
+            {{ csrf_field() }}
+            <div class="form-group">
+                <label class="form-label" for="file">
+                    فایل اکسل <span class="required">*</span>
+                </label>
+                <input type="file" id="file" name="file" accept=".xlsx,.xls" class="form-input" required>
+            </div>
+            <div style="margin-top: 1.5rem; display: flex; gap: 0.75rem;">
+                <button type="submit" class="btn btn-primary">آپلود و پردازش</button>
+                <a href="{{ url_for('enrollment.admin_enrollment_list') }}" class="btn btn-secondary">بازگشت</a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

@@ -1,15 +1,33 @@
 # Project Status
 
-**Current Phase:** P21 — Advanced Grading & Transcripts — Completed
-**Current Objective:** Weighted grading, negative marking, and printable transcripts implemented.
+**Current Phase:** P22 — Public Enrollment Portal & Excel Power — Completed
+**Current Objective:** Excel bulk import/export and public online enrollment portal implemented.
 
-**Previous Phase:** P20 — Timetable, Conflict Detection & Rich Demo Seeder
+**Previous Phase:** P21 — Advanced Grading & Transcripts
 
 ## Status
 
-P21 is complete. The grading system now supports weighted grade calculation per class, negative marking for objective tests, and formal printable transcripts (کارنامه). All tests pass.
+P22 is complete. Admins can bulk-import students via Excel, export reports as .xlsx, and new students can apply online via a public enrollment form. All 782 tests pass.
 
 ## Completed
+
+### P22 — Public Enrollment Portal & Excel Power
+- [x] `excel_service.py` — Application-layer service for Excel import/export using openpyxl
+- [x] Excel import: reads .xlsx with columns first_name, last_name, national_id, mobile_phone, birth_date, gender
+- [x] Duplicate detection by national_id — skips existing students
+- [x] Error handling: malformed dates, missing fields, blank rows
+- [x] Import creates inactive UserModel, STUDENT role, StudentProfileModel (password = national_id)
+- [x] Admin route `/enrollment/admin/import/students` with upload form and result page
+- [x] Excel export routes for attendance, assessment, and finance reports
+- [x] Public enrollment blueprint at `/enrollment/apply` — no login required
+- [x] Public form: first_name, last_name, national_id, mobile_phone, birth_date (Jalali), gender, class dropdown
+- [x] Creates inactive user + StudentProfileModel + PENDING EnrollmentModel
+- [x] Existing students linked (no duplicate user creation)
+- [x] Standalone Persian RTL public page with custom header
+- [x] Admin "Approve and Activate" button for public enrollments
+- [x] Landing page "Online Enrollment" button
+- [x] 22 new tests: Excel parser, public enrollment, approve-activate, import routes
+- [x] 782 total tests passing, Ruff check/format clean
 
 ### P21 — Advanced Grading & Transcripts
 - [x] `GradingTemplate` domain entity and model — defines weight distribution for assessment types per class

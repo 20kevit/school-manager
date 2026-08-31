@@ -9,3 +9,4 @@ python-dotenv>=1,<2
 gunicorn>=22,<23
 jdatetime>=6,<7
 requests>=2.31,<3
+openpyxl>=3.1,<4

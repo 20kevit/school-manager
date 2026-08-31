@@ -6,6 +6,36 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 
 ## Unreleased
 
+## P22 — Public Enrollment Portal & Excel Power (2026-09-01)
+
+### Added
+- Excel import service (`excel_service.py`) in Application layer for bulk student import
+- Admin route `/enrollment/admin/import/students` (GET/POST) for uploading .xlsx files
+- Excel file parsing with validation: required columns (first_name, last_name, national_id, mobile_phone, birth_date), optional gender
+- Duplicate detection by national_id — skips existing students and reports them
+- Error handling: malformed dates, missing fields, blank rows gracefully handled
+- Student import creates UserModel (inactive), assigns STUDENT role, creates StudentProfileModel, password = national_id
+- Excel export routes for attendance, assessment, and finance reports (`/xlsx` endpoints)
+- Export-to-Excel buttons alongside existing CSV buttons in reporting templates
+- Public enrollment blueprint (`/enrollment/apply`) — no login required
+- Public enrollment form: first_name, last_name, national_id, mobile_phone, birth_date (Jalali), gender, class dropdown
+- Public enrollment creates inactive user + StudentProfileModel + PENDING EnrollmentModel
+- Existing students linked to their application (no duplicate user creation)
+- Standalone Persian RTL public page with custom header (no admin sidebar)
+- Admin "Approve and Activate" button for public enrollments — activates user account, sets password, approves enrollment
+- Public enrollment success page with password info
+- Landing page "Online Enrollment" (ثبت‌نام آنلاین) button
+- Import result page showing created/duplicates/errors per row
+- 22 new tests: Excel parser (valid, duplicate, malformed, missing fields, blank rows), public enrollment form, approve-activate flow, import/upload routes
+
+### Changed
+- `requirements.txt` — added `openpyxl>=3.1,<4`
+- Reporting CSV export routes now have parallel Excel export routes
+
+### Metrics
+- 782 tests passing
+- Ruff check and format clean
+
 ## P21 — Advanced Grading & Transcripts (2026-08-31)
 
 ### Added

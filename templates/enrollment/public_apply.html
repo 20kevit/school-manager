@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ثبت‌نام — آکادمی</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/tokens.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/base.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/components.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/forms.css') }}">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Vazirmatn', sans-serif;
+            background: var(--color-bg, #f8f9fa);
+            color: var(--color-text, #1a1a2e);
+            min-height: 100vh;
+        }
+        .public-header {
+            background: linear-gradient(135deg, #1e3a5f 0%, #2563eb 100%);
+            color: white;
+            padding: 1.5rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .public-header-brand {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: white;
+            font-size: 1.25rem;
+            font-weight: 700;
+            text-decoration: none;
+        }
+        .public-header-brand svg { opacity: 0.9; }
+        .public-header a {
+            color: white;
+            text-decoration: none;
+            font-size: 0.9rem;
+            opacity: 0.85;
+            transition: opacity 0.2s;
+        }
+        .public-header a:hover { opacity: 1; }
+        .form-container {
+            max-width: 640px;
+            margin: 2rem auto;
+            padding: 0 1.5rem;
+        }
+        .form-card {
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 2px 16px rgba(0,0,0,0.06);
+            padding: 2.5rem;
+            border: 1px solid var(--color-border, #E2E8F0);
+        }
+        .form-card h1 {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+            text-align: center;
+        }
+        .form-card .subtitle {
+            text-align: center;
+            color: var(--color-muted, #64748B);
+            margin-bottom: 2rem;
+            font-size: 0.9rem;
+        }
+        .form-group { margin-bottom: 1.25rem; }
+        .form-label {
+            display: block;
+            font-size: 0.9rem;
+            font-weight: 500;
+            margin-bottom: 0.4rem;
+            color: var(--color-text, #1a1a2e);
+        }
+        .form-label .required { color: #dc2626; }
+        .form-input, .form-select {
+            width: 100%;
+            padding: 0.75rem 1rem;
+            border: 1px solid var(--color-border, #E2E8F0);
+            border-radius: 10px;
+            font-family: 'Vazirmatn', sans-serif;
+            font-size: 0.95rem;
+            background: white;
+            transition: border-color 0.2s;
+        }
+        .form-input:focus, .form-select:focus {
+            outline: none;
+            border-color: var(--color-primary, #2563eb);
+            box-shadow: 0 0 0 3px rgba(37,99,235,0.1);
+        }
+        .flash-messages { margin-bottom: 1.5rem; }
+        .flash {
+            padding: 0.75rem 1rem;
+            border-radius: 10px;
+            font-size: 0.9rem;
+            margin-bottom: 0.5rem;
+        }
+        .flash.error { background: #fef2f2; color: #991b1b; border: 1px solid #fecaca; }
+        .flash.success { background: #f0fdf4; color: #166534; border: 1px solid #bbf7d0; }
+        .btn-submit {
+            width: 100%;
+            padding: 0.875rem;
+            background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-family: 'Vazirmatn', sans-serif;
+            font-size: 1.05rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            margin-top: 0.5rem;
+        }
+        .btn-submit:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 15px rgba(37,99,235,0.3);
+        }
+        @media (max-width: 640px) {
+            .form-card { padding: 1.5rem; }
+            .public-header { padding: 1rem 1.25rem; }
+        }
+    </style>
+</head>
+<body>
+    <header class="public-header">
+        <a href="/" class="public-header-brand">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M22 10v6M2 10l10-5 10 5-10 5z"/>
+                <path d="M6 12v5c3 3 9 3 12 0v-5"/>
+            </svg>
+            آکادمی
+        </a>
+        <a href="{{ url_for('auth.login') }}">ورود</a>
+    </header>
+
+    <div class="form-container">
+        <div class="form-card">
+            <h1>فرم ثبت‌نام</h1>
+            <p class="subtitle">اطلاعات خود را برای ثبت‌نام در کلاس وارد کنید</p>
+
+            {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+            <div class="flash-messages">
+                {% for category, message in messages %}
+                <div class="flash {{ category }}">{{ message }}</div>
+                {% endfor %}
+            </div>
+            {% endif %}
+            {% endwith %}
+
+            <form method="POST">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+                <div class="form-group">
+                    <label class="form-label" for="first_name">
+                        نام <span class="required">*</span>
+                    </label>
+                    <input type="text" id="first_name" name="first_name" class="form-input" required placeholder="نام را وارد کنید">
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="last_name">
+                        نام خانوادگی <span class="required">*</span>
+                    </label>
+                    <input type="text" id="last_name" name="last_name" class="form-input" required placeholder="نام خانوادگی را وارد کنید">
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="national_id">
+                        کد ملی <span class="required">*</span>
+                    </label>
+                    <input type="text" id="national_id" name="national_id" class="form-input" required placeholder="کد ملی ۱۰ رقمی" maxlength="10">
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="mobile_phone">
+                        شماره موبایل <span class="required">*</span>
+                    </label>
+                    <input type="tel" id="mobile_phone" name="mobile_phone" class="form-input" required placeholder="۰۹۱۲۱۲۳۴۵۶۷" maxlength="15">
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="birth_date">
+                        تاریخ تولد (شمسی) <span class="required">*</span>
+                    </label>
+                    <input type="text" id="birth_date" name="birth_date" class="form-input" required placeholder="مثال: ۱۳۸۵/۰۳/۱۵">
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="gender">
+                        جنسیت <span class="required">*</span>
+                    </label>
+                    <select id="gender" name="gender" class="form-select" required>
+                        <option value="">— انتخاب کنید —</option>
+                        <option value="MALE">پسر</option>
+                        <option value="FEMALE">دختر</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="class_id">
+                        کلاس مورد نظر <span class="required">*</span>
+                    </label>
+                    <select id="class_id" name="class_id" class="form-select" required>
+                        <option value="">— انتخاب کنید —</option>
+                        {% for cls in classes %}
+                        <option value="{{ cls.id }}">{{ cls.title }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <button type="submit" class="btn-submit">ثبت درخواست</button>
+            </form>
+        </div>
+    </div>
+</body>
+</html>

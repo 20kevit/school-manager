@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ثبت‌نام موفق — آکادمی</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/tokens.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/base.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/components.css') }}">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Vazirmatn', sans-serif;
+            background: var(--color-bg, #f8f9fa);
+            color: var(--color-text, #1a1a2e);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        .public-header {
+            background: linear-gradient(135deg, #1e3a5f 0%, #2563eb 100%);
+            color: white;
+            padding: 1.5rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .public-header-brand {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: white;
+            font-size: 1.25rem;
+            font-weight: 700;
+            text-decoration: none;
+        }
+        .public-header a {
+            color: white;
+            text-decoration: none;
+            font-size: 0.9rem;
+            opacity: 0.85;
+            transition: opacity 0.2s;
+        }
+        .public-header a:hover { opacity: 1; }
+        .success-container {
+            max-width: 500px;
+            margin: 4rem auto;
+            padding: 0 1.5rem;
+            text-align: center;
+        }
+        .success-card {
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 2px 16px rgba(0,0,0,0.06);
+            padding: 3rem 2rem;
+            border: 1px solid var(--color-border, #E2E8F0);
+        }
+        .success-icon {
+            width: 72px;
+            height: 72px;
+            background: #f0fdf4;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 1.5rem;
+            color: #059669;
+        }
+        .success-card h1 {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-bottom: 0.75rem;
+            color: #166534;
+        }
+        .success-card p {
+            color: var(--color-muted, #64748B);
+            line-height: 1.8;
+            margin-bottom: 2rem;
+        }
+        .btn-back {
+            display: inline-block;
+            padding: 0.75rem 2rem;
+            background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+            color: white;
+            border-radius: 10px;
+            text-decoration: none;
+            font-family: 'Vazirmatn', sans-serif;
+            font-size: 1rem;
+            font-weight: 600;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .btn-back:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 15px rgba(37,99,235,0.3);
+        }
+    </style>
+</head>
+<body>
+    <header class="public-header">
+        <a href="/" class="public-header-brand">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M22 10v6M2 10l10-5 10 5-10 5z"/>
+                <path d="M6 12v5c3 3 9 3 12 0v-5"/>
+            </svg>
+            آکادمی
+        </a>
+        <a href="{{ url_for('auth.login') }}">ورود</a>
+    </header>
+
+    <div class="success-container">
+        <div class="success-card">
+            <div class="success-icon">
+                <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="20 6 9 17 4 12"/>
+                </svg>
+            </div>
+            <h1>درخواست ثبت‌نام ارسال شد</h1>
+            <p>
+                درخواست ثبت‌نام شما با موفقیت ثبت شد.
+                پس از بررسی توسط مدیریت، وضعیت ثبت‌نام شما مشخص خواهد شد.
+                <br><br>
+                رمز عبور شما: <strong>کد ملی شما</strong>
+            </p>
+            <a href="{{ url_for('public.public_apply') }}" class="btn-back">ثبت‌نام مجدد</a>
+        </div>
+    </div>
+</body>
+</html>

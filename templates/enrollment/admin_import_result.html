@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+{% block title %}نتیجه ورود اطلاعات{% endblock %}
+{% block content %}
+{% from "macros/utils.html" import page_header %}
+{{ page_header("نتیجه ورود اطلاعات دانش‌آموزان") }}
+
+<div class="card" style="margin-bottom: 1.5rem;">
+    <div class="card-body">
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 1rem; text-align: center;">
+            <div>
+                <div style="font-size: 2rem; font-weight: 700; color: var(--color-primary);">{{ result.total_rows }}</div>
+                <div style="color: var(--color-muted);">کل ردیف‌ها</div>
+            </div>
+            <div>
+                <div style="font-size: 2rem; font-weight: 700; color: var(--color-success, #059669);">{{ result.created }}</div>
+                <div style="color: var(--color-muted);">ایجاد شده</div>
+            </div>
+            <div>
+                <div style="font-size: 2rem; font-weight: 700; color: var(--color-warning, #d97706);">{{ result.duplicates }}</div>
+                <div style="color: var(--color-muted);">تکراری</div>
+            </div>
+            <div>
+                <div style="font-size: 2rem; font-weight: 700; color: var(--color-danger, #dc2626);">{{ result.errors }}</div>
+                <div style="color: var(--color-muted);">خطا</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% if result.rows %}
+<div class="table-container">
+    <div class="table-scroll">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>ردیف</th>
+                    <th>کد ملی</th>
+                    <th>وضعیت</th>
+                    <th>توضیح</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in result.rows %}
+                <tr>
+                    <td>{{ row.row_number }}</td>
+                    <td>{{ row.national_id }}</td>
+                    <td>
+                        {% if row.status == 'created' %}
+                        <span style="color: var(--color-success, #059669);">ایجاد شده</span>
+                        {% elif row.status == 'duplicate' %}
+                        <span style="color: var(--color-warning, #d97706);">تکراری</span>
+                        {% elif row.status == 'linked' %}
+                        <span style="color: var(--color-info, #2563eb);">لینک شده</span>
+                        {% else %}
+                        <span style="color: var(--color-danger, #dc2626);">خطا</span>
+                        {% endif %}
+                    </td>
+                    <td>{{ row.message }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endif %}
+
+<div style="margin-top: 1.5rem; display: flex; gap: 0.75rem;">
+    <a href="{{ url_for('enrollment.admin_import_students') }}" class="btn btn-primary">آپلود مجدد</a>
+    <a href="{{ url_for('enrollment.admin_enrollment_list') }}" class="btn btn-secondary">بازگشت به لیست ثبت‌نام</a>
+</div>
+{% endblock %}

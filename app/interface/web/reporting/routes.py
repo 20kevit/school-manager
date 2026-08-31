@@ -6,6 +6,7 @@ import csv
 import io
 from datetime import date
 
+import openpyxl
 from flask import Blueprint, Response, render_template, request
 from flask_login import current_user, login_required
 
@@ -368,4 +369,123 @@ def export_finance_csv():
         "\ufeff" + output.getvalue(),
         mimetype="text/csv",
         headers={"Content-Disposition": "attachment; filename=finance_report.csv"},
+    )
+
+
+# Excel Export routes
+@reporting_bp.route("/admin/export/attendance/xlsx")
+@login_required
+@role_required("ADMIN")
+def export_attendance_excel():
+    """Export attendance report as Excel."""
+    class_id = request.args.get("class_id", type=int)
+    student_id = request.args.get("student_id", type=int)
+
+    report = ReportingService.get_attendance_report(
+        class_id=class_id, student_user_id=student_id
+    )
+
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.title = "Attendance"
+    ws.append(["Status", "Count"])
+    ws.append(["Total", report["total"]])
+    ws.append(["Present", report["present"]])
+    ws.append(["Absent", report["absent"]])
+    ws.append(["Late", report["late"]])
+    ws.append(["Excused", report["excused"]])
+    ws.append(["Percentage", f"{report['percentage']}%"])
+
+    output = io.BytesIO()
+    wb.save(output)
+    wb.close()
+
+    return Response(
+        output.getvalue(),
+        mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": "attachment; filename=attendance_report.xlsx"},
+    )
+
+
+@reporting_bp.route("/admin/export/assessment/<int:assessment_id>/xlsx")
+@login_required
+@role_required("ADMIN")
+def export_assessment_excel(assessment_id: int):
+    """Export assessment report as Excel."""
+    report = ReportingService.get_assessment_report(assessment_id)
+    if "error" in report:
+        return render_template("errors/404.html", message=report["error"]), 404
+
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.title = "Assessment"
+    ws.append(["Metric", "Value"])
+    ws.append(["Eligible Students", report["stats"]["eligible"]])
+    ws.append(["Submitted", report["stats"]["submitted"]])
+    ws.append(["Missing", report["stats"]["missing"]])
+    ws.append(["Average", report["stats"]["average"]])
+    ws.append(["Min", report["stats"]["min"]])
+    ws.append(["Max", report["stats"]["max"]])
+    ws.append(["Passed", report["stats"]["passed"]])
+    ws.append(["Failed", report["stats"]["failed"]])
+    ws.append(["Pass Rate", f"{report['stats']['pass_rate']}%"])
+
+    ws.append([])
+    ws.append(["Score Distribution"])
+    ws.append(["Range", "Count"])
+    for range_name, count in report["stats"]["score_distribution"].items():
+        ws.append([range_name, count])
+
+    output = io.BytesIO()
+    wb.save(output)
+    wb.close()
+
+    return Response(
+        output.getvalue(),
+        mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={
+            "Content-Disposition": f"attachment; filename=assessment_{assessment_id}_report.xlsx"
+        },
+    )
+
+
+@reporting_bp.route("/admin/export/finance/xlsx")
+@login_required
+@role_required("ADMIN")
+def export_finance_excel():
+    """Export finance report as Excel."""
+    start_date_str = request.args.get("start_date")
+    end_date_str = request.args.get("end_date")
+
+    start_date = date.fromisoformat(start_date_str) if start_date_str else None
+    end_date = date.fromisoformat(end_date_str) if end_date_str else None
+
+    report = ReportingService.get_finance_report(
+        start_date=start_date, end_date=end_date
+    )
+
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.title = "Finance"
+    ws.append(["Metric", "Amount (Toman)"])
+    ws.append(["Total Payments", report["total_payments"]])
+    ws.append(["Total Charges", report["total_charges"]])
+    ws.append(["Total Discounts", report["total_discounts"]])
+    ws.append(["Total Refunds", report["total_refunds"]])
+    ws.append(["Net Revenue", report["net_revenue"]])
+
+    ws.append([])
+    ws.append(["Debt by Student"])
+    ws.append(["Student ID", "Student Name", "Balance"])
+    for item in report["debt_by_student"]:
+        ws.append([item["student_id"], item["student_name"], item["balance"]])
+
+    output = io.BytesIO()
+    wb.save(output)
+    wb.close()
+
+    return Response(
+        output.getvalue(),
+        mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": "attachment; filename=finance_report.xlsx"},
     )

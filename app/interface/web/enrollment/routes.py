@@ -16,6 +16,7 @@ from app.application.enrollment.enrollment_service import (
     reject_enrollment,
     request_enrollment,
 )
+from app.extensions import db
 from app.infrastructure.database.models import (
     AcademyClassModel,
     CourseModel,
@@ -177,6 +178,31 @@ def admin_approve(enrollment_id):
     )
 
 
+@enrollment_bp.route("/admin/<int:enrollment_id>/approve-activate", methods=["POST"])
+@login_required
+@role_required("ADMIN")
+def admin_approve_activate(enrollment_id):
+    """Approve a public enrollment and activate the user account."""
+    enrollment = get_enrollment(enrollment_id)
+    if enrollment is None:
+        flash("Enrollment not found.", "error")
+        return redirect(url_for("enrollment.admin_enrollment_list"))
+
+    try:
+        from app.application.enrollment.public_enrollment_service import (
+            approve_and_activate_enrollment,
+        )
+
+        approve_and_activate_enrollment(enrollment)
+        flash("Enrollment approved and account activated.", "success")
+    except Exception as e:
+        flash(str(e), "error")
+
+    return redirect(
+        url_for("enrollment.admin_enrollment_detail", enrollment_id=enrollment_id)
+    )
+
+
 @enrollment_bp.route("/admin/<int:enrollment_id>/reject", methods=["POST"])
 @login_required
 @role_required("ADMIN")
@@ -217,6 +243,51 @@ def admin_cancel(enrollment_id):
     return redirect(
         url_for("enrollment.admin_enrollment_detail", enrollment_id=enrollment_id)
     )
+
+
+# ---------------------------------------------------------------------------
+# Excel Import
+# ---------------------------------------------------------------------------
+
+
+@enrollment_bp.route("/admin/import/students", methods=["GET", "POST"])
+@login_required
+@role_required("ADMIN")
+def admin_import_students():
+    """Bulk import students from an Excel file."""
+    if request.method == "POST":
+        file = request.files.get("file")
+        if not file or not file.filename:
+            flash("لطفاً یک فایل انتخاب کنید.", "error")
+            return render_template("enrollment/admin_import.html")
+
+        if not file.filename.endswith((".xlsx", ".xls")):
+            flash("فرمت فایل نامعتبر است. فقط فایل .xlsx پذیرفته می‌شود.", "error")
+            return render_template("enrollment/admin_import.html")
+
+        try:
+            from app.application.enrollment.excel_service import (
+                ExcelImportError,
+                parse_excel_file,
+            )
+
+            result = parse_excel_file(file.read())
+
+            if result.total_rows == 0:
+                flash("فایل خالی است.", "error")
+                return render_template("enrollment/admin_import.html")
+
+            return render_template(
+                "enrollment/admin_import_result.html",
+                result=result,
+            )
+        except ExcelImportError as e:
+            flash(str(e), "error")
+        except Exception as e:
+            db.session.rollback()
+            flash(f"خطا در پردازش فایل: {e}", "error")
+
+    return render_template("enrollment/admin_import.html")
 
 
 # ---------------------------------------------------------------------------

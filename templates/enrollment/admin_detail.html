@@ -10,12 +10,30 @@
         <span class="detail-row-value">{{ student.student_profile.first_name }} {{ student.student_profile.last_name }}</span>
     </div>
     <div class="detail-row">
+        <span class="detail-row-label">کد ملی</span>
+        <span class="detail-row-value">{{ student.student_profile.national_id }}</span>
+    </div>
+    <div class="detail-row">
+        <span class="detail-row-label">موبایل</span>
+        <span class="detail-row-value">{{ student.student_profile.mobile_phone }}</span>
+    </div>
+    <div class="detail-row">
         <span class="detail-row-label">کلاس</span>
         <span class="detail-row-value">{{ academy_class.title }}</span>
     </div>
     <div class="detail-row">
-        <span class="detail-row-label">وضعیت</span>
+        <span class="detail-row-label">وضعیت ثبت‌نام</span>
         <span class="detail-row-value">{{ status_badge(enrollment.status) }}</span>
+    </div>
+    <div class="detail-row">
+        <span class="detail-row-label">وضعیت حساب کاربری</span>
+        <span class="detail-row-value">
+            {% if student.is_active_user %}
+            <span style="color: var(--color-success, #059669);">فعال</span>
+            {% else %}
+            <span style="color: var(--color-warning, #d97706);">غیرفعال (در انتظار تایید)</span>
+            {% endif %}
+        </span>
     </div>
     <div class="detail-row">
         <span class="detail-row-label">تاریخ درخواست</span>
@@ -43,18 +61,24 @@
 
 <div class="action-links">
     {% if enrollment.status == 'PENDING' %}
+    {% if not student.is_active_user %}
+    <form method="POST" action="{{ url_for('enrollment.admin_approve_activate', enrollment_id=enrollment.id) }}" style="display: inline;">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <button type="submit" class="btn btn-success">تایید و فعال‌سازی حساب</button>
+    </form>
+    {% endif %}
     <form method="POST" action="{{ url_for('enrollment.admin_approve', enrollment_id=enrollment.id) }}" style="display: inline;">
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <button type="submit" class="btn btn-success">تایید</button>
     </form>
-    <form method="POST" action="{{ url_for('enrollmen
-        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">t.admin_reject', enrollment_id=enrollment.id) }}" style="display: inline;">
+    <form method="POST" action="{{ url_for('enrollment.admin_reject', enrollment_id=enrollment.id) }}" style="display: inline;">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <button type="submit" class="btn btn-danger">رد</button>
     </form>
     {% endif %}
-    {% if enrollment.status in ('PEN
-        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">DING', 'APPROVED') %}
+    {% if enrollment.status in ('PENDING', 'APPROVED') %}
     <form method="POST" action="{{ url_for('enrollment.admin_cancel', enrollment_id=enrollment.id) }}" style="display: inline;">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <button type="submit" class="btn btn-secondary">لغو</button>
     </form>
     {% endif %}
