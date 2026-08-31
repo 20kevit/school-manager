@@ -36,7 +36,7 @@
                         {% elif r.pass_fail == 'FAIL' %}
                             {{ status_badge('FAIL') }}
                         {% else %}
-                            {{ r.pass_fail }}
+                            {{ r.pass_fail|persian_label }}
                         {% endif %}
                     </td>
                     <td>
@@ -47,7 +47,7 @@
                         {% elif r.presence_status == 'EXCUSED' %}
                             {{ status_badge('EXCUSED') }}
                         {% else %}
-                            {{ r.presence_status }}
+                            {{ r.presence_status|persian_label }}
                         {% endif %}
                     </td>
                     <td><a href="{{ url_for('assessment.student_result_detail', result_id=r.id) }}" class="btn btn-sm btn-ghost">جزئیات</a></td>

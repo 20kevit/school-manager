@@ -550,6 +550,14 @@ def student_submit_activity(activity_id):
         flash("فعالیت یافت نشد.", "error")
         return redirect(url_for("activity.student_my_classes"))
 
+    if activity.class_id is None:
+        flash("فعالیت یافت نشد.", "error")
+        return redirect(url_for("activity.student_my_classes"))
+
+    if not is_student_enrolled(current_user.id, activity.class_id):
+        flash("شما در این کلاس ثبت‌نام نکرده‌اید.", "error")
+        return redirect(url_for("activity.student_my_classes"))
+
     text_content = request.form.get("text_content", "")
 
     try:
@@ -605,6 +613,14 @@ def student_submission_history(activity_id):
     activity = get_activity(activity_id)
     if activity is None:
         flash("فعالیت یافت نشد.", "error")
+        return redirect(url_for("activity.student_my_classes"))
+
+    if activity.class_id is None:
+        flash("فعالیت یافت نشد.", "error")
+        return redirect(url_for("activity.student_my_classes"))
+
+    if not is_student_enrolled(current_user.id, activity.class_id):
+        flash("شما در این کلاس ثبت‌نام نکرده‌اید.", "error")
         return redirect(url_for("activity.student_my_classes"))
 
     history = get_submission_history(activity_id, current_user.id)

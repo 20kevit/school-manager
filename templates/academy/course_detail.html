@@ -128,7 +128,7 @@
                 {% for cls in class_list %}
                 <tr>
                     <td><a href="{{ url_for('academy.class_detail', class_id=cls.id) }}">{{ cls.title }}</a></td>
-                    <td>{{ cls.start_date }}</td>
+                    <td>{{ cls.start_date|jalali }}</td>
                     <td>{{ cls.capacity }}</td>
                     <td>{{ status_badge(cls.status) }}</td>
                 </tr>

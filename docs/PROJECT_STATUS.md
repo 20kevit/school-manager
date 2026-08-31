@@ -1,17 +1,24 @@
 # Project Status
 
-**Current Phase:** P16 — Admin User Management & System Seeding — Completed
-**Current Objective:** P16 complete. Ready for P17.
+**Current Phase:** P17 — Final MVP Polish & Hardening — Completed
+**Current Objective:** MVP Core Complete. Ready for real-world testing.
 
-**Previous Phase:** P15 — Bug Fixes & P11 File Integration
+**Previous Phase:** P16 — Admin User Management & System Seeding
 
 ## Status
 
-P16 — Admin User Management & System Seeding is complete. Admin UI for user CRUD, parent-student linking, automated `flask seed` CLI command, and 35 new tests all implemented.
+P17 — Final MVP Polish & Hardening is complete. Enhanced seed script with rich test data, UI consistency audit (English enums & Jalali dates fixed), authorization hardening, and all 691 tests passing.
 
 ## Completed
 
-### P16 — Admin User Management & System Seeding
+### P17 — Final MVP Polish & Hardening
+- [x] Enhanced `flask seed` CLI command with realistic test data (course, class, sessions, enrollment, activity, assessment, finance)
+- [x] UI audit: fixed 12+ raw English enum values in templates to use `|persian_label` filter
+- [x] UI audit: fixed 18 date displays to use `|jalali` filter instead of raw ISO dates
+- [x] UI audit: fixed 8 raw enum fallback branches in assessment templates
+- [x] Authorization: added enrollment check to student activity submit POST route
+- [x] Authorization: added enrollment check to student submission history GET route
+- [x] All 691 tests pass, Ruff check/format clean
 - [x] Auth services: create_teacher_user, create_parent_user, create_admin_user, update_user_profile, link_parent_student, unlink_parent_student, get_user_profile_data, list_users
 - [x] Admin user list with search, role filter, pagination
 - [x] Admin user create form with role-based conditional profile fields (JS toggle)

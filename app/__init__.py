@@ -250,9 +250,18 @@ def _register_cli(app):
 
         from app.extensions import db
         from app.infrastructure.database.models import (
+            AcademyClassModel,
+            ActivityModel,
+            AssessmentModel,
+            ClassScheduleModel,
+            CourseModel,
+            EnrollmentModel,
+            FinancialTransactionModel,
             ParentProfileModel,
             RoleModel,
+            SessionModel,
             StudentProfileModel,
+            SyllabusItemModel,
             TeacherProfileModel,
             UserModel,
         )
@@ -362,6 +371,201 @@ def _register_cli(app):
                     print("  Already exists: parent1")
             else:
                 print("  Already exists: parent1")
+
+        # ── Course ───────────────────────────────────────────────────────
+        course = CourseModel.query.filter_by(title="ریاضی کنکور").first()
+        if course is None:
+            course = CourseModel(
+                title="ریاضی کنکور",
+                description="دوره جامع ریاضی کنکور شامل جبر، هندسه و آمار",
+                num_sessions=10,
+                min_age=16,
+                max_age=19,
+                prerequisites="ریاضی پایه",
+            )
+            db.session.add(course)
+            db.session.flush()
+            print("  Created: course (ریاضی کنکور)")
+
+            for i, title in enumerate(
+                [
+                    "مقدمه جبر",
+                    "معادلات درجه دوم",
+                    "هندسه تحلیلی",
+                    "احتمال و آمار",
+                    "ترکیبات",
+                ],
+                start=1,
+            ):
+                db.session.add(
+                    SyllabusItemModel(
+                        course_id=course.id,
+                        order=i,
+                        title=title,
+                        description=f"توضیحات {title}",
+                    )
+                )
+            print("  Created: 5 syllabus items")
+        else:
+            print("  Already exists: course (ریاضی کنکور)")
+
+        # ── Class ────────────────────────────────────────────────────────
+        academy_class = AcademyClassModel.query.filter_by(title="کلاس رضا").first()
+        if academy_class is None:
+            from datetime import time as _time
+
+            academy_class = AcademyClassModel(
+                course_id=course.id,
+                title="کلاس رضا",
+                start_date=date(2026, 9, 1),
+                end_date=date(2026, 11, 30),
+                capacity=25,
+                num_sessions=5,
+                tuition=500000,
+                status="ACTIVE",
+                teacher_user_id=teacher.id,
+            )
+            db.session.add(academy_class)
+            db.session.flush()
+
+            db.session.add(
+                ClassScheduleModel(
+                    class_id=academy_class.id,
+                    weekday="SATURDAY",
+                    start_time=_time(10, 0),
+                    end_time=_time(12, 0),
+                )
+            )
+            db.session.add(
+                ClassScheduleModel(
+                    class_id=academy_class.id,
+                    weekday="TUESDAY",
+                    start_time=_time(10, 0),
+                    end_time=_time(12, 0),
+                )
+            )
+            db.session.flush()
+            print("  Created: class (کلاس رضا) + schedule")
+        else:
+            print("  Already exists: class (کلاس رضا)")
+
+        # ── Sessions ─────────────────────────────────────────────────────
+        existing_session = SessionModel.query.filter_by(
+            class_id=academy_class.id
+        ).first()
+        if existing_session is None:
+            from datetime import time as _time
+
+            session_dates = [
+                date(2026, 9, 5),
+                date(2026, 9, 8),
+                date(2026, 9, 12),
+                date(2026, 9, 15),
+                date(2026, 9, 19),
+            ]
+            for i, sdate in enumerate(session_dates, start=1):
+                db.session.add(
+                    SessionModel(
+                        class_id=academy_class.id,
+                        session_number=i,
+                        scheduled_date=sdate,
+                        start_time=_time(10, 0),
+                        end_time=_time(12, 0),
+                        status="COMPLETED" if i <= 2 else "SCHEDULED",
+                        title=f"جلسه {i}",
+                    )
+                )
+            db.session.flush()
+            print("  Created: 5 sessions")
+        else:
+            print("  Already exists: sessions")
+
+        # ── Enrollment ───────────────────────────────────────────────────
+        enrollment = EnrollmentModel.query.filter_by(
+            student_user_id=student.id, class_id=academy_class.id
+        ).first()
+        if enrollment is None:
+            from datetime import datetime as _dt
+
+            enrollment = EnrollmentModel(
+                student_user_id=student.id,
+                class_id=academy_class.id,
+                status="APPROVED",
+                requested_at=_dt(2026, 8, 25),
+                approved_at=_dt(2026, 8, 26),
+            )
+            db.session.add(enrollment)
+            db.session.flush()
+            print("  Created: enrollment (student1 -> کلاس رضا)")
+        else:
+            print("  Already exists: enrollment (student1 -> کلاس رضا)")
+
+        # ── Activity ─────────────────────────────────────────────────────
+        existing_activity = ActivityModel.query.filter_by(
+            class_id=academy_class.id, title="تمرین فصل اول"
+        ).first()
+        if existing_activity is None:
+            db.session.add(
+                ActivityModel(
+                    type="HOMEWORK",
+                    title="تمرین فصل اول",
+                    description="تمرین‌های فصل اول جبر - حل مسائل صفحه ۴۵ تا ۵۰",
+                    requirement="REQUIRED",
+                    max_score=100,
+                    class_id=academy_class.id,
+                )
+            )
+            db.session.flush()
+            print("  Created: activity (تمرین فصل اول)")
+        else:
+            print("  Already exists: activity (تمرین فصل اول)")
+
+        # ── Assessment ───────────────────────────────────────────────────
+        existing_assessment = AssessmentModel.query.filter_by(
+            class_id=academy_class.id, title="آزمون میان‌ترم"
+        ).first()
+        if existing_assessment is None:
+            db.session.add(
+                AssessmentModel(
+                    class_id=academy_class.id,
+                    type="MIDTERM",
+                    title="آزمون میان‌ترم",
+                    description="آزمون میان‌ترم ریاضی کنکور",
+                    scheduled_date=date(2026, 10, 15),
+                    max_score=20,
+                    passing_score=10,
+                    status="SCHEDULED",
+                    created_by=teacher.id,
+                )
+            )
+            db.session.flush()
+            print("  Created: assessment (آزمون میان‌ترم)")
+        else:
+            print("  Already exists: assessment (آزمون میان‌ترم)")
+
+        # ── Finance ──────────────────────────────────────────────────────
+        existing_charge = FinancialTransactionModel.query.filter_by(
+            student_user_id=student.id,
+            category="TUITION",
+            class_id=academy_class.id,
+        ).first()
+        if existing_charge is None:
+            db.session.add(
+                FinancialTransactionModel(
+                    student_user_id=student.id,
+                    amount=500000,
+                    transaction_type="CHARGE",
+                    category="TUITION",
+                    description="شهریه کلاس رضا",
+                    class_id=academy_class.id,
+                    enrollment_id=enrollment.id,
+                    created_by=admin.id,
+                )
+            )
+            db.session.flush()
+            print("  Created: tuition charge for student1")
+        else:
+            print("  Already exists: tuition charge")
 
         db.session.commit()
         print("\nSeed completed successfully.")

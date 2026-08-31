@@ -21,7 +21,7 @@
     </div>
     <div class="detail-row">
         <span class="detail-row-label">تاریخ برنامه‌ریزی</span>
-        <span class="detail-row-value">{{ assessment.scheduled_date or 'تعیین نشده' }}</span>
+        <span class="detail-row-value">{{ assessment.scheduled_date|jalali if assessment.scheduled_date else 'تعیین نشده' }}</span>
     </div>
     <div class="detail-row">
         <span class="detail-row-label">حداکثر نمره</span>

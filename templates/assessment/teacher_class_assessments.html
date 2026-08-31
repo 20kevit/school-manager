@@ -25,7 +25,7 @@
                     <td>
                         {% if a.type == 'FINAL_EXAM' %}آزمون پایانی{% elif a.type == 'MIDTERM' %}آزمون میان‌ترم{% elif a.type == 'QUIZ' %}آزمون کلاسی{% elif a.type == 'PROJECT' %}پروژه{% elif a.type == 'PRACTICAL' %}عملی{% elif a.type == 'ORAL' %}شفاهی{% else %}سایر{% endif %}
                     </td>
-                    <td>{{ a.scheduled_date or '—' }}</td>
+                    <td>{{ a.scheduled_date|jalali if a.scheduled_date else '—' }}</td>
                     <td>{{ a.max_score }}</td>
                     <td>{{ status_badge(a.status) }}</td>
                     <td>

@@ -20,7 +20,7 @@
                 {% for c in classes %}
                 <tr>
                     <td>{{ c.title }}</td>
-                    <td>{{ c.start_date }}</td>
+                    <td>{{ c.start_date|jalali }}</td>
                     <td>{{ status_badge(c.status) }}</td>
                     <td>
                         <div class="action-links">

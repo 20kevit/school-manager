@@ -16,11 +16,11 @@
     </div>
     <div class="detail-row">
         <span class="detail-row-label">تاریخ شروع:</span>
-        <span class="detail-row-value">{{ class_obj.start_date }}</span>
+        <span class="detail-row-value">{{ class_obj.start_date|jalali }}</span>
     </div>
     <div class="detail-row">
         <span class="detail-row-label">تاریخ پایان:</span>
-        <span class="detail-row-value">{{ class_obj.end_date or '—' }}</span>
+        <span class="detail-row-value">{{ class_obj.end_date|jalali if class_obj.end_date else '—' }}</span>
     </div>
     <div class="detail-row">
         <span class="detail-row-label">ظرفیت:</span>
@@ -50,8 +50,7 @@
     {% for entry in schedule %}
     <div class="schedule-item">
         <span class="schedule-day">
-            {% set day_names = {'SATURDAY': 'شنبه', 'SUNDAY': 'یکشنبه', 'MONDAY': 'دوشنبه', 'TUESDAY': 'سه‌شنبه', 'WEDNESDAY': 'چهارشنبه', 'THURSDAY': 'پنجشنبه', 'FRIDAY': 'جمعه'} %}
-            {{ day_names.get(entry.weekday, entry.weekday) }}
+            {{ entry.weekday|persian_label }}
         </span>
         <span class="schedule-time">{{ entry.start_time|jalali_time }} — {{ entry.end_time|jalali_time }}</span>
     </div>
@@ -80,7 +79,7 @@
                 {% for session in sessions %}
                 <tr>
                     <td>{{ session.session_number }}</td>
-                    <td>{{ session.scheduled_date }}</td>
+                    <td>{{ session.scheduled_date|jalali }}</td>
                     <td>{{ session.start_time|jalali_time }} — {{ session.end_time|jalali_time }}</td>
                     <td>{{ session.title or '—' }}</td>
                     <td>{{ status_badge(session.status) }}</td>

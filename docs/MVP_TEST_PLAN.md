@@ -16,13 +16,13 @@ flask db upgrade
 
 This creates all tables in `school_manager_dev.db` (SQLite).
 
-### Seed Test Users
+### Seed Test Data
 
 ```powershell
 flask seed
 ```
 
-This creates the 4 standard roles and test users:
+This creates the 4 standard roles, test users, and a fully populated test environment:
 
 | Role | Login | Password |
 |------|-------|----------|
@@ -31,7 +31,16 @@ This creates the 4 standard roles and test users:
 | Student | `student1` | `student123` |
 | Parent | `parent1` | `parent123` |
 
-The command is idempotent — running it twice will not create duplicates.
+The seed script also creates:
+- A sample course ("ریاضی کنکور") with 5 syllabus items
+- A sample class ("کلاس رضا") assigned to teacher1 with weekly schedule
+- 5 class sessions (2 completed, 3 scheduled)
+- An approved enrollment for student1
+- A sample homework activity ("تمرین فصل اول")
+- A midterm assessment ("آزمون میان‌ترم")
+- A tuition charge for student1
+
+The command is idempotent — running it twice will not create duplicates. No manual shell data entry is needed.
 
 ### Start the Server
 

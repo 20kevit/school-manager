@@ -21,12 +21,12 @@
     {% endif %}
     <div class="detail-row">
         <span class="detail-row-label">تاریخ شروع</span>
-        <span class="detail-row-value">{{ academy_class.start_date }}</span>
+        <span class="detail-row-value">{{ academy_class.start_date|jalali }}</span>
     </div>
     {% if academy_class.end_date %}
     <div class="detail-row">
         <span class="detail-row-label">تاریخ پایان</span>
-        <span class="detail-row-value">{{ academy_class.end_date }}</span>
+        <span class="detail-row-value">{{ academy_class.end_date|jalali if academy_class.end_date else '—' }}</span>
     </div>
     {% endif %}
     <div class="detail-row">
@@ -58,7 +58,7 @@
             <tbody>
                 {% for schedule in academy_class.schedule_entries %}
                 <tr>
-                    <td>{{ schedule.weekday }}</td>
+                    <td>{{ schedule.weekday|persian_label }}</td>
                     <td>{{ schedule.start_time|jalali_time }}</td>
                     <td>{{ schedule.end_time|jalali_time }}</td>
                 </tr>

@@ -64,3 +64,15 @@ class TestAuthorization:
         response = client.get("/admin-only-3", follow_redirects=False)
         # Flask-Login returns 401 for unauthenticated requests
         assert response.status_code in (302, 401)
+
+    def test_student_cannot_access_admin_users(self, client, student_user):
+        """Test that a student cannot access /admin/users (expect 403)."""
+        # Login as student
+        client.post(
+            "/auth/login",
+            data={"login": "student", "password": "studentpass123"},
+        )
+
+        # Access admin user management page
+        response = client.get("/admin/users", follow_redirects=False)
+        assert response.status_code == 403

@@ -45,7 +45,7 @@
                 {% for a in activities %}
                 <tr>
                     <td><a href="{{ url_for('activity.admin_activity_detail', activity_id=a.id) }}">{{ a.title }}</a></td>
-                    <td><span class="badge badge-secondary">{{ a.type }}</span></td>
+                    <td><span class="badge badge-secondary">{{ a.type|persian_label }}</span></td>
                     <td>{{ status_badge(a.requirement.value if a.requirement else 'OPTIONAL') }}</td>
                     <td>{{ a.deadline|jalali_datetime }}</td>
                     <td>

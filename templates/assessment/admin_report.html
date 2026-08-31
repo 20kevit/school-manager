@@ -17,7 +17,7 @@
     </div>
     <div class="detail-row">
         <span class="detail-row-label">تاریخ</span>
-        <span class="detail-row-value">{{ report.assessment.scheduled_date or 'تعیین نشده' }}</span>
+        <span class="detail-row-value">{{ report.assessment.scheduled_date|jalali if report.assessment.scheduled_date else 'تعیین نشده' }}</span>
     </div>
     <div class="detail-row">
         <span class="detail-row-label">حداکثر نمره</span>

@@ -11,7 +11,7 @@
     </div>
     <div class="detail-row">
         <span class="detail-label">نوع:</span>
-        <span class="detail-value">{{ notification.notification_type }}</span>
+        <span class="detail-value">{{ notification.notification_type|persian_label }}</span>
     </div>
     <div class="detail-row">
         <span class="detail-label">عنوان:</span>
@@ -27,7 +27,7 @@
     </div>
     <div class="detail-row">
         <span class="detail-label">اولویت:</span>
-        <span class="detail-value">{{ notification.priority }}</span>
+        <span class="detail-value">{{ notification.priority|persian_label }}</span>
     </div>
     <div class="detail-row">
         <span class="detail-label">وضعیت:</span>
@@ -70,7 +70,7 @@
             <tbody>
                 {% for d in deliveries %}
                 <tr>
-                    <td>{{ d.channel }}</td>
+                    <td>{{ d.channel|persian_label }}</td>
                     <td>{{ status_badge(d.status) }}</td>
                     <td>{{ d.provider_name or '-' }}</td>
                     <td>{{ d.provider_message_id or '-' }}</td>

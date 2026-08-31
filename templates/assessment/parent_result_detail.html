@@ -17,7 +17,7 @@
     </div>
     <div class="detail-row">
         <span class="detail-row-label">تاریخ</span>
-        <span class="detail-row-value">{{ assessment.scheduled_date or 'تعیین نشده' }}</span>
+        <span class="detail-row-value">{{ assessment.scheduled_date|jalali if assessment.scheduled_date else 'تعیین نشده' }}</span>
     </div>
 </div>
 
@@ -38,7 +38,7 @@
             {% elif result.pass_fail == 'FAIL' %}
                 {{ status_badge('FAIL') }}
             {% else %}
-                {{ result.pass_fail }}
+                {{ result.pass_fail|persian_label }}
             {% endif %}
         </span>
     </div>
@@ -52,7 +52,7 @@
             {% elif result.presence_status == 'EXCUSED' %}
                 {{ status_badge('EXCUSED') }}
             {% else %}
-                {{ result.presence_status }}
+                {{ result.presence_status|persian_label }}
             {% endif %}
         </span>
     </div>

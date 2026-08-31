@@ -23,7 +23,7 @@
                 <tr>
                     <td>{{ cls.title }}</td>
                     <td>{{ cls.course.title }}</td>
-                    <td>{{ cls.start_date }}</td>
+                    <td>{{ cls.start_date|jalali }}</td>
                     <td>{{ cls.capacity }}</td>
                     <td>{{ status_badge(cls.status) }}</td>
                     <td>

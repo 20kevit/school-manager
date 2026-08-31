@@ -52,7 +52,7 @@
                 {% for n in failed %}
                 <tr>
                     <td>{{ n.id }}</td>
-                    <td>{{ n.notification_type }}</td>
+                    <td>{{ n.notification_type|persian_label }}</td>
                     <td>{{ n.recipient_user_id }}</td>
                     <td>{{ status_badge(n.status) }}</td>
                     <td>
@@ -91,7 +91,7 @@
             <select id="type" name="type" onchange="this.form.submit()">
                 <option value="">همه انواع</option>
                 {% for t in ["ENROLLMENT_SUBMITTED","ENROLLMENT_APPROVED","ENROLLMENT_REJECTED","SESSION_CREATED","SESSION_CANCELLED","ACTIVITY_CREATED","ACTIVITY_GRADED","ASSESSMENT_CREATED","RESULT_PUBLISHED","TUITION_CHARGED","PAYMENT_RECEIVED","ANNOUNCEMENT"] %}
-                <option value="{{ t }}" {{ "selected" if selected_type == t }}>{{ t }}</option>
+                <option value="{{ t }}" {{ "selected" if selected_type == t }}>{{ t|persian_label }}</option>
                 {% endfor %}
             </select>
         </div>
@@ -122,7 +122,7 @@
                     <td>{{ n.notification_type }}</td>
                     <td>{{ n.title }}</td>
                     <td>{{ n.recipient_user_id }}</td>
-                    <td>{{ n.priority }}</td>
+                    <td>{{ n.priority|persian_label }}</td>
                     <td>{{ status_badge(n.status) }}</td>
                     <td>{{ n.created_at|jalali_datetime }}</td>
                     <td>
