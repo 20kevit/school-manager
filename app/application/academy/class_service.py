@@ -348,67 +348,64 @@ def update_session(
     """
     from app.infrastructure.database.models import SessionEditHistoryModel
 
-    changes = []
+    prev_title = session.title
+    new_title_val = title.strip() if title else None
+    title_changed = title is not None and new_title_val != session.title
 
-    if title is not None and (title.strip() if title else None) != session.title:
-        changes.append(("title", session.title, title.strip() if title else None))
-        session.title = title.strip() if title else None
+    new_description_val = description.strip() if description else None
+    description_changed = (
+        description is not None and new_description_val != session.description
+    )
 
-    if (
-        description is not None
-        and (description.strip() if description else None) != session.description
-    ):
-        changes.append(
-            (
-                "description",
-                session.description,
-                description.strip() if description else None,
-            )
-        )
-        session.description = description.strip() if description else None
+    prev_date = session.scheduled_date
+    new_date_val = scheduled_date
+    date_changed = (
+        scheduled_date is not None and scheduled_date != session.scheduled_date
+    )
 
-    if scheduled_date is not None and scheduled_date != session.scheduled_date:
-        changes.append(("date", session.scheduled_date, scheduled_date))
-        session.scheduled_date = scheduled_date
+    prev_start = session.start_time
+    new_start_val = start_time
+    start_changed = start_time is not None and start_time != session.start_time
+
+    prev_end = session.end_time
+    new_end_val = end_time
+    end_changed = end_time is not None and end_time != session.end_time
+
+    has_changes = (
+        title_changed
+        or description_changed
+        or date_changed
+        or start_changed
+        or end_changed
+    )
+
+    if title_changed:
+        session.title = new_title_val
+    if description_changed:
+        session.description = new_description_val
+    if date_changed:
+        session.scheduled_date = new_date_val
         session.is_rescheduled = True
-
-    if start_time is not None and start_time != session.start_time:
-        changes.append(("start_time", session.start_time, start_time))
-        session.start_time = start_time
-
-    if end_time is not None and end_time != session.end_time:
-        changes.append(("end_time", session.end_time, end_time))
-        session.end_time = end_time
+    if start_changed:
+        session.start_time = new_start_val
+    if end_changed:
+        session.end_time = new_end_val
 
     if session.start_time >= session.end_time:
         raise ClassError("Start time must be before end time.")
 
-    if changes:
+    if has_changes:
         history = SessionEditHistoryModel(
             session_id=session.id,
-            previous_date=changes[0][1]
-            if any(c[0] == "date" for c in changes)
-            else None,
-            new_date=changes[0][2] if any(c[0] == "date" for c in changes) else None,
-            previous_start_time=changes[0][1]
-            if any(c[0] == "start_time" for c in changes)
-            else None,
-            new_start_time=changes[0][2]
-            if any(c[0] == "start_time" for c in changes)
-            else None,
-            previous_end_time=changes[0][1]
-            if any(c[0] == "end_time" for c in changes)
-            else None,
-            new_end_time=changes[0][2]
-            if any(c[0] == "end_time" for c in changes)
-            else None,
-            previous_title=changes[0][1]
-            if any(c[0] == "title" for c in changes)
-            else None,
-            new_title=changes[0][2] if any(c[0] == "title" for c in changes) else None,
-            change_type="RESCHEDULE"
-            if any(c[0] == "date" for c in changes)
-            else "EDIT",
+            previous_date=prev_date if date_changed else None,
+            new_date=new_date_val if date_changed else None,
+            previous_start_time=prev_start if start_changed else None,
+            new_start_time=new_start_val if start_changed else None,
+            previous_end_time=prev_end if end_changed else None,
+            new_end_time=new_end_val if end_changed else None,
+            previous_title=prev_title if title_changed else None,
+            new_title=new_title_val if title_changed else None,
+            change_type="RESCHEDULE" if date_changed else "EDIT",
             edited_by=edited_by,
         )
         db.session.add(history)

@@ -6,12 +6,10 @@ from datetime import datetime
 from flask import (
     Blueprint,
     abort,
-    current_app,
     flash,
     redirect,
     render_template,
     request,
-    send_from_directory,
     url_for,
 )
 from flask_login import current_user, login_required
@@ -26,7 +24,6 @@ from app.application.activity.activity_service import (
     get_class_enrolled_students,
     get_student_enrolled_classes,
     get_submission,
-    get_submission_files,
     get_submission_history,
     grade_submission,
     is_student_enrolled,
@@ -35,15 +32,21 @@ from app.application.activity.activity_service import (
     list_activities_by_class_all,
     list_activities_by_course,
     return_submission,
-    save_file_upload,
     submit_activity,
     update_activity,
+)
+from app.application.file_management.file_service import (
+    FileError,
+    get_entity_files,
+    get_file_stream,
+    upload_file,
 )
 from app.infrastructure.database.models import (
     AcademyClassModel,
     ActivityModel,
     CourseModel,
     SessionModel,
+    StoredFileModel,
     UserModel,
 )
 from app.interface.web.decorators import role_required
@@ -97,7 +100,7 @@ def admin_create_activity():
     if request.method == "POST":
         try:
             activity = _create_activity_from_form(request.form)
-            flash("Activity created successfully.", "success")
+            flash("فعالیت با موفقیت ایجاد شد.", "success")
             return redirect(
                 url_for("activity.admin_activity_detail", activity_id=activity.id)
             )
@@ -126,7 +129,7 @@ def admin_activity_detail(activity_id):
     """View activity details with submission overview."""
     activity = get_activity(activity_id)
     if activity is None:
-        flash("Activity not found.", "error")
+        flash("فعالیت یافت نشد.", "error")
         return redirect(url_for("activity.admin_activity_list"))
 
     submissions = []
@@ -158,13 +161,13 @@ def admin_edit_activity(activity_id):
     """Edit an activity."""
     activity = get_activity(activity_id)
     if activity is None:
-        flash("Activity not found.", "error")
+        flash("فعالیت یافت نشد.", "error")
         return redirect(url_for("activity.admin_activity_list"))
 
     if request.method == "POST":
         try:
             _update_activity_from_form(activity, request.form)
-            flash("Activity updated successfully.", "success")
+            flash("فعالیت با موفقیت به‌روزرسانی شد.", "success")
             return redirect(
                 url_for("activity.admin_activity_detail", activity_id=activity.id)
             )
@@ -193,11 +196,11 @@ def admin_deactivate_activity(activity_id):
     """Deactivate an activity."""
     activity = get_activity(activity_id)
     if activity is None:
-        flash("Activity not found.", "error")
+        flash("فعالیت یافت نشد.", "error")
         return redirect(url_for("activity.admin_activity_list"))
 
     deactivate_activity(activity)
-    flash("Activity deactivated.", "success")
+    flash("فعالیت غیرفعال شد.", "success")
     return redirect(url_for("activity.admin_activity_list"))
 
 
@@ -208,12 +211,12 @@ def admin_submission_detail(submission_id):
     """View a submission detail (admin)."""
     submission = get_submission(submission_id)
     if submission is None:
-        flash("Submission not found.", "error")
+        flash("ارسال یافت نشد.", "error")
         return redirect(url_for("activity.admin_activity_list"))
 
     activity = get_activity(submission.activity_id)
     student = UserModel.query.get(submission.student_user_id)
-    files = get_submission_files(submission_id)
+    files = get_entity_files("activity_submission", submission_id)
 
     return render_template(
         "activity/admin_submission.html",
@@ -231,14 +234,14 @@ def admin_grade_submission(submission_id):
     """Grade a submission (admin)."""
     submission = get_submission(submission_id)
     if submission is None:
-        flash("Submission not found.", "error")
+        flash("ارسال یافت نشد.", "error")
         return redirect(url_for("activity.admin_activity_list"))
 
     try:
         score = float(request.form.get("score", 0))
         feedback = request.form.get("feedback", "")
         grade_submission(submission, score, feedback, graded_by=current_user.id)
-        flash("Submission graded.", "success")
+        flash("ارسال نمره‌گذاری شد.", "success")
     except (ActivityError, ValueError) as e:
         flash(str(e), "error")
 
@@ -254,12 +257,12 @@ def admin_return_submission(submission_id):
     """Return a submission for correction (admin)."""
     submission = get_submission(submission_id)
     if submission is None:
-        flash("Submission not found.", "error")
+        flash("ارسال یافت نشد.", "error")
         return redirect(url_for("activity.admin_activity_list"))
 
     feedback = request.form.get("feedback", "")
     return_submission(submission, feedback, graded_by=current_user.id)
-    flash("Submission returned for correction.", "success")
+    flash("ارسال برای اصلاح بازگردانده شد.", "success")
 
     return redirect(
         url_for("activity.admin_submission_detail", submission_id=submission_id)
@@ -291,7 +294,7 @@ def teacher_class_activities(class_id):
     """List activities for a teacher's class."""
     academy_class = AcademyClassModel.query.get(class_id)
     if academy_class is None:
-        flash("Class not found.", "error")
+        flash("کلاس یافت نشد.", "error")
         return redirect(url_for("activity.teacher_my_classes"))
 
     if not is_teacher_of_class(current_user.id, class_id):
@@ -319,7 +322,7 @@ def teacher_create_activity(class_id):
     """Create an activity for a teacher's class."""
     academy_class = AcademyClassModel.query.get(class_id)
     if academy_class is None:
-        flash("Class not found.", "error")
+        flash("کلاس یافت نشد.", "error")
         return redirect(url_for("activity.teacher_my_classes"))
 
     if not is_teacher_of_class(current_user.id, class_id):
@@ -328,7 +331,7 @@ def teacher_create_activity(class_id):
     if request.method == "POST":
         try:
             _create_activity_from_form(request.form, class_id=class_id)
-            flash("Activity created successfully.", "success")
+            flash("فعالیت با موفقیت ایجاد شد.", "success")
             return redirect(
                 url_for("activity.teacher_class_activities", class_id=class_id)
             )
@@ -356,7 +359,7 @@ def teacher_activity_detail(activity_id):
     """View activity details and submissions (teacher)."""
     activity = get_activity(activity_id)
     if activity is None:
-        flash("Activity not found.", "error")
+        flash("فعالیت یافت نشد.", "error")
         return redirect(url_for("activity.teacher_my_classes"))
 
     if activity.class_id is None or not is_teacher_of_class(
@@ -390,7 +393,7 @@ def teacher_submission_detail(submission_id):
     """View a submission detail (teacher)."""
     submission = get_submission(submission_id)
     if submission is None:
-        flash("Submission not found.", "error")
+        flash("ارسال یافت نشد.", "error")
         return redirect(url_for("activity.teacher_my_classes"))
 
     activity = get_activity(submission.activity_id)
@@ -401,7 +404,7 @@ def teacher_submission_detail(submission_id):
         abort(403)
 
     student = UserModel.query.get(submission.student_user_id)
-    files = get_submission_files(submission_id)
+    files = get_entity_files("activity_submission", submission_id)
 
     return render_template(
         "activity/teacher_submission.html",
@@ -419,7 +422,7 @@ def teacher_grade_submission(submission_id):
     """Grade a submission (teacher)."""
     submission = get_submission(submission_id)
     if submission is None:
-        flash("Submission not found.", "error")
+        flash("ارسال یافت نشد.", "error")
         return redirect(url_for("activity.teacher_my_classes"))
 
     activity = get_activity(submission.activity_id)
@@ -433,7 +436,7 @@ def teacher_grade_submission(submission_id):
         score = float(request.form.get("score", 0))
         feedback = request.form.get("feedback", "")
         grade_submission(submission, score, feedback, graded_by=current_user.id)
-        flash("Submission graded.", "success")
+        flash("ارسال نمره‌گذاری شد.", "success")
     except (ActivityError, ValueError) as e:
         flash(str(e), "error")
 
@@ -449,7 +452,7 @@ def teacher_return_submission(submission_id):
     """Return a submission for correction (teacher)."""
     submission = get_submission(submission_id)
     if submission is None:
-        flash("Submission not found.", "error")
+        flash("ارسال یافت نشد.", "error")
         return redirect(url_for("activity.teacher_my_classes"))
 
     activity = get_activity(submission.activity_id)
@@ -461,7 +464,7 @@ def teacher_return_submission(submission_id):
 
     feedback = request.form.get("feedback", "")
     return_submission(submission, feedback, graded_by=current_user.id)
-    flash("Submission returned for correction.", "success")
+    flash("ارسال برای اصلاح بازگردانده شد.", "success")
 
     return redirect(
         url_for("activity.teacher_submission_detail", submission_id=submission_id)
@@ -488,7 +491,7 @@ def student_my_classes():
 def student_class_activities(class_id):
     """List activities for a student's class."""
     if not is_student_enrolled(current_user.id, class_id):
-        flash("You are not enrolled in this class.", "error")
+        flash("شما در این کلاس ثبت‌نام نکرده‌اید.", "error")
         return redirect(url_for("activity.student_my_classes"))
 
     activities = list_activities_by_class(class_id)
@@ -508,22 +511,22 @@ def student_activity_detail(activity_id):
     """View activity details and submit."""
     activity = get_activity(activity_id)
     if activity is None:
-        flash("Activity not found.", "error")
+        flash("فعالیت یافت نشد.", "error")
         return redirect(url_for("activity.student_my_classes"))
 
     if activity.class_id is None:
-        flash("Activity not found.", "error")
+        flash("فعالیت یافت نشد.", "error")
         return redirect(url_for("activity.student_my_classes"))
 
     if not is_student_enrolled(current_user.id, activity.class_id):
-        flash("You are not enrolled in this class.", "error")
+        flash("شما در این کلاس ثبت‌نام نکرده‌اید.", "error")
         return redirect(url_for("activity.student_my_classes"))
 
     from app.application.activity.activity_service import get_latest_submission
 
     latest = get_latest_submission(activity_id, current_user.id)
     history = get_submission_history(activity_id, current_user.id)
-    files = get_submission_files(latest.id) if latest else []
+    files = get_entity_files("activity_submission", latest.id) if latest else []
 
     academy_class = AcademyClassModel.query.get(activity.class_id)
 
@@ -544,7 +547,7 @@ def student_submit_activity(activity_id):
     """Submit or resubmit an activity."""
     activity = get_activity(activity_id)
     if activity is None:
-        flash("Activity not found.", "error")
+        flash("فعالیت یافت نشد.", "error")
         return redirect(url_for("activity.student_my_classes"))
 
     text_content = request.form.get("text_content", "")
@@ -558,16 +561,35 @@ def student_submit_activity(activity_id):
                 f.seek(0, os.SEEK_END)
                 file_size = f.tell()
                 f.seek(0)
-                save_file_upload(
-                    submission,
-                    f,
-                    f.filename,
-                    file_size,
-                    f.content_type,
+                upload_file(
+                    file_storage=f,
+                    filename=f.filename,
+                    file_size=file_size,
+                    content_type=f.content_type,
+                    category="ACTIVITY_SUBMISSION",
+                    uploader_user_id=current_user.id,
+                    entity_type="activity_submission",
+                    entity_id=submission.id,
+                    allowed_extensions=frozenset(
+                        {
+                            "pdf",
+                            "doc",
+                            "docx",
+                            "xls",
+                            "xlsx",
+                            "ppt",
+                            "pptx",
+                            "jpg",
+                            "jpeg",
+                            "png",
+                            "zip",
+                        }
+                    ),
+                    max_size=5 * 1024 * 1024,
                 )
 
-        flash("Activity submitted successfully.", "success")
-    except ActivityError as e:
+        flash("فعالیت با موفقیت ارسال شد.", "success")
+    except (ActivityError, FileError) as e:
         flash(str(e), "error")
 
     return redirect(
@@ -582,7 +604,7 @@ def student_submission_history(activity_id):
     """View submission history for an activity."""
     activity = get_activity(activity_id)
     if activity is None:
-        flash("Activity not found.", "error")
+        flash("فعالیت یافت نشد.", "error")
         return redirect(url_for("activity.student_my_classes"))
 
     history = get_submission_history(activity_id, current_user.id)
@@ -602,14 +624,15 @@ def student_submission_history(activity_id):
 @activity_bp.route("/file/<int:file_id>/download")
 @login_required
 def download_file(file_id):
-    """Download an activity file."""
-    from app.infrastructure.database.models import ActivityFileModel
-
-    file_record = ActivityFileModel.query.get(file_id)
+    """Download an activity file via P11 storage backend."""
+    file_record = StoredFileModel.query.get(file_id)
     if file_record is None:
         abort(404)
 
-    submission = get_submission(file_record.submission_id)
+    if file_record.status == "DELETED":
+        abort(404)
+
+    submission = get_submission(file_record.entity_id)
     if submission is None:
         abort(404)
 
@@ -627,17 +650,17 @@ def download_file(file_id):
     if not (is_owner or is_admin or is_teacher):
         abort(403)
 
-    upload_dir = os.path.join(
-        current_app.config.get("UPLOAD_FOLDER", "uploads"),
-        "activity_submissions",
-        str(submission.id),
-    )
+    try:
+        record, stream = get_file_stream(file_id)
+        from flask import send_file
 
-    return send_from_directory(
-        upload_dir,
-        file_record.filename,
-        download_name=file_record.original_filename,
-    )
+        return send_file(
+            stream,
+            mimetype=record.mime_type,
+            download_name=record.original_filename,
+        )
+    except FileError:
+        abort(404)
 
 
 # ---------------------------------------------------------------------------

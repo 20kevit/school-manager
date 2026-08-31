@@ -763,3 +763,196 @@ class TestRegression:
                 follow_redirects=False,
             )
             assert resp.status_code == 302
+
+
+# ---------------------------------------------------------------------------
+# P15 — Architectural Cleanup & Consistency
+# ---------------------------------------------------------------------------
+
+
+class TestSessionEditHistoryBugFix:
+    """Tests for the fixed session edit history logic (P15 Task 1)."""
+
+    def _create_class_with_sessions(self, db):
+        from app.application.academy.class_service import create_class, get_sessions
+        from app.application.academy.course_service import create_course
+
+        course = create_course(title="Bug Course", num_sessions=4)
+        cls = create_class(
+            course_id=course.id,
+            title="Bug Class",
+            start_date=date(2026, 9, 7),
+            num_sessions=4,
+            schedule=[
+                {
+                    "weekday": "MONDAY",
+                    "start_time": time(17, 0),
+                    "end_time": time(19, 0),
+                },
+            ],
+        )
+        sessions = get_sessions(cls.id)
+        return cls, sessions
+
+    def test_update_title_and_date_simultaneously(self, db, admin_user):
+        from app.application.academy.class_service import update_session
+        from app.infrastructure.database.models import SessionEditHistoryModel
+
+        cls, sessions = self._create_class_with_sessions(db)
+        session = sessions[0]
+
+        original_title = session.title
+        original_date = session.scheduled_date
+
+        history = SessionEditHistoryModel.query.filter_by(session_id=session.id).count()
+        assert history == 0
+
+        result = update_session(
+            session,
+            title="New Title",
+            scheduled_date=date(2026, 10, 15),
+            edited_by=admin_user.id,
+        )
+
+        assert result.title == "New Title"
+        assert result.scheduled_date == date(2026, 10, 15)
+        assert result.is_rescheduled is True
+
+        histories = SessionEditHistoryModel.query.filter_by(session_id=session.id).all()
+        assert len(histories) == 1
+        h = histories[0]
+        assert h.previous_title == original_title
+        assert h.new_title == "New Title"
+        assert h.previous_date == original_date
+        assert h.new_date == date(2026, 10, 15)
+        assert h.change_type == "RESCHEDULE"
+        assert h.edited_by == admin_user.id
+
+    def test_update_title_and_time_simultaneously(self, db, admin_user):
+        from app.application.academy.class_service import update_session
+        from app.infrastructure.database.models import SessionEditHistoryModel
+
+        cls, sessions = self._create_class_with_sessions(db)
+        session = sessions[0]
+
+        original_title = session.title
+        original_start = session.start_time
+        original_end = session.end_time
+
+        result = update_session(
+            session,
+            title="Updated Title",
+            start_time=time(14, 0),
+            end_time=time(16, 0),
+            edited_by=admin_user.id,
+        )
+
+        assert result.title == "Updated Title"
+        assert result.start_time == time(14, 0)
+        assert result.end_time == time(16, 0)
+
+        h = SessionEditHistoryModel.query.filter_by(session_id=session.id).one()
+        assert h.previous_title == original_title
+        assert h.new_title == "Updated Title"
+        assert h.previous_start_time == original_start
+        assert h.new_start_time == time(14, 0)
+        assert h.previous_end_time == original_end
+        assert h.new_end_time == time(16, 0)
+        assert h.change_type == "EDIT"
+        assert h.previous_date is None
+        assert h.new_date is None
+
+    def test_update_all_fields_simultaneously(self, db, admin_user):
+        from app.application.academy.class_service import update_session
+        from app.infrastructure.database.models import SessionEditHistoryModel
+
+        cls, sessions = self._create_class_with_sessions(db)
+        session = sessions[0]
+
+        result = update_session(
+            session,
+            title="All New",
+            description="New desc",
+            scheduled_date=date(2027, 1, 1),
+            start_time=time(9, 0),
+            end_time=time(11, 0),
+            edited_by=admin_user.id,
+        )
+
+        assert result.title == "All New"
+        assert result.description == "New desc"
+        assert result.scheduled_date == date(2027, 1, 1)
+        assert result.start_time == time(9, 0)
+        assert result.end_time == time(11, 0)
+
+        h = SessionEditHistoryModel.query.filter_by(session_id=session.id).one()
+        assert h.new_title == "All New"
+        assert h.new_date == date(2027, 1, 1)
+        assert h.new_start_time == time(9, 0)
+        assert h.new_end_time == time(11, 0)
+        assert h.change_type == "RESCHEDULE"
+
+
+class TestActivityFileUploadP11:
+    """Tests for P11 file management in activity submissions (P15 Task 2)."""
+
+    def test_submit_activity_creates_stored_file(self, client, student_user, db):
+        from io import BytesIO
+
+        from app.application.academy.class_service import create_class, get_sessions
+        from app.application.academy.course_service import create_course
+        from app.application.activity.activity_service import create_activity
+        from app.application.enrollment.enrollment_service import admin_enroll_student
+        from app.infrastructure.database.models import StoredFileModel
+
+        course = create_course(title="File Course", num_sessions=2)
+        cls = create_class(
+            course_id=course.id,
+            title="File Class",
+            start_date=date(2026, 9, 7),
+            num_sessions=2,
+            schedule=[
+                {
+                    "weekday": "MONDAY",
+                    "start_time": time(17, 0),
+                    "end_time": time(19, 0),
+                },
+            ],
+        )
+        sessions = get_sessions(cls.id)
+
+        activity = create_activity(
+            activity_type="HOMEWORK",
+            title="File Test Activity",
+            class_id=cls.id,
+            session_id=sessions[0].id,
+        )
+
+        admin_enroll_student(student_user.id, cls.id)
+
+        client.post(
+            "/auth/login",
+            data={"login": "student", "password": "studentpass123"},
+            follow_redirects=False,
+        )
+
+        data = {
+            "text_content": "Test submission",
+            "files": (BytesIO(b"fake file content"), "test_file.pdf"),
+        }
+        resp = client.post(
+            f"/activity/student/{activity.id}/submit",
+            data=data,
+            content_type="multipart/form-data",
+            follow_redirects=True,
+        )
+        assert resp.status_code == 200
+
+        stored_files = StoredFileModel.query.filter_by(
+            entity_type="activity_submission"
+        ).all()
+        assert len(stored_files) >= 1
+        sf = stored_files[0]
+        assert sf.original_filename == "test_file.pdf"
+        assert sf.status == "ACTIVE"
+        assert sf.category == "ACTIVITY_SUBMISSION"
