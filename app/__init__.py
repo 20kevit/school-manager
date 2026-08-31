@@ -16,7 +16,11 @@ PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 def create_app(config_name="development"):
     """Application factory."""
-    app = Flask(__name__, template_folder=os.path.join(PROJECT_ROOT, "templates"))
+    app = Flask(
+        __name__,
+        template_folder=os.path.join(PROJECT_ROOT, "templates"),
+        static_folder=os.path.join(PROJECT_ROOT, "static"),
+    )
     app.config.from_object(config[config_name])
 
     _register_extensions(app)
