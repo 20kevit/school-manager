@@ -1,0 +1,198 @@
+"""Online payment service — handles ZarinPal integration for student payments.
+
+This module provides two core operations:
+1. Initiating an online payment (creates a PENDING transaction, returns redirect URL).
+2. Processing the payment callback (verifies with ZarinPal, updates transaction status).
+
+The financial ledger remains the source of truth. PENDING transactions do not affect
+the student balance until they become ACTIVE (verified payment).
+"""
+
+from __future__ import annotations
+
+import logging
+from decimal import Decimal
+
+from flask import current_app
+
+from app.extensions import db
+from app.infrastructure.database.models import FinancialTransactionModel, UserModel
+from app.infrastructure.payment.gateway import PaymentGateway
+from app.infrastructure.payment.null_gateway import NullPaymentGateway
+
+logger = logging.getLogger(__name__)
+
+
+class PaymentError(Exception):
+    """Raised when an online payment operation fails."""
+
+
+def _get_gateway() -> PaymentGateway:
+    """Resolve the payment gateway from app config."""
+    merchant_id = current_app.config.get("ZARINPAL_MERCHANT_ID", "")
+    sandbox = current_app.config.get("ZARINPAL_SANDBOX", True)
+
+    if not merchant_id:
+        return NullPaymentGateway()
+
+    from app.infrastructure.payment.zarinpal import ZarinPalGateway
+
+    return ZarinPalGateway(merchant_id=merchant_id, sandbox=sandbox)
+
+
+def initiate_online_payment(
+    student_user_id: int,
+    amount: Decimal,
+    description: str,
+    callback_url: str,
+) -> dict:
+    """Initiate an online payment via ZarinPal.
+
+    Creates a PENDING FinancialTransaction (does not affect balance),
+    then calls ZarinPal to get an authority code and redirect URL.
+
+    Args:
+        student_user_id: The student's user ID.
+        amount: Payment amount in Toman.
+        description: Payment description.
+        callback_url: URL for ZarinPal to redirect after payment.
+
+    Returns:
+        dict with 'transaction_id' and 'payment_url'.
+
+    Raises:
+        PaymentError: If validation fails or gateway rejects the request.
+    """
+    if amount <= 0:
+        raise PaymentError("مبلغ پرداخت باید مثبت باشد.")
+
+    student = UserModel.query.get(student_user_id)
+    if student is None:
+        raise PaymentError("دانش‌آموز یافت نشد.")
+    if not student.has_role("STUDENT"):
+        raise PaymentError("کاربر دانش‌آموز نیست.")
+
+    gateway = _get_gateway()
+    result = gateway.create_payment(
+        amount=amount,
+        description=description,
+        callback_url=callback_url,
+    )
+
+    if not result.success:
+        raise PaymentError(f"خطا در اتصال به درگاه پرداخت: {result.error}")
+
+    # Create a PENDING transaction — does not affect balance
+    transaction = FinancialTransactionModel(
+        student_user_id=student_user_id,
+        amount=amount,
+        transaction_type="PAYMENT",
+        category="OTHER",
+        description=description or "پرداخت آنلاین",
+        reference_number=result.authority,
+        payment_method="ONLINE",
+        status="PENDING",
+    )
+    db.session.add(transaction)
+    db.session.commit()
+
+    logger.info(
+        "Online payment initiated: transaction_id=%d, authority=%s, amount=%s",
+        transaction.id,
+        result.authority,
+        amount,
+    )
+
+    return {
+        "transaction_id": transaction.id,
+        "payment_url": result.payment_url,
+    }
+
+
+def process_payment_callback(
+    authority: str,
+    amount: Decimal,
+    callback_status: str,
+) -> dict:
+    """Process the ZarinPal payment callback.
+
+    Called when ZarinPal redirects the user back after payment.
+    Verifies the payment with ZarinPal and updates the transaction status.
+
+    Args:
+        authority: The authority code from the callback query.
+        amount: The payment amount (must match the original).
+        callback_status: The 'Status' query parameter from ZarinPal.
+
+    Returns:
+        dict with 'success', 'transaction_id', 'ref_id', 'message'.
+    """
+    # Find the PENDING transaction by authority code
+    transaction = FinancialTransactionModel.query.filter_by(
+        reference_number=authority,
+        payment_method="ONLINE",
+        status="PENDING",
+    ).first()
+
+    if transaction is None:
+        logger.warning("Payment callback for unknown authority: %s", authority)
+        return {
+            "success": False,
+            "transaction_id": None,
+            "ref_id": "",
+            "message": "تراکنش یافت نشد.",
+        }
+
+    # If ZarinPal reported user cancellation
+    if callback_status != "OK":
+        transaction.status = "FAILED"
+        db.session.commit()
+        logger.info(
+            "Payment cancelled by user: transaction_id=%d, authority=%s",
+            transaction.id,
+            authority,
+        )
+        return {
+            "success": False,
+            "transaction_id": transaction.id,
+            "ref_id": "",
+            "message": "پرداخت لغو شد.",
+        }
+
+    # Verify with ZarinPal
+    gateway = _get_gateway()
+    result = gateway.verify_payment(
+        authority=authority,
+        amount=transaction.amount,
+    )
+
+    if result.success:
+        transaction.status = "ACTIVE"
+        transaction.reference_number = result.ref_id or authority
+        db.session.commit()
+        logger.info(
+            "Payment verified: transaction_id=%d, ref_id=%s",
+            transaction.id,
+            result.ref_id,
+        )
+        return {
+            "success": True,
+            "transaction_id": transaction.id,
+            "ref_id": result.ref_id,
+            "message": "پرداخت با موفقیت انجام شد.",
+        }
+    else:
+        transaction.status = "FAILED"
+        db.session.commit()
+        logger.warning(
+            "Payment verification failed: transaction_id=%d, authority=%s, error=%s",
+            transaction.id,
+            authority,
+            result.error,
+        )
+        return {
+            "success": False,
+            "transaction_id": transaction.id,
+            "ref_id": "",
+            "message": f"پرداخت تأیید نشد: {result.error}",
+        }

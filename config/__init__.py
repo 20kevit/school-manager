@@ -37,6 +37,10 @@ class Config:
     FILE_STORAGE_PATH = os.getenv("FILE_STORAGE_PATH", "")
     FILE_MAX_UPLOAD_SIZE = int(os.getenv("FILE_MAX_UPLOAD_SIZE", str(5 * 1024 * 1024)))
 
+    # ZarinPal Payment Gateway
+    ZARINPAL_MERCHANT_ID = os.getenv("ZARINPAL_MERCHANT_ID", "")
+    ZARINPAL_SANDBOX = os.getenv("ZARINPAL_SANDBOX", "true").lower() == "true"
+
     @staticmethod
     def init_app(app):
         pass

@@ -42,6 +42,8 @@ class TransactionStatus(StrEnum):
     ACTIVE = "ACTIVE"
     VOIDED = "VOIDED"
     CORRECTED = "CORRECTED"
+    PENDING = "PENDING"
+    FAILED = "FAILED"
 
 
 class FinancialTransaction:

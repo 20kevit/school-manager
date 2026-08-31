@@ -1,11 +1,12 @@
 from __future__ import annotations
 
 from datetime import date
+from decimal import Decimal, InvalidOperation
 
 from flask import Blueprint, flash, redirect, render_template, request, url_for
 from flask_login import current_user, login_required
 
-from app.application.finance import finance_service
+from app.application.finance import finance_service, payment_service
 from app.infrastructure.database.models import (
     AcademyClassModel,
     FinancialTransactionModel,
@@ -432,3 +433,197 @@ def student_my_finance():
         balance=balance,
         transactions=transactions,
     )
+
+
+# ---------------------------------------------------------------------------
+# Online payment routes (Student 18+ & Parent)
+# ---------------------------------------------------------------------------
+
+
+@finance_bp.route("/student/pay", methods=["POST"])
+@login_required
+@role_required("STUDENT")
+def student_pay_online():
+    """Initiate an online payment for a student (18+ only)."""
+    from datetime import date as date_type
+
+    from app.infrastructure.database.models import StudentProfileModel
+
+    profile = StudentProfileModel.query.filter_by(user_id=current_user.id).first()
+    if profile is None:
+        flash("پروفایل دانش‌آموزی یافت نشد.", "error")
+        return redirect(url_for("auth.dashboard"))
+
+    today = date_type.today()
+    age = (
+        today.year
+        - profile.birth_date.year
+        - (
+            (today.month, today.day)
+            < (profile.birth_date.month, profile.birth_date.day)
+        )
+    )
+
+    if age < 18:
+        flash("شما به اطلاعات مالی دسترسی ندارید (سن زیر ۱۸ سال).", "error")
+        return redirect(url_for("auth.dashboard"))
+
+    amount_str = request.form.get("amount", "")
+    try:
+        amount = Decimal(amount_str)
+    except InvalidOperation, TypeError:
+        flash("مبلغ وارد شده معتبر نیست.", "error")
+        return redirect(url_for("finance.student_my_finance"))
+
+    if amount <= 0:
+        flash("مبلغ پرداخت باید مثبت باشد.", "error")
+        return redirect(url_for("finance.student_my_finance"))
+
+    balance = finance_service.get_student_balance(current_user.id)
+    if balance >= 0:
+        flash("شما بدهی ندارید.", "error")
+        return redirect(url_for("finance.student_my_finance"))
+
+    callback_url = url_for("finance.payment_callback", _external=True)
+
+    try:
+        result = payment_service.initiate_online_payment(
+            student_user_id=current_user.id,
+            amount=amount,
+            description="پرداخت آنلاین شهریه",
+            callback_url=callback_url,
+        )
+        return redirect(result["payment_url"])
+    except payment_service.PaymentError as e:
+        flash(str(e), "error")
+        return redirect(url_for("finance.student_my_finance"))
+
+
+@finance_bp.route("/parent/child/<int:child_user_id>/pay", methods=["POST"])
+@login_required
+@role_required("PARENT")
+def parent_pay_online(child_user_id):
+    """Initiate an online payment for a parent's child."""
+    from app.infrastructure.database.models import ParentProfileModel
+
+    parent_profile = ParentProfileModel.query.filter_by(user_id=current_user.id).first()
+    if parent_profile is None:
+        flash("پروفایل والد یافت نشد.", "error")
+        return redirect(url_for("auth.dashboard"))
+
+    child_ids = [c.user_id for c in parent_profile.children]
+    if child_user_id not in child_ids:
+        flash("شما به اطلاعات مالی این دانش‌آموز دسترسی ندارید.", "error")
+        return redirect(url_for("finance.parent_overview"))
+
+    amount_str = request.form.get("amount", "")
+    try:
+        amount = Decimal(amount_str)
+    except InvalidOperation, TypeError:
+        flash("مبلغ وارد شده معتبر نیست.", "error")
+        return redirect(
+            url_for("finance.parent_child_statement", child_user_id=child_user_id)
+        )
+
+    if amount <= 0:
+        flash("مبلغ پرداخت باید مثبت باشد.", "error")
+        return redirect(
+            url_for("finance.parent_child_statement", child_user_id=child_user_id)
+        )
+
+    balance = finance_service.get_student_balance(child_user_id)
+    if balance >= 0:
+        flash("این دانش‌آموز بدهی ندارد.", "error")
+        return redirect(
+            url_for("finance.parent_child_statement", child_user_id=child_user_id)
+        )
+
+    callback_url = url_for(
+        "finance.payment_callback",
+        _external=True,
+    )
+
+    try:
+        result = payment_service.initiate_online_payment(
+            student_user_id=child_user_id,
+            amount=amount,
+            description="پرداخت آنلاین شهریه (توسط والد)",
+            callback_url=callback_url,
+        )
+        return redirect(result["payment_url"])
+    except payment_service.PaymentError as e:
+        flash(str(e), "error")
+        return redirect(
+            url_for("finance.parent_child_statement", child_user_id=child_user_id)
+        )
+
+
+@finance_bp.route("/payment/callback", methods=["GET"])
+def payment_callback():
+    """ZarinPal payment callback URL.
+
+    This route is called by ZarinPal after the user completes (or cancels)
+    the payment. It does NOT require login since the user is redirected
+    from the external ZarinPal page.
+    """
+    authority = request.args.get("Authority", "")
+    status = request.args.get("Status", "")
+
+    if not authority:
+        flash("کد پیگیری پرداخت یافت نشد.", "error")
+        return redirect(url_for("auth.dashboard"))
+
+    # We don't have the amount in the callback, so we look up the transaction
+    from app.infrastructure.database.models import FinancialTransactionModel
+
+    transaction = FinancialTransactionModel.query.filter_by(
+        reference_number=authority,
+        payment_method="ONLINE",
+        status="PENDING",
+    ).first()
+
+    if transaction is None:
+        flash("تراکنش پرداخت یافت نشد.", "error")
+        return redirect(url_for("auth.dashboard"))
+
+    result = payment_service.process_payment_callback(
+        authority=authority,
+        amount=transaction.amount,
+        callback_status=status,
+    )
+
+    if result["success"]:
+        flash(
+            f"پرداخت با موفقیت انجام شد. کد پیگیری: {result['ref_id']}",
+            "success",
+        )
+    else:
+        flash(result["message"], "error")
+
+    # Redirect to the appropriate finance page
+    student_id = transaction.student_user_id
+    student = UserModel.query.get(student_id)
+    if student is None:
+        return redirect(url_for("auth.dashboard"))
+
+    if student.has_role("STUDENT"):
+        # Check if this is a student (18+) or if a parent should see it
+        from datetime import date as date_type
+
+        from app.infrastructure.database.models import StudentProfileModel
+
+        profile = StudentProfileModel.query.filter_by(user_id=student_id).first()
+        if profile is not None:
+            today = date_type.today()
+            age = (
+                today.year
+                - profile.birth_date.year
+                - (
+                    (today.month, today.day)
+                    < (profile.birth_date.month, profile.birth_date.day)
+                )
+            )
+            if age >= 18:
+                return redirect(url_for("finance.student_my_finance"))
+
+    return redirect(url_for("finance.parent_overview"))

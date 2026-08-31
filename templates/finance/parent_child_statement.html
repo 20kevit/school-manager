@@ -18,6 +18,28 @@
             تسویه
         {% endif %}
     </span>
+
+    {% if balance < 0 %}
+    <div class="pay-online-section" style="margin-top: 1rem;">
+        <form method="POST" action="{{ url_for('finance.parent_pay_online', child_user_id=student.id) }}" style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <input
+                type="number"
+                name="amount"
+                min="1000"
+                step="1000"
+                value="{{ (balance * -1)|int }}"
+                placeholder="مبلغ پرداخت (تومان)"
+                required
+                style="padding: 0.5rem; border: 1px solid #ccc; border-radius: 4px; width: 200px;"
+            >
+            <button type="submit" class="btn btn-primary">
+                پرداخت آنلاین
+            </button>
+        </form>
+        <small style="color: #666;">مبلغ پیش‌فرض: بدهی فعلی دانش‌آموز</small>
+    </div>
+    {% endif %}
 </div>
 
 {% if transactions %}
