@@ -126,11 +126,9 @@ def upgrade():
             server_default=sa.func.now(),
             nullable=False,
         ),
-    )
-    op.create_unique_constraint(
-        "uq_result_assessment_enrollment",
-        "assessment_results",
-        ["assessment_id", "enrollment_id"],
+        sa.UniqueConstraint(
+            "assessment_id", "enrollment_id", name="uq_result_assessment_enrollment"
+        ),
     )
     op.create_index("ix_result_assessment", "assessment_results", ["assessment_id"])
     op.create_index("ix_result_student", "assessment_results", ["student_user_id"])

@@ -104,11 +104,9 @@ def upgrade() -> None:
         sa.Column(
             "updated_at", sa.DateTime(), server_default=sa.func.now(), nullable=False
         ),
-    )
-    op.create_unique_constraint(
-        "uq_delivery_notification_channel",
-        "notification_deliveries",
-        ["notification_id", "channel"],
+        sa.UniqueConstraint(
+            "notification_id", "channel", name="uq_delivery_notification_channel"
+        ),
     )
     op.create_index(
         "ix_delivery_notification", "notification_deliveries", ["notification_id"]
@@ -130,11 +128,12 @@ def upgrade() -> None:
         sa.Column(
             "updated_at", sa.DateTime(), server_default=sa.func.now(), nullable=False
         ),
-    )
-    op.create_unique_constraint(
-        "uq_preference_user_type_channel",
-        "notification_preferences",
-        ["user_id", "notification_type", "channel"],
+        sa.UniqueConstraint(
+            "user_id",
+            "notification_type",
+            "channel",
+            name="uq_preference_user_type_channel",
+        ),
     )
     op.create_index("ix_preference_user", "notification_preferences", ["user_id"])
 

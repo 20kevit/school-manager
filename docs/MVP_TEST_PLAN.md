@@ -29,7 +29,12 @@ Then paste:
 ```python
 from app import create_app
 from app.extensions import db
-from app.infrastructure.database.models import RoleModel, UserModel, StudentProfileModel, ParentProfileModel
+from app.infrastructure.database.models import (
+    RoleModel,
+    UserModel,
+    StudentProfileModel,
+    ParentProfileModel,
+)
 from app.application.auth.services import create_user, assign_role
 from datetime import date
 
