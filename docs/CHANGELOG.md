@@ -6,7 +6,48 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 
 ## Unreleased
 
-## P16 — Admin User Management & System Seeding (2026-08-31)
+## P19 — Payment Receipts, Notifications & Admin Visibility (2026-08-31)
+
+### Added
+- Payment receipt generation route (`/finance/receipt/<transaction_id>`)
+- Printable receipt template with Vazirmatn font, academy name, student name, Jalali date, amount, tracking number, payment method, and status
+- Print-friendly CSS (`@media print`) that hides sidebars and headers
+- "Print Receipt" (چاپ رسید) button on admin transaction detail page
+- "Receipt" (رسید) button on each transaction row in student finance and parent child statement pages
+- In-app payment confirmation notification triggered automatically on successful online payment (PAYMENT_RECEIVED type)
+- Notification message includes amount and tracking number in Persian
+- Graceful degradation if notification providers are unavailable
+- Admin finance dashboard stat card: "Online Payments Today" (پرداخت‌های آنلاین امروز) with count and total amount
+- Payment method filter (روش پرداخت) on admin transaction list (Online, Cash, Card, Bank Transfer, Other)
+- Persian labels for payment methods in filter dropdown
+
+### Changed
+- `get_dashboard_summary()` now includes `today_online_payments_count` and `today_online_payments_amount`
+- Admin transaction detail page now shows receipt print button unconditionally (not only for ACTIVE transactions)
+- Student and parent finance tables now include an "Operations" column with receipt links
+
+## P18 — ZarinPal Online Payment Integration (2026-08-31)
+
+### Added
+- PaymentGateway abstraction (ABC) with PaymentRequestResult/PaymentVerificationResult dataclasses
+- ZarinPal v4 REST API implementation with sandbox/production modes
+- NullPaymentGateway fallback when no gateway configured
+- Payment service: initiate_online_payment (creates PENDING transaction, returns redirect URL)
+- Payment service: process_payment_callback (verifies with ZarinPal, updates transaction to ACTIVE/FAILED)
+- Student online payment route (`/finance/student/pay`)
+- Parent online payment route (`/finance/parent/child/<id>/pay`)
+- Payment callback route (`/finance/payment/callback`) — no login required (external redirect)
+- Age-based access control for student finance (18+ only)
+- Configuration: ZARINPAL_MERCHANT_ID, ZARINPAL_SANDBOX environment variables
+- 15 new tests covering payment initiation, callback processing, gateway integration, authorization
+
+### Design Decisions
+- PENDING transactions do not affect student balance until verified (ACTIVE)
+- Callback route is public (no login) since ZarinPal redirects externally
+- Transaction lookup by authority code (reference_number) for callback processing
+- Sandbox mode enabled by default for development safety
+
+## P17 — Final MVP Polish & Hardening (2026-08-31)
 
 ### Added
 - Auth services: create_teacher_user, create_parent_user, create_admin_user, update_user_profile, link_parent_student, unlink_parent_student, get_user_profile_data, list_users

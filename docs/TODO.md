@@ -71,8 +71,10 @@
 - [x] Credit / debt
 - [x] Refunds
 - [x] Payment history
-- [ ] Payment receipt upload
-- [ ] Future payment gateway integration
+- [x] Online payment gateway (ZarinPal)
+- [x] Payment receipt generation (printable)
+- [x] Payment notifications (in-app)
+- [x] Admin online payment visibility
 
 ## P7 — Exams, Assessments & Grades
 
@@ -262,7 +264,5 @@
 - [ ] Advanced analytics
 - [ ] AI features
 - [ ] Multi-branch support
-- [ ] Payment gateway integration (ZarinPal)
-- [ ] Payment receipt upload
 - [ ] Attendance reports
 - [ ] Academic calendar & holidays

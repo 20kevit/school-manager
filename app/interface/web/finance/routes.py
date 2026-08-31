@@ -436,6 +436,117 @@ def student_my_finance():
 
 
 # ---------------------------------------------------------------------------
+# Receipt route
+# ---------------------------------------------------------------------------
+
+
+@finance_bp.route("/receipt/<int:transaction_id>")
+@login_required
+def receipt(transaction_id):
+    """View and print a payment receipt."""
+    transaction = FinancialTransactionModel.query.get_or_404(transaction_id)
+
+    # Authorization: only the student who owns the transaction, their linked parent,
+    # or an admin can view the receipt
+    user_id = current_user.id
+    is_admin = current_user.has_role("ADMIN")
+    is_owner = transaction.student_user_id == user_id
+
+    if not is_admin and not is_owner:
+        # Check if current user is a parent linked to this student
+        from app.infrastructure.database.models import ParentProfileModel
+
+        parent_profile = ParentProfileModel.query.filter_by(user_id=user_id).first()
+        if parent_profile is None:
+            flash("دسترسی غیرمجاز.", "error")
+            return redirect(url_for("auth.dashboard"))
+        child_ids = [c.user_id for c in parent_profile.children]
+        if transaction.student_user_id not in child_ids:
+            flash("دسترسی غیرمجاز.", "error")
+            return redirect(url_for("auth.dashboard"))
+
+    student = UserModel.query.get(transaction.student_user_id)
+    if student is None:
+        flash("دانش‌آموز یافت نشد.", "error")
+        return redirect(url_for("auth.dashboard"))
+
+    student_name = "-"
+    if student.student_profile:
+        student_name = (
+            f"{student.student_profile.first_name} {student.student_profile.last_name}"
+        )
+
+    from app.utils.date_utils import format_jalali_datetime
+
+    payment_date = format_jalali_datetime(transaction.created_at)
+
+    if transaction.payment_method == "ONLINE":
+        payment_method_label = "پرداخت آنلاین"
+    elif transaction.payment_method == "CASH":
+        payment_method_label = "نقدی"
+    elif transaction.payment_method == "CARD":
+        payment_method_label = "کارت"
+    elif transaction.payment_method == "BANK_TRANSFER":
+        payment_method_label = "转账 بانکی"
+    else:
+        payment_method_label = "سایر"
+
+    ref_id = transaction.reference_number or "-"
+
+    if transaction.status == "ACTIVE":
+        status_class = "status-active"
+        status_label = "تایید شده"
+    elif transaction.status == "PENDING":
+        status_class = "status-pending"
+        status_label = "در انتظار"
+    else:
+        status_class = "status-failed"
+        status_label = "ناموفق"
+
+    # Determine back URL based on role
+    if is_admin:
+        back_url = url_for(
+            "finance.admin_transaction_detail", transaction_id=transaction.id
+        )
+    elif student.has_role("STUDENT"):
+        from datetime import date as date_type
+
+        from app.infrastructure.database.models import StudentProfileModel
+
+        profile = StudentProfileModel.query.filter_by(user_id=user_id).first()
+        if profile is not None:
+            today = date_type.today()
+            age = (
+                today.year
+                - profile.birth_date.year
+                - (
+                    (today.month, today.day)
+                    < (profile.birth_date.month, profile.birth_date.day)
+                )
+            )
+            if age >= 18:
+                back_url = url_for("finance.student_my_finance")
+            else:
+                back_url = url_for("finance.parent_overview")
+        else:
+            back_url = url_for("finance.parent_overview")
+    else:
+        back_url = url_for("finance.parent_overview")
+
+    return render_template(
+        "finance/receipt.html",
+        transaction=transaction,
+        student_name=student_name,
+        payment_date=payment_date,
+        payment_method_label=payment_method_label,
+        ref_id=ref_id,
+        status_class=status_class,
+        status_label=status_label,
+        back_url=back_url,
+    )
+
+
+# ---------------------------------------------------------------------------
 # Online payment routes (Student 18+ & Parent)
 # ---------------------------------------------------------------------------
 

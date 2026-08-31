@@ -1,15 +1,38 @@
 # Project Status
 
-**Current Phase:** P17 — Final MVP Polish & Hardening — Completed
-**Current Objective:** MVP Core Complete. Ready for real-world testing.
+**Current Phase:** P19 — Payment Receipts, Notifications & Admin Visibility — Completed
+**Current Objective:** Payment workflow complete. Receipts, notifications, and admin visibility implemented.
 
-**Previous Phase:** P16 — Admin User Management & System Seeding
+**Previous Phase:** P18 — ZarinPal Online Payment Integration
 
 ## Status
 
-P17 — Final MVP Polish & Hardening is complete. Enhanced seed script with rich test data, UI consistency audit (English enums & Jalali dates fixed), authorization hardening, and all 691 tests passing.
+P19 is complete. Students and parents can view and print payment receipts, successful online payments trigger in-app notifications, and the admin dashboard now shows online payment statistics. All tests pass.
 
 ## Completed
+
+### P19 — Payment Receipts, Notifications & Admin Visibility
+- [x] Payment receipt route (`/finance/receipt/<transaction_id>`) with authorization checks
+- [x] Printable receipt template (academy name, student name, Jalali date, amount, ref_id, payment method, status)
+- [x] Print-friendly CSS (`@media print`) hiding sidebars/headers
+- [x] Print receipt buttons on admin transaction detail, student finance, and parent child statement pages
+- [x] In-app notification on successful online payment (PAYMENT_RECEIVED type)
+- [x] Notification includes amount and tracking number in Persian
+- [x] Graceful degradation if notification system unavailable
+- [x] Admin dashboard: "Online Payments Today" stat card (count + total amount)
+- [x] Payment method filter on admin transaction list
+- [x] All tests pass, Ruff check/format clean
+
+### P18 — ZarinPal Online Payment Integration
+- [x] PaymentGateway abstraction (ABC) with result dataclasses
+- [x] ZarinPal v4 REST API implementation (sandbox/production)
+- [x] NullPaymentGateway fallback
+- [x] Online payment initiation (PENDING transaction)
+- [x] Payment callback processing (verification + status update)
+- [x] Student and parent online payment routes
+- [x] Payment callback route (public, no login required)
+- [x] Configuration: ZARINPAL_MERCHANT_ID, ZARINPAL_SANDBOX
+- [x] 15 new tests for payment services and routes
 
 ### P17 — Final MVP Polish & Hardening
 - [x] Enhanced `flask seed` CLI command with realistic test data (course, class, sessions, enrollment, activity, assessment, finance)

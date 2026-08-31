@@ -781,6 +781,24 @@ def get_dashboard_summary() -> dict:
         .scalar()
     )
 
+    today_online_payments_count = FinancialTransactionModel.query.filter(
+        FinancialTransactionModel.status == "ACTIVE",
+        FinancialTransactionModel.transaction_type == "PAYMENT",
+        FinancialTransactionModel.payment_method == "ONLINE",
+        func.date(FinancialTransactionModel.created_at) == today,
+    ).count()
+
+    today_online_payments_amount = (
+        FinancialTransactionModel.query.filter(
+            FinancialTransactionModel.status == "ACTIVE",
+            FinancialTransactionModel.transaction_type == "PAYMENT",
+            FinancialTransactionModel.payment_method == "ONLINE",
+            func.date(FinancialTransactionModel.created_at) == today,
+        )
+        .with_entities(func.coalesce(func.sum(FinancialTransactionModel.amount), 0))
+        .scalar()
+    )
+
     month_payments = (
         FinancialTransactionModel.query.filter(
             FinancialTransactionModel.status == "ACTIVE",
@@ -836,6 +854,8 @@ def get_dashboard_summary() -> dict:
         "credit_count": credit_count,
         "total_payments": Decimal(str(total_payments)),
         "today_payments": Decimal(str(today_payments)),
+        "today_online_payments_count": today_online_payments_count,
+        "today_online_payments_amount": Decimal(str(today_online_payments_amount)),
         "month_payments": Decimal(str(month_payments)),
         "total_refunds": Decimal(str(total_refunds)),
         "total_discounts": Decimal(str(total_discounts)),

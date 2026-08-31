@@ -51,6 +51,17 @@
                 </select>
             </div>
             <div class="form-group">
+                <label class="form-label" for="payment_method">روش پرداخت</label>
+                <select class="form-select" id="payment_method" name="payment_method" onchange="this.form.submit()">
+                    <option value="">همه</option>
+                    <option value="ONLINE" {{ 'selected' if filters.payment_method == 'ONLINE' }}>آنلاین</option>
+                    <option value="CASH" {{ 'selected' if filters.payment_method == 'CASH' }}>نقدی</option>
+                    <option value="CARD" {{ 'selected' if filters.payment_method == 'CARD' }}>کارت</option>
+                    <option value="BANK_TRANSFER" {{ 'selected' if filters.payment_method == 'BANK_TRANSFER' }}>转账 بانکی</option>
+                    <option value="OTHER" {{ 'selected' if filters.payment_method == 'OTHER' }}>سایر</option>
+                </select>
+            </div>
+            <div class="form-group">
                 <label class="form-label" for="start_date">از تاریخ</label>
                 <input class="form-input" type="date" id="start_date" name="start_date" value="{{ filters.start_date }}">
             </div>
@@ -61,7 +72,7 @@
         </div>
         <div style="margin-top: 1rem; display: flex; gap: 0.5rem;">
             <button type="submit" class="btn btn-primary btn-sm">اعمال فیلتر</button>
-            {% if filters.student_id or filters.class_id or filters.transaction_type or filters.category or filters.start_date or filters.end_date %}
+            {% if filters.student_id or filters.class_id or filters.transaction_type or filters.category or filters.payment_method or filters.start_date or filters.end_date %}
             <a href="{{ url_for('finance.admin_transaction_list') }}" class="btn btn-outline btn-sm">پاک کردن فیلترها</a>
             {% endif %}
         </div>

@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>رسید پرداخت</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: 'Vazirmatn', sans-serif;
+            background: #f5f5f5;
+            color: #1a1a1a;
+            display: flex;
+            justify-content: center;
+            padding: 2rem;
+        }
+        .receipt-wrapper {
+            width: 100%;
+            max-width: 600px;
+        }
+        .print-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem 1.25rem;
+            background: var(--color-primary, #2563eb);
+            color: #fff;
+            border: none;
+            border-radius: 8px;
+            font-family: 'Vazirmatn', sans-serif;
+            font-size: 0.95rem;
+            font-weight: 500;
+            cursor: pointer;
+            margin-bottom: 1rem;
+        }
+        .print-btn:hover { opacity: 0.9; }
+        .back-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem 1.25rem;
+            background: #fff;
+            color: #1a1a1a;
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            font-family: 'Vazirmatn', sans-serif;
+            font-size: 0.95rem;
+            font-weight: 500;
+            cursor: pointer;
+            margin-bottom: 1rem;
+            margin-right: 0.5rem;
+            text-decoration: none;
+        }
+        .back-btn:hover { background: #f9fafb; }
+        .receipt {
+            background: #fff;
+            border: 2px solid #e5e7eb;
+            border-radius: 12px;
+            overflow: hidden;
+        }
+        .receipt-header {
+            background: #2563eb;
+            color: #fff;
+            text-align: center;
+            padding: 2rem 1.5rem 1.5rem;
+        }
+        .receipt-header h1 {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-bottom: 0.25rem;
+        }
+        .receipt-header .academy-name {
+            font-size: 1.1rem;
+            font-weight: 400;
+            opacity: 0.9;
+        }
+        .receipt-body { padding: 1.5rem; }
+        .receipt-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.75rem 0;
+            border-bottom: 1px solid #f3f4f6;
+        }
+        .receipt-row:last-child { border-bottom: none; }
+        .receipt-label {
+            font-size: 0.9rem;
+            color: #6b7280;
+            font-weight: 400;
+        }
+        .receipt-value {
+            font-size: 0.95rem;
+            font-weight: 600;
+            text-align: left;
+        }
+        .receipt-amount {
+            font-size: 1.4rem;
+            font-weight: 700;
+            color: #059669;
+        }
+        .receipt-footer {
+            text-align: center;
+            padding: 1rem 1.5rem 1.5rem;
+            color: #9ca3af;
+            font-size: 0.8rem;
+        }
+        .status-badge {
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px;
+            font-size: 0.85rem;
+            font-weight: 500;
+        }
+        .status-active {
+            background: #d1fae5;
+            color: #065f46;
+        }
+        .status-pending {
+            background: #fef3c7;
+            color: #92400e;
+        }
+        .status-failed {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+        @media print {
+            body { background: #fff; padding: 0; }
+            .print-btn, .back-btn { display: none !important; }
+            .receipt-wrapper { max-width: 100%; }
+            .receipt {
+                border: none;
+                border-radius: 0;
+                box-shadow: none;
+            }
+            .receipt-header { background: #2563eb !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            .status-badge { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+        }
+    </style>
+</head>
+<body>
+    <div class="receipt-wrapper">
+        <div style="display: flex; gap: 0.5rem;">
+            <button class="print-btn" onclick="window.print()">چاپ رسید</button>
+            <a href="{{ back_url }}" class="back-btn">بازگشت</a>
+        </div>
+
+        <div class="receipt">
+            <div class="receipt-header">
+                <h1>رسید پرداخت</h1>
+                <div class="academy-name">آکادمی</div>
+            </div>
+
+            <div class="receipt-body">
+                <div class="receipt-row">
+                    <span class="receipt-label">نام دانش‌آموز</span>
+                    <span class="receipt-value">{{ student_name }}</span>
+                </div>
+                <div class="receipt-row">
+                    <span class="receipt-label">تاریخ پرداخت</span>
+                    <span class="receipt-value">{{ payment_date }}</span>
+                </div>
+                <div class="receipt-row">
+                    <span class="receipt-label">مبلغ پرداختی</span>
+                    <span class="receipt-value receipt-amount">{{ "{:,.0f}".format(transaction.amount) }} تومان</span>
+                </div>
+                <div class="receipt-row">
+                    <span class="receipt-label">کد پیگیری</span>
+                    <span class="receipt-value">{{ ref_id }}</span>
+                </div>
+                <div class="receipt-row">
+                    <span class="receipt-label">روش پرداخت</span>
+                    <span class="receipt-value">{{ payment_method_label }}</span>
+                </div>
+                <div class="receipt-row">
+                    <span class="receipt-label">وضعیت</span>
+                    <span class="receipt-value">
+                        <span class="status-badge {{ status_class }}">{{ status_label }}</span>
+                    </span>
+                </div>
+                {% if transaction.description %}
+                <div class="receipt-row">
+                    <span class="receipt-label">توضیحات</span>
+                    <span class="receipt-value">{{ transaction.description }}</span>
+                </div>
+                {% endif %}
+                <div class="receipt-row">
+                    <span class="receipt-label">شماره تراکنش</span>
+                    <span class="receipt-value">#{{ transaction.id }}</span>
+                </div>
+            </div>
+
+            <div class="receipt-footer">
+                این رسید به صورت خودکار توسط سیستم صادر شده است.
+            </div>
+        </div>
+    </div>
+</body>
+</html>

@@ -175,6 +175,10 @@ def process_payment_callback(
             transaction.id,
             result.ref_id,
         )
+
+        # Trigger in-app notification to the student
+        _notify_payment_success(transaction)
+
         return {
             "success": True,
             "transaction_id": transaction.id,
@@ -196,3 +200,33 @@ def process_payment_callback(
             "ref_id": "",
             "message": f"پرداخت تأیید نشد: {result.error}",
         }
+
+
+def _notify_payment_success(transaction: FinancialTransactionModel) -> None:
+    """Send an in-app notification when a payment is successfully verified.
+
+    Uses the notification service to create and send a notification.
+    Gracefully degrades if the notification system is unavailable.
+    """
+    try:
+        from app.application.notification import notification_service
+        from app.domain.notification import NotificationType
+
+        ref_id = transaction.reference_number or "-"
+        amount_str = f"{transaction.amount:,.0f}"
+
+        notification_service.create_in_app_notification(
+            user_id=transaction.student_user_id,
+            title="تاییدیه پرداخت",
+            message=(
+                f"پرداخت شما به مبلغ {amount_str} تومان با کد پیگیری {ref_id} "
+                f"با موفقیت ثبت شد."
+            ),
+            notification_type=NotificationType.PAYMENT_RECEIVED,
+            link="/finance/receipt/" + str(transaction.id),
+        )
+    except Exception:
+        logger.exception(
+            "Failed to send payment notification for transaction_id=%d",
+            transaction.id,
+        )
