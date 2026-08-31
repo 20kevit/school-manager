@@ -1,15 +1,32 @@
 # Project Status
 
-**Current Phase:** P24 — Teacher Salaries & Payroll Management — Completed
-**Current Objective:** Teacher contract management, automated payroll calculation, and payment tracking.
+**Current Phase:** P25 — Online Class Integration & Session Links — Completed
+**Current Objective:** Online meeting link management for hybrid/online classes.
 
-**Previous Phase:** P23 — Academic Calendar & Semester Management
+**Previous Phase:** P24 — Teacher Salaries & Payroll Management
 
 ## Status
 
-P24 is complete. Admins can define per-session or percentage-based contracts for teachers, generate monthly payroll reports with Jalali month selection, and mark payments as paid. All 869 tests pass.
+P25 is complete. Admins and teachers can set a default online link for classes, override it per session, and students see a "Join Online Class" button in their timetable when a session is imminent. All 886 tests pass.
 
 ## Completed
+
+### P25 — Online Class Integration & Session Links
+- [x] `online_link` nullable column on `AcademyClassModel` — default class online meeting link
+- [x] `online_link` nullable column on `SessionModel` — per-session link override
+- [x] `online_link` field on `AcademyClass` and `Session` domain entities
+- [x] Class edit form: "لینک پیش‌فرض کلاس آنلاین" field (Admin + assigned Teacher)
+- [x] Session edit form: "لینک جلسه آنلاین" field (Admin + assigned Teacher) with fallback hint
+- [x] Student timetable: "ورود به کلاس آنلاین" button for imminent sessions
+- [x] Teacher timetable: same button for teacher's own classes
+- [x] Student class detail: online link shown when enrolled
+- [x] Admin class detail: online link displayed
+- [x] Timetable badge: "آنلاین" tag on classes with online links
+- [x] In-app notification to enrolled students when session online link is set
+- [x] Teacher access restricted to own classes (ownership check)
+- [x] Database migration: e5f6a7b8c9d0 (online_link on academy_classes, sessions)
+- [x] 17 new tests: online_link CRUD, session override, timetable data, upcoming sessions
+- [x] 886 total tests passing, Ruff check/format clean
 
 ### P24 — Teacher Salaries & Payroll Management
 - [x] `TeacherContract` domain entity and `TeacherContractModel` — PER_SESSION or PERCENTAGE_OF_REVENUE contracts per class
@@ -25,7 +42,7 @@ P24 is complete. Admins can define per-session or percentage-based contracts for
 - [x] Admin UI: payroll dashboard with Jalali month selector and per-class breakdown
 - [x] Database migration: teacher_contracts, teacher_payments tables
 - [x] 41 new tests: contract CRUD, mixed contract types, non-completed session exclusion, finalization, payment status, admin routes, generic contract fallback, date range filtering
-- [x] 869 total tests passing, Ruff check/format clean
+- [x] 869 tests passing at completion, Ruff check/format clean
 
 ### P23 — Academic Calendar & Semester Management
 - [x] `excel_service.py` — Application-layer service for Excel import/export using openpyxl

@@ -41,6 +41,12 @@
         <span class="detail-row-label">وضعیت</span>
         <span class="detail-row-value">{{ status_badge(academy_class.status) }}</span>
     </div>
+    {% if academy_class.online_link and existing_enrollment and existing_enrollment.status == 'APPROVED' %}
+    <div class="detail-row">
+        <span class="detail-row-label">لینک کلاس آنلاین:</span>
+        <span class="detail-row-value"><a href="{{ academy_class.online_link }}" target="_blank" rel="noopener noreferrer">{{ academy_class.online_link }}</a></span>
+    </div>
+    {% endif %}
 </div>
 
 {% if academy_class.schedule_entries %}

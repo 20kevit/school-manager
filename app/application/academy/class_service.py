@@ -251,6 +251,7 @@ def update_class(
     capacity: int | None = None,
     teacher_user_id: int | None = None,
     status: str | None = None,
+    online_link: str | None = None,
 ) -> AcademyClassModel:
     """Update class metadata (not schedule or sessions)."""
     if title is not None:
@@ -265,6 +266,8 @@ def update_class(
         academy_class.teacher_user_id = teacher_user_id
     if status is not None:
         academy_class.status = status
+    if online_link is not None:
+        academy_class.online_link = online_link.strip() if online_link.strip() else None
 
     db.session.commit()
     return academy_class
@@ -370,6 +373,7 @@ def update_session(
     scheduled_date: date | None = None,
     start_time: time | None = None,
     end_time: time | None = None,
+    online_link: str | None = None,
     edited_by: int | None = None,
 ) -> SessionModel:
     """Update session properties safely.
@@ -421,6 +425,9 @@ def update_session(
         session.start_time = new_start_val
     if end_changed:
         session.end_time = new_end_val
+
+    if online_link is not None:
+        session.online_link = online_link.strip() if online_link.strip() else None
 
     if session.start_time >= session.end_time:
         raise ClassError("Start time must be before end time.")

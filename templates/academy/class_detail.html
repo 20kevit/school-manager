@@ -51,6 +51,12 @@
         <span class="detail-row-value">{{ class_obj.semester.title }} ({{ class_obj.semester.academic_year.title }})</span>
     </div>
     {% endif %}
+    {% if class_obj.online_link %}
+    <div class="detail-row">
+        <span class="detail-row-label">لینک کلاس آنلاین:</span>
+        <span class="detail-row-value"><a href="{{ class_obj.online_link }}" target="_blank" rel="noopener noreferrer">{{ class_obj.online_link }}</a></span>
+    </div>
+    {% endif %}
 </div>
 
 <div class="section-header">

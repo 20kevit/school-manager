@@ -42,6 +42,7 @@ class AcademyClass:
         num_sessions: int = 1,
         status: ClassStatus = ClassStatus.PLANNED,
         teacher_user_id: int | None = None,
+        online_link: str | None = None,
     ):
         self.id = id
         self.course_id = course_id
@@ -52,6 +53,7 @@ class AcademyClass:
         self.num_sessions = num_sessions
         self.status = status
         self.teacher_user_id = teacher_user_id
+        self.online_link = online_link
 
     def __repr__(self) -> str:
         return f"<AcademyClass id={self.id} title={self.title!r}>"

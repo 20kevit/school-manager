@@ -6,6 +6,32 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 
 ## Unreleased
 
+## P25 — Online Class Integration & Session Links (2026-09-01)
+
+### Added
+- `online_link` nullable column on `AcademyClassModel` — default online meeting link for all sessions in a class
+- `online_link` nullable column on `SessionModel` — per-session link override (falls back to class default when empty)
+- `online_link` field on `AcademyClass` and `Session` domain entities
+- Class edit form: "لینک پیش‌فرض کلاس آنلاین" field (Admin + assigned Teacher)
+- Session edit form: "لینک جلسه آنلاین" field (Admin + assigned Teacher) with hint about class default fallback
+- Student timetable: "ورود به کلاس آنلاین" button for sessions happening today (within 30 minutes), using session link with class link fallback
+- Teacher timetable: same "Join Online Class" button for their own classes
+- Student class detail page: shows class online link when student is enrolled
+- Admin class detail page: shows class online link
+- Timetable entries: "آنلاین" badge on classes that have an online link
+- In-app notification to enrolled students when a teacher/admin sets a session online link
+- `class_edit` route now allows TEACHER role (with ownership check)
+- `session_edit` route now allows TEACHER role (with ownership check)
+- Database migration: `e5f6a7b8c9d0` adds `online_link` to `academy_classes` and `sessions`
+- 17 new tests: class/session online_link CRUD, session override of class default, timetable data, upcoming sessions, enrollment visibility
+
+### Design Decisions
+- Session-level link overrides class-level link (fallback: `session.online_link or class.online_link`)
+- "Join Class" button shown only when session is scheduled for TODAY and current time is within the session window (up to 30 minutes before start)
+- Teacher access restricted to own classes only (ownership check via `teacher_user_id`)
+- Online link stored as plain URL string (no video conferencing integration)
+- Empty string cleared to `None` on save for clean nullable semantics
+
 ## P24 — Teacher Salaries & Payroll Management (2026-09-01)
 
 ### Added

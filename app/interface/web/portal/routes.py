@@ -1,5 +1,7 @@
 """Portal routes — role-specific dashboards."""
 
+from datetime import date, datetime, timedelta
+
 from flask import Blueprint, render_template
 from flask_login import current_user, login_required
 
@@ -91,7 +93,7 @@ def _build_timetable_data(schedule_entries):
     """Build a weekly timetable grid from schedule entries.
 
     Returns a dict keyed by weekday, each containing a list of
-    {"class_title", "course_title", "start_time", "end_time", "class_id"}.
+    {"class_title", "course_title", "start_time", "end_time", "class_id", "online_link"}.
     """
     grid: dict[str, list[dict]] = {d: [] for d in WEEKDAYS}
     for entry in schedule_entries:
@@ -104,11 +106,48 @@ def _build_timetable_data(schedule_entries):
                 "course_title": course.title if course else "",
                 "start_time": entry.start_time,
                 "end_time": entry.end_time,
+                "online_link": cls.online_link,
             }
         )
     for day in grid:
         grid[day].sort(key=lambda x: x["start_time"])
     return grid
+
+
+def _get_upcoming_sessions(class_ids: list[int]) -> list[dict]:
+    """Get upcoming sessions (today, within 30 minutes) with online links for given classes."""
+    from app.infrastructure.database.models import SessionModel
+
+    if not class_ids:
+        return []
+
+    today = date.today()
+    now = datetime.now()
+    cutoff = now + timedelta(minutes=30)
+
+    sessions = SessionModel.query.filter(
+        SessionModel.class_id.in_(class_ids),
+        SessionModel.scheduled_date == today,
+        SessionModel.status == "SCHEDULED",
+    ).all()
+
+    upcoming = []
+    for s in sessions:
+        session_start = datetime.combine(s.scheduled_date, s.start_time)
+        session_end = datetime.combine(s.scheduled_date, s.end_time)
+        if session_start <= cutoff and session_end >= now:
+            effective_link = s.online_link or (
+                s.academy_class.online_link if s.academy_class else None
+            )
+            if effective_link:
+                upcoming.append(
+                    {
+                        "session": s,
+                        "online_link": effective_link,
+                        "class_title": s.academy_class.title if s.academy_class else "",
+                    }
+                )
+    return upcoming
 
 
 @portal_bp.route("/student/timetable")
@@ -133,7 +172,13 @@ def student_timetable():
         ).all()
 
     timetable = _build_timetable_data(schedule_entries)
-    return render_template("portal/timetable.html", timetable=timetable, role="student")
+    upcoming = _get_upcoming_sessions(class_ids)
+    return render_template(
+        "portal/timetable.html",
+        timetable=timetable,
+        role="student",
+        upcoming_sessions=upcoming,
+    )
 
 
 @portal_bp.route("/teacher/timetable")
@@ -160,4 +205,10 @@ def teacher_timetable():
         ).all()
 
     timetable = _build_timetable_data(schedule_entries)
-    return render_template("portal/timetable.html", timetable=timetable, role="teacher")
+    upcoming = _get_upcoming_sessions(class_ids)
+    return render_template(
+        "portal/timetable.html",
+        timetable=timetable,
+        role="teacher",
+        upcoming_sessions=upcoming,
+    )

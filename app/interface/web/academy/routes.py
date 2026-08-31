@@ -283,12 +283,17 @@ def class_detail(class_id):
 
 @academy_bp.route("/classes/<int:class_id>/edit", methods=["GET", "POST"])
 @login_required
-@role_required("ADMIN")
+@role_required("ADMIN", "TEACHER")
 def class_edit(class_id):
     academy_class = get_class(class_id)
     if academy_class is None:
         flash("Class not found.", "error")
         return redirect(url_for("academy.class_list"))
+
+    if current_user.has_any_role("TEACHER") and not current_user.has_any_role("ADMIN"):
+        if academy_class.teacher_user_id != current_user.id:
+            flash("You can only edit your own classes.", "error")
+            return redirect(url_for("academy.class_detail", class_id=class_id))
 
     courses = list_courses()
     teachers = []  # Could fetch teachers here if needed
@@ -301,6 +306,7 @@ def class_edit(class_id):
                 capacity=int(request.form.get("capacity", 30)),
                 teacher_user_id=_parse_int(request.form.get("teacher_user_id")),
                 status=request.form.get("status", academy_class.status),
+                online_link=request.form.get("online_link", ""),
             )
             flash("Class updated successfully.", "success")
             return redirect(url_for("academy.class_detail", class_id=class_id))
@@ -375,15 +381,22 @@ def session_detail(session_id):
 
 @academy_bp.route("/sessions/<int:session_id>/edit", methods=["GET", "POST"])
 @login_required
-@role_required("ADMIN")
+@role_required("ADMIN", "TEACHER")
 def session_edit(session_id):
     session = get_session(session_id)
     if session is None:
         flash("Session not found.", "error")
         return redirect(url_for("academy.class_list"))
     academy_class = get_class(session.class_id)
+
+    if current_user.has_any_role("TEACHER") and not current_user.has_any_role("ADMIN"):
+        if academy_class.teacher_user_id != current_user.id:
+            flash("You can only edit sessions for your own classes.", "error")
+            return redirect(url_for("academy.session_detail", session_id=session_id))
+
     if request.method == "POST":
         try:
+            new_online_link = request.form.get("online_link", "")
             update_session(
                 session,
                 title=request.form.get("title"),
@@ -391,8 +404,11 @@ def session_edit(session_id):
                 scheduled_date=_parse_date(request.form["scheduled_date"]),
                 start_time=_parse_time(request.form["start_time"]),
                 end_time=_parse_time(request.form["end_time"]),
+                online_link=new_online_link,
                 edited_by=current_user.id,
             )
+            if new_online_link.strip():
+                _notify_students_online_link(session, academy_class)
             flash("Session updated successfully.", "success")
             return redirect(url_for("academy.session_detail", session_id=session_id))
         except (ClassError, ValueError) as e:
@@ -543,3 +559,28 @@ def _parse_session_contents(form) -> list[dict]:
             )
         i += 1
     return contents
+
+
+def _notify_students_online_link(session, academy_class):
+    """Send in-app notifications to enrolled students when a session gets an online link."""
+    from app.application.notification.notification_service import (
+        create_in_app_notification,
+    )
+    from app.infrastructure.database.models import EnrollmentModel
+
+    enrollments = EnrollmentModel.query.filter_by(
+        class_id=academy_class.id, status="APPROVED"
+    ).all()
+
+    session_label = f"جلسه {session.session_number}"
+    if session.title:
+        session_label += f" ({session.title})"
+
+    for enrollment in enrollments:
+        create_in_app_notification(
+            user_id=enrollment.student_user_id,
+            title="لینک کلاس آنلاین ثبت شد",
+            message=f"لینک کلاس آنلاین برای {session_label} کلاس «{academy_class.title}» ثبت شد.",
+            notification_type="IN_APP_MESSAGE",
+            link=f"/academy/sessions/{session.id}",
+        )

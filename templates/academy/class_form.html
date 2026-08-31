@@ -84,6 +84,14 @@
         </div>
         {% endif %}
 
+        {% if class_obj %}
+        <div class="form-group">
+            <label class="form-label" for="online_link">لینک پیش‌فرض کلاس آنلاین</label>
+            <input class="form-input" type="url" id="online_link" name="online_link" value="{{ class_obj.online_link or '' }}" placeholder="مثال: https://skyroom.online/room/...">
+            <span class="form-hint">لینک پیش‌فرض برای تمام جلسات (قابل override در هر جلسه)</span>
+        </div>
+        {% endif %}
+
         {% if not class_obj %}
         <div class="section-header">
             <h3>برنامه هفتگی</h3>

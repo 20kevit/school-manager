@@ -346,6 +346,7 @@ class AcademyClassModel(db.Model):
     status = db.Column(db.String(20), nullable=False, default="PLANNED")
     teacher_user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=True)
     semester_id = db.Column(db.Integer, db.ForeignKey("semesters.id"), nullable=True)
+    online_link = db.Column(db.String(500), nullable=True)
     created_at = db.Column(db.DateTime, server_default=db.func.now(), nullable=False)
     updated_at = db.Column(
         db.DateTime,
@@ -428,6 +429,7 @@ class SessionModel(db.Model):
     title = db.Column(db.String(200), nullable=True)
     description = db.Column(db.Text, nullable=True)
     is_rescheduled = db.Column(db.Boolean, nullable=False, default=False)
+    online_link = db.Column(db.String(500), nullable=True)
     created_at = db.Column(db.DateTime, server_default=db.func.now(), nullable=False)
     updated_at = db.Column(
         db.DateTime,

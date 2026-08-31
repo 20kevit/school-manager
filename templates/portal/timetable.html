@@ -119,11 +119,16 @@
     <div class="timetable-cell">
         {% if timetable[day] %}
             {% for entry in timetable[day] %}
-            <a href="{{ url_for('academy.class_detail', class_id=entry.class_id) }}" class="timetable-entry {{ class_color_map.get(entry.class_id, 'color-1') }}" style="text-decoration: none; color: inherit; display: block;">
-                <div class="entry-class">{{ entry.class_title }}</div>
-                <div class="entry-course">{{ entry.course_title }}</div>
-                <div class="entry-time">{{ entry.start_time.strftime('%H:%M') }} - {{ entry.end_time.strftime('%H:%M') }}</div>
-            </a>
+            <div class="timetable-entry {{ class_color_map.get(entry.class_id, 'color-1') }}" style="position: relative;">
+                <a href="{{ url_for('academy.class_detail', class_id=entry.class_id) }}" style="text-decoration: none; color: inherit; display: block;">
+                    <div class="entry-class">{{ entry.class_title }}</div>
+                    <div class="entry-course">{{ entry.course_title }}</div>
+                    <div class="entry-time">{{ entry.start_time.strftime('%H:%M') }} - {{ entry.end_time.strftime('%H:%M') }}</div>
+                </a>
+                {% if entry.online_link %}
+                <a href="{{ entry.online_link }}" target="_blank" rel="noopener noreferrer" title="لینک کلاس آنلاین" style="position: absolute; top: 0.35rem; left: 0.35rem; background: var(--color-primary, #2563eb); color: #fff; border-radius: 4px; padding: 0.15rem 0.35rem; font-size: 0.65rem; text-decoration: none;">آنلاین</a>
+                {% endif %}
+            </div>
             {% endfor %}
         {% else %}
             <div class="timetable-empty">—</div>
@@ -136,6 +141,21 @@
 <div style="text-align: center; padding: 3rem 1rem; color: var(--color-text-secondary, #64748b);">
     <p style="font-size: 1.1rem;">برنامه هفتگی خالی است</p>
     <p style="font-size: 0.9rem; margin-top: 0.5rem;">هنوز در هیچ کلاسی ثبت‌نام نشده‌اید.</p>
+</div>
+{% endif %}
+
+{% if upcoming_sessions is defined and upcoming_sessions %}
+<div style="margin-top: 2rem;">
+    <h3 style="margin-bottom: 1rem; color: var(--color-primary, #2563eb);">کلاس‌های آنلاین امروز</h3>
+    {% for item in upcoming_sessions %}
+    <div style="display: flex; align-items: center; justify-content: space-between; background: var(--color-primary-light, #eff6ff); border: 2px solid var(--color-primary, #2563eb); border-radius: 8px; padding: 1rem; margin-bottom: 0.75rem;">
+        <div>
+            <div style="font-weight: 600; color: var(--color-primary, #2563eb);">{{ item.class_title }}</div>
+            <div style="font-size: 0.85rem; color: var(--color-text-secondary, #64748b);">جلسه {{ item.session.session_number }} — {{ item.session.start_time.strftime('%H:%M') }} تا {{ item.session.end_time.strftime('%H:%M') }}</div>
+        </div>
+        <a href="{{ item.online_link }}" target="_blank" rel="noopener noreferrer" class="btn btn-primary" style="white-space: nowrap;">ورود به کلاس آنلاین</a>
+    </div>
+    {% endfor %}
 </div>
 {% endif %}
 {% endblock %}

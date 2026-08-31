@@ -31,6 +31,7 @@ class Session:
         title: str | None = None,
         description: str | None = None,
         is_rescheduled: bool = False,
+        online_link: str | None = None,
     ):
         self.id = id
         self.class_id = class_id
@@ -42,6 +43,7 @@ class Session:
         self.title = title
         self.description = description
         self.is_rescheduled = is_rescheduled
+        self.online_link = online_link
 
     def __repr__(self) -> str:
         return (
