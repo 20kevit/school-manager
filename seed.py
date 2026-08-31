@@ -65,10 +65,16 @@ with app.app_context():
 
     parent = create_user("parent1", "parent123")
     assign_role(parent, "PARENT")
-    parent_profile = ParentProfileModel(user_id=parent.id)
+    parent_profile = ParentProfileModel(
+        user_id=parent.id,
+        first_name="Mohammad",
+        last_name="Rezaei",
+        national_id="9876543210",
+        mobile_phone="09129876543",
+    )
     db.session.add(parent_profile)
     db.session.flush()
-    parent_profile.students.append(profile)
+    parent_profile.children.append(profile)
     print("Created: parent1 / parent123 (linked to student1)")
 
     db.session.commit()
