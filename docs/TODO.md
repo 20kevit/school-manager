@@ -186,7 +186,21 @@
 - [x] 80 file management tests
 - [x] Documentation updated
 
-## P12 — Future
+## P12 — UI/UX, Frontend & User Experience Overhaul
+
+- [x] CSS architecture: 9 modular CSS files (tokens, base, layout, components, forms, tables, dashboard, utilities, responsive)
+- [x] Base template redesign: sidebar + header app shell
+- [x] Vazirmatn font, SVG icons, sidebar toggle
+- [x] Reusable component macros (page_header, empty_state, status_badge, stat_card, pagination, breadcrumbs, confirm_dialog)
+- [x] Reusable form macros (form_field, form_select, form_textarea, form_checkbox, form_section)
+- [x] Flash message component
+- [x] Error pages (400, 403, 404, 500) with Persian UI
+- [x] Auth pages redesign (login, change_password, dashboard)
+- [x] Portal dashboards redesign (admin, teacher, student, parent)
+- [x] All module templates redesigned with new design system
+- [x] 577 tests passing, Ruff clean
+
+## P13 — Future
 
 - [ ] Mobile application
 - [ ] Advanced permissions

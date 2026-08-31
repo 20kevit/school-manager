@@ -1,9 +1,9 @@
 # Project Status
 
-**Current Phase:** P11 — File & Document Management — Completed
-**Current Objective:** P11 — File & Document Management complete.
+**Current Phase:** P12 — UI/UX, Frontend & User Experience Overhaul — Completed
+**Current Objective:** P12 — UI/UX complete, ready for P13.
 
-**Previous Phase:** P10 — Reporting & Analytics
+**Previous Phase:** P11 — File & Document Management
 
 ## Status
 
@@ -254,4 +254,20 @@ P11 — File & Document Management is complete.
 - [x] Configuration (FILE_STORAGE_BACKEND, FILE_STORAGE_PATH, FILE_MAX_UPLOAD_SIZE)
 - [x] .env.example updated
 - [x] 80 file management tests (domain, storage, validation, service, authorization, routes, security)
-- [x] 577 total tests passing (P1-P11)
+- [x] 577 total tests passing (P1-P12)
+
+### P12 — UI/UX, Frontend & User Experience Overhaul
+- [x] CSS architecture: 9 modular CSS files (tokens, base, layout, components, forms, tables, dashboard, utilities, responsive)
+- [x] Vazirmatn web font loading, inline SVG icons
+- [x] Base template redesign: sidebar + header app shell
+- [x] Sidebar persistent on desktop, hamburger toggle on mobile/tablet
+- [x] Reusable component macros (page_header, empty_state, status_badge, stat_card, pagination, breadcrumbs, confirm_dialog)
+- [x] Reusable form macros (form_field, form_select, form_textarea, form_checkbox, form_section)
+- [x] Flash message component (shared across all pages)
+- [x] Error pages: 400, 403, 404, 500 with Persian UI
+- [x] Auth pages redesign (login, change_password, dashboard)
+- [x] Portal dashboards redesign (admin, teacher, student, parent)
+- [x] All module templates redesigned: academy, activity, assessment, attendance, enrollment, finance, file_management, notification, reporting
+- [x] Main.js rewrite: sidebar toggle, auto-dismiss alerts, toast system, button loading, confirm dialogs
+- [x] All UI text in Persian, RTL layout
+- [x] 577 tests passing, Ruff check/format clean

@@ -22,7 +22,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 
 ### Changed
 
-- Established project roadmap (P0 through P11) and updated project status to P1 — Identity & Access
+- Established project roadmap (P0 through P13) and updated project status to P1 — Identity & Access
 
 ## P1 — Identity & Access (2026-08-30)
 
@@ -381,3 +381,35 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 - UUID-based storage keys prevent filename collisions and path traversal attacks
 - Existing ActivityFileModel preserved for backward compatibility
 - File categories are string-based for extensibility without migrations
+
+## P12 — UI/UX, Frontend & User Experience Overhaul (2026-08-31)
+
+### Added
+
+- CSS architecture: 9 modular CSS files (tokens, base, layout, components, forms, tables, dashboard, utilities, responsive)
+- Design token system (CSS custom properties for colors, spacing, typography, shadows, borders)
+- Vazirmatn Persian web font loaded from Google Fonts CDN
+- Inline SVG icon system (no icon library dependency)
+- Base template redesign: sidebar + header app shell
+- Sidebar persistent on desktop (>1024px), hamburger toggle on mobile/tablet
+- Reusable component macros: page_header, empty_state, status_badge, stat_card, pagination, breadcrumbs, confirm_dialog
+- Reusable form macros: form_field, form_select, form_textarea, form_checkbox, form_section
+- Flash message component (shared across all pages via base.html inclusion)
+- Error pages: 400, 403, 404, 500 with Persian UI and navigation
+- Auth pages redesign (login, change_password, dashboard) with Persian UI
+- Portal dashboards redesign (admin, teacher, student, parent)
+- All module templates redesigned with new design system (88 templates total)
+- Main.js rewrite: sidebar toggle, auto-dismiss alerts, toast notifications, button loading states, confirm dialogs
+- All UI text in Persian, RTL layout, mobile-friendly responsive design
+
+### Design Decisions
+
+- CSS architecture uses 9 modular files for maintainability and clear separation of concerns
+- Design tokens via CSS custom properties for easy theme customization
+- Vazirmatn font chosen for Persian language support and modern design
+- Inline SVG icons avoid external icon library dependencies
+- Sidebar layout provides consistent navigation across all pages
+- Component macros ensure consistent UI patterns across all templates
+- Form macros provide standardized form layouts and validation states
+- Error pages provide Persian UI with navigation back to dashboard
+- All templates follow the same design system for visual consistency
