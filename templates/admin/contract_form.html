@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+{% from "macros/utils.html" import page_header %}
+{% from "macros/forms.html" import csrf_field, form_field %}
+
+{% block title %}{{ "ویرایش قرارداد" if contract else "ایجاد قرارداد" }}{% endblock %}
+
+{% block content %}
+{{ page_header("ویرایش قرارداد" if contract else "ایجاد قرارداد جدید") }}
+
+<div class="form-card">
+    <form method="POST">
+        {{ csrf_field() }}
+
+        <div class="form-group">
+            <label class="form-label" for="teacher_user_id">معلم <span class="required">*</span></label>
+            <select id="teacher_user_id" name="teacher_user_id" class="form-select" required>
+                <option value="">— انتخاب کنید —</option>
+                {% for teacher in teachers %}
+                <option value="{{ teacher.id }}" {% if contract and contract.teacher_user_id == teacher.id %}selected{% endif %}>
+                    {% if teacher.teacher_profile %}
+                        {{ teacher.teacher_profile.first_name }} {{ teacher.teacher_profile.last_name }}
+                    {% else %}
+                        {{ teacher.login }}
+                    {% endif %}
+                </option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label class="form-label" for="class_id">کلاس</label>
+            <select id="class_id" name="class_id" class="form-select">
+                <option value="">— همه کلاس‌ها —</option>
+                {% for cls in classes %}
+                <option value="{{ cls.id }}" {% if contract and contract.class_id == cls.id %}selected{% endif %}>
+                    {{ cls.title }}
+                </option>
+                {% endfor %}
+            </select>
+            <span class="form-hint">در صورت عدم انتخاب، قرارداد برای تمام کلاس‌های معلم اعمال می‌شود.</span>
+        </div>
+
+        <div class="form-group">
+            <label class="form-label" for="payment_type">نوع پرداخت <span class="required">*</span></label>
+            <select id="payment_type" name="payment_type" class="form-select" required>
+                <option value="">— انتخاب کنید —</option>
+                <option value="PER_SESSION" {% if contract and contract.payment_type == 'PER_SESSION' %}selected{% endif %}>در هر جلسه (مبلغ ثابت)</option>
+                <option value="PERCENTAGE_OF_REVENUE" {% if contract and contract.payment_type == 'PERCENTAGE_OF_REVENUE' %}selected{% endif %}>درصد از درآمد</option>
+            </select>
+        </div>
+
+        {{ form_field("rate", "نرخ", type="number", value=contract.rate if contract else "", required=true, placeholder="مثال: 500000 یا 20", hint="در حالت «در هر جلسه»: مبلغ به تومان. در حالت «درصد از درآمد»: درصد (0-100).") }}
+
+        {{ form_field("start_date", "تاریخ شروع (شمسی)", type="text", value=contract.start_date|to_jalali_input if contract and contract.start_date else "", placeholder="مثال: 1403/07/01", hint="اختیاری") }}
+
+        {{ form_field("end_date", "تاریخ پایان (شمسی)", type="text", value=contract.end_date|to_jalali_input if contract and contract.end_date else "", placeholder="مثال: 1404/01/15", hint="اختیاری") }}
+
+        {% if contract %}
+        <div class="form-group">
+            <label class="form-label">
+                <input type="checkbox" name="is_active" {% if contract.is_active %}checked{% endif %}>
+                فعال
+            </label>
+        </div>
+        {% endif %}
+
+        <div class="form-actions">
+            <button type="submit" class="btn btn-primary">{{ "ذخیره تغییرات" if contract else "ایجاد" }}</button>
+            <a href="{{ url_for('admin.contract_list') }}" class="btn btn-outline">انصراف</a>
+        </div>
+    </form>
+</div>
+{% endblock %}

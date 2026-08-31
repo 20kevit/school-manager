@@ -1355,3 +1355,92 @@ class StoredFileModel(db.Model):
             f"original={self.original_filename!r} "
             f"category={self.category}>"
         )
+
+
+# ---------------------------------------------------------------------------
+# P24 — Teacher Salaries & Payroll
+# ---------------------------------------------------------------------------
+
+
+class TeacherContractModel(db.Model):
+    """Teacher contract — defines payment terms for a teacher per class."""
+
+    __tablename__ = "teacher_contracts"
+
+    id = db.Column(db.Integer, primary_key=True)
+    teacher_user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)
+    class_id = db.Column(db.Integer, db.ForeignKey("academy_classes.id"), nullable=True)
+    payment_type = db.Column(db.String(30), nullable=False)
+    rate = db.Column(db.Numeric(10, 2), nullable=False)
+    is_active = db.Column(db.Boolean, nullable=False, default=True)
+    start_date = db.Column(db.Date, nullable=True)
+    end_date = db.Column(db.Date, nullable=True)
+    created_at = db.Column(db.DateTime, server_default=db.func.now(), nullable=False)
+    updated_at = db.Column(
+        db.DateTime,
+        server_default=db.func.now(),
+        onupdate=db.func.now(),
+        nullable=False,
+    )
+
+    teacher = db.relationship(
+        "UserModel", backref=db.backref("contracts", lazy="select")
+    )
+    academy_class = db.relationship(
+        "AcademyClassModel", backref=db.backref("contracts", lazy="select")
+    )
+
+    __table_args__ = (
+        db.Index("ix_tc_teacher", "teacher_user_id"),
+        db.Index("ix_tc_class", "class_id"),
+        db.Index("ix_tc_active", "is_active"),
+    )
+
+    def __repr__(self) -> str:
+        return (
+            f"<TeacherContractModel id={self.id} "
+            f"teacher={self.teacher_user_id} "
+            f"type={self.payment_type} "
+            f"rate={self.rate}>"
+        )
+
+
+class TeacherPaymentModel(db.Model):
+    """Teacher payment — records a finalized payout to a teacher."""
+
+    __tablename__ = "teacher_payments"
+
+    id = db.Column(db.Integer, primary_key=True)
+    teacher_user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)
+    period_start = db.Column(db.Date, nullable=False)
+    period_end = db.Column(db.Date, nullable=False)
+    gross_amount = db.Column(db.Numeric(12, 2), nullable=False)
+    deductions = db.Column(db.Numeric(12, 2), nullable=False, default=0)
+    net_amount = db.Column(db.Numeric(12, 2), nullable=False)
+    status = db.Column(db.String(20), nullable=False, default="PENDING")
+    paid_at = db.Column(db.DateTime, nullable=True)
+    created_at = db.Column(db.DateTime, server_default=db.func.now(), nullable=False)
+    updated_at = db.Column(
+        db.DateTime,
+        server_default=db.func.now(),
+        onupdate=db.func.now(),
+        nullable=False,
+    )
+
+    teacher = db.relationship(
+        "UserModel", backref=db.backref("payments", lazy="select")
+    )
+
+    __table_args__ = (
+        db.Index("ix_tp_teacher", "teacher_user_id"),
+        db.Index("ix_tp_period", "period_start", "period_end"),
+        db.Index("ix_tp_status", "status"),
+    )
+
+    def __repr__(self) -> str:
+        return (
+            f"<TeacherPaymentModel id={self.id} "
+            f"teacher={self.teacher_user_id} "
+            f"gross={self.gross_amount} "
+            f"status={self.status}>"
+        )

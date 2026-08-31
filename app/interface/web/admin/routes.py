@@ -1,5 +1,8 @@
 """Admin user management routes."""
 
+from datetime import date
+from decimal import Decimal
+
 from flask import Blueprint, flash, redirect, render_template, request, url_for
 from flask_login import login_required
 
@@ -630,3 +633,330 @@ def class_regenerate_sessions(class_id):
         flash(f"خطا در بازسازی جلسات: {e}", "error")
 
     return redirect(url_for("academy.class_detail", class_id=class_id))
+
+
+# ---------------------------------------------------------------------------
+# Teacher Contracts
+# ---------------------------------------------------------------------------
+
+
+@admin_bp.route("/contracts")
+@login_required
+@role_required("ADMIN")
+def contract_list():
+    """List all teacher contracts."""
+    from app.application.payroll.services import list_contracts
+    from app.infrastructure.database.models import UserModel
+
+    teacher_id = request.args.get("teacher_id", type=int)
+    contracts = list_contracts(teacher_user_id=teacher_id)
+
+    teachers = UserModel.query.filter(UserModel.roles.any(name="TEACHER")).all()
+
+    return render_template(
+        "admin/contract_list.html",
+        contracts=contracts,
+        teachers=teachers,
+        selected_teacher_id=teacher_id,
+    )
+
+
+@admin_bp.route("/contracts/create", methods=["GET", "POST"])
+@login_required
+@role_required("ADMIN")
+def contract_create():
+    """Create a new teacher contract."""
+    from app.application.payroll.services import PayrollError, create_contract
+    from app.infrastructure.database.models import AcademyClassModel, UserModel
+
+    teachers = UserModel.query.filter(UserModel.roles.any(name="TEACHER")).all()
+    classes = AcademyClassModel.query.filter_by(status="ACTIVE").all()
+
+    if request.method == "POST":
+        teacher_user_id = request.form.get("teacher_user_id", type=int)
+        class_id = request.form.get("class_id", type=int)
+        payment_type = request.form.get("payment_type", "").strip()
+        rate = request.form.get("rate", "").strip()
+        start_date_str = request.form.get("start_date", "").strip()
+        end_date_str = request.form.get("end_date", "").strip()
+
+        if not teacher_user_id or not payment_type or not rate:
+            flash("معلم، نوع پرداخت و نرخ الزامی هستند.", "error")
+            return render_template(
+                "admin/contract_form.html",
+                teachers=teachers,
+                classes=classes,
+            )
+
+        try:
+            rate_decimal = Decimal(rate)
+        except Exception:
+            flash("نرخ پرداخت نامعتبر است.", "error")
+            return render_template(
+                "admin/contract_form.html",
+                teachers=teachers,
+                classes=classes,
+            )
+
+        from app.utils.date_utils import parse_jalali_date_or_none
+
+        start_date = parse_jalali_date_or_none(start_date_str)
+        end_date = parse_jalali_date_or_none(end_date_str)
+
+        try:
+            create_contract(
+                teacher_user_id=teacher_user_id,
+                class_id=class_id if class_id else None,
+                payment_type=payment_type,
+                rate=rate_decimal,
+                start_date=start_date,
+                end_date=end_date,
+            )
+            flash("قرارداد با موفقیت ایجاد شد.", "success")
+            return redirect(url_for("admin.contract_list"))
+        except PayrollError as e:
+            flash(str(e), "error")
+
+    return render_template(
+        "admin/contract_form.html",
+        teachers=teachers,
+        classes=classes,
+    )
+
+
+@admin_bp.route("/contracts/<int:contract_id>/edit", methods=["GET", "POST"])
+@login_required
+@role_required("ADMIN")
+def contract_edit(contract_id):
+    """Edit a teacher contract."""
+    from app.application.payroll.services import (
+        PayrollError,
+        get_contract,
+        update_contract,
+    )
+    from app.infrastructure.database.models import AcademyClassModel, UserModel
+
+    contract = get_contract(contract_id)
+    if contract is None:
+        flash("قرارداد یافت نشد.", "error")
+        return redirect(url_for("admin.contract_list"))
+
+    teachers = UserModel.query.filter(UserModel.roles.any(name="TEACHER")).all()
+    classes = AcademyClassModel.query.filter_by(status="ACTIVE").all()
+
+    if request.method == "POST":
+        class_id = request.form.get("class_id", type=int)
+        payment_type = request.form.get("payment_type", "").strip()
+        rate = request.form.get("rate", "").strip()
+        is_active = request.form.get("is_active") == "on"
+        start_date_str = request.form.get("start_date", "").strip()
+        end_date_str = request.form.get("end_date", "").strip()
+
+        if not payment_type or not rate:
+            flash("نوع پرداخت و نرخ الزامی هستند.", "error")
+            return render_template(
+                "admin/contract_form.html",
+                contract=contract,
+                teachers=teachers,
+                classes=classes,
+            )
+
+        try:
+            rate_decimal = Decimal(rate)
+        except Exception:
+            flash("نرخ پرداخت نامعتبر است.", "error")
+            return render_template(
+                "admin/contract_form.html",
+                contract=contract,
+                teachers=teachers,
+                classes=classes,
+            )
+
+        from app.utils.date_utils import parse_jalali_date_or_none
+
+        start_date = parse_jalali_date_or_none(start_date_str)
+        end_date = parse_jalali_date_or_none(end_date_str)
+
+        try:
+            update_contract(
+                contract,
+                class_id=class_id if class_id else None,
+                payment_type=payment_type,
+                rate=rate_decimal,
+                is_active=is_active,
+                start_date=start_date,
+                end_date=end_date,
+            )
+            flash("قرارداد با موفقیت به‌روزرسانی شد.", "success")
+            return redirect(url_for("admin.contract_list"))
+        except PayrollError as e:
+            flash(str(e), "error")
+
+    return render_template(
+        "admin/contract_form.html",
+        contract=contract,
+        teachers=teachers,
+        classes=classes,
+    )
+
+
+@admin_bp.route("/contracts/<int:contract_id>/delete", methods=["POST"])
+@login_required
+@role_required("ADMIN")
+def contract_delete(contract_id):
+    """Soft-delete a teacher contract."""
+    from app.application.payroll.services import delete_contract, get_contract
+
+    contract = get_contract(contract_id)
+    if contract is None:
+        flash("قرارداد یافت نشد.", "error")
+        return redirect(url_for("admin.contract_list"))
+
+    delete_contract(contract)
+    flash("قرارداد غیرفعال شد.", "success")
+    return redirect(url_for("admin.contract_list"))
+
+
+# ---------------------------------------------------------------------------
+# Payroll Management
+# ---------------------------------------------------------------------------
+
+
+@admin_bp.route("/payroll")
+@login_required
+@role_required("ADMIN")
+def payroll():
+    """Payroll dashboard — select month and view teacher payouts."""
+    import jdatetime
+
+    from app.application.payroll.services import list_teachers_with_payroll_summary
+    from app.utils.date_utils import gregorian_to_jalali
+
+    year = request.args.get("year", type=int)
+    month = request.args.get("month", type=int)
+
+    if year is None or month is None:
+        today_jalali = gregorian_to_jalali(date.today())
+        if today_jalali is not None:
+            year = today_jalali.year
+            month = today_jalali.month
+        else:
+            year = 1405
+            month = 6
+
+    # Convert Jalali month start/end to Gregorian
+    try:
+        jd_start = jdatetime.date(year, month, 1)
+        if month < 12:
+            jd_end = jdatetime.date(year, month + 1, 1)
+        else:
+            jd_end = jdatetime.date(year + 1, 1, 1)
+    except ValueError:
+        flash("تاریخ نامعتبر است.", "error")
+        return render_template(
+            "admin/payroll.html", teachers_data=[], year=year, month=month
+        )
+
+    from app.utils.date_utils import jalali_to_gregorian
+
+    period_start = jalali_to_gregorian(jd_start)
+    period_end = jalali_to_gregorian(jd_end)
+
+    teachers_data = list_teachers_with_payroll_summary(period_start, period_end)
+
+    months = [
+        (1, "فروردین"),
+        (2, "اردیبهشت"),
+        (3, "خرداد"),
+        (4, "تیر"),
+        (5, "مرداد"),
+        (6, "شهریور"),
+        (7, "مهر"),
+        (8, "آبان"),
+        (9, "آذر"),
+        (10, "دی"),
+        (11, "بهمن"),
+        (12, "اسفند"),
+    ]
+
+    return render_template(
+        "admin/payroll.html",
+        teachers_data=teachers_data,
+        year=year,
+        month=month,
+        months=months,
+        period_start=period_start,
+        period_end=period_end,
+    )
+
+
+@admin_bp.route("/payroll/finalize", methods=["POST"])
+@login_required
+@role_required("ADMIN")
+def payroll_finalize():
+    """Finalize payroll for a specific teacher."""
+    from app.application.payroll.services import PayrollError, finalize_payroll
+
+    teacher_user_id = request.form.get("teacher_user_id", type=int)
+    period_start_str = request.form.get("period_start", "").strip()
+    period_end_str = request.form.get("period_end", "").strip()
+    deductions = request.form.get("deductions", "0").strip()
+
+    if not teacher_user_id or not period_start_str or not period_end_str:
+        flash("اطلاعات ناقص است.", "error")
+        return redirect(url_for("admin.payroll"))
+
+    from app.utils.date_utils import parse_jalali_date
+
+    try:
+        period_start = parse_jalali_date(period_start_str)
+        period_end = parse_jalali_date(period_end_str)
+        deductions_decimal = Decimal(deductions) if deductions else Decimal("0")
+    except (ValueError, Exception) as e:
+        flash(f"خطا در تاریخ: {e}", "error")
+        return redirect(url_for("admin.payroll"))
+
+    try:
+        finalize_payroll(
+            teacher_user_id=teacher_user_id,
+            period_start=period_start,
+            period_end=period_end,
+            deductions=deductions_decimal,
+        )
+        flash("حقوق با موفقیت محاسبه و ثبت شد.", "success")
+    except PayrollError as e:
+        flash(str(e), "error")
+
+    # Redirect back with same month params
+    import jdatetime
+
+    jd = jdatetime.date.fromgregorian(date=period_start)
+    return redirect(url_for("admin.payroll", year=jd.year, month=jd.month))
+
+
+@admin_bp.route("/payroll/<int:payment_id>/pay", methods=["POST"])
+@login_required
+@role_required("ADMIN")
+def payroll_pay(payment_id):
+    """Mark a teacher payment as paid."""
+    from app.application.payroll.services import (
+        PayrollError,
+        get_payment,
+        mark_payment_paid,
+    )
+
+    payment = get_payment(payment_id)
+    if payment is None:
+        flash("رکورد پرداخت یافت نشد.", "error")
+        return redirect(url_for("admin.payroll"))
+
+    try:
+        mark_payment_paid(payment)
+        flash("پرداخت با موفقیت ثبت شد.", "success")
+    except PayrollError as e:
+        flash(str(e), "error")
+
+    import jdatetime
+
+    jd = jdatetime.date.fromgregorian(date=payment.period_start)
+    return redirect(url_for("admin.payroll", year=jd.year, month=jd.month))

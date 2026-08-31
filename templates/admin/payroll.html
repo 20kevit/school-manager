@@ -1,0 +1,123 @@
+{% extends "base.html" %}
+{% from "macros/utils.html" import page_header %}
+{% from "macros/forms.html" import csrf_field %}
+
+{% block title %}لیست حقوق معلمان{% endblock %}
+
+{% block content %}
+{{ page_header("لیست حقوق معلمان", description="محاسبه و مدیریت پرداخت حقوق معلمان") }}
+
+<div class="form-card" style="margin-bottom: var(--space-4);">
+    <form method="GET" class="form-grid" style="grid-template-columns: 1fr 1fr auto; align-items: end;">
+        <div class="form-group">
+            <label class="form-label" for="year">سال شمسی</label>
+            <select id="year" name="year" class="form-select">
+                {% for y in range(year - 2, year + 3) %}
+                <option value="{{ y }}" {% if y == year %}selected{% endif %}>{{ y }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="form-group">
+            <label class="form-label" for="month">ماه</label>
+            <select id="month" name="month" class="form-select">
+                {% for m, name in months %}
+                <option value="{{ m }}" {% if m == month %}selected{% endif %}>{{ name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="form-group">
+            <button type="submit" class="btn btn-primary">نمایش</button>
+        </div>
+    </form>
+</div>
+
+{% if teachers_data %}
+<div class="table-container">
+    <div class="table-scroll">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>معلم</th>
+                    <th>تعداد جلسات</th>
+                    <th>مبلغ ناخالص</th>
+                    <th>جزئیات</th>
+                    <th>وضعیت</th>
+                    <th>عملیات</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in teachers_data %}
+                <tr>
+                    <td>{{ item.teacher.id }}</td>
+                    <td>
+                        {% if item.teacher.teacher_profile %}
+                            {{ item.teacher.teacher_profile.first_name }} {{ item.teacher.teacher_profile.last_name }}
+                        {% else %}
+                            {{ item.teacher.login }}
+                        {% endif %}
+                    </td>
+                    <td>{{ item.summary.total_sessions }}</td>
+                    <td>{{ item.summary.gross_amount|currency }}</td>
+                    <td>
+                        {% if item.summary.breakdown_per_class %}
+                        <details>
+                            <summary style="cursor:pointer;">مشاهده جزئیات</summary>
+                            <div style="margin-top:8px; padding:8px; background:var(--bg-secondary); border-radius:6px;">
+                                {% for bd in item.summary.breakdown_per_class %}
+                                <div style="margin-bottom:4px; font-size:0.9em;">
+                                    <strong>{{ bd.class_title }}</strong>:
+                                    {% if bd.payment_type == 'PER_SESSION' %}
+                                        {{ bd.session_count }} جلسه × {{ bd.rate|currency }} = {{ bd.amount|currency }}
+                                    {% else %}
+                                        درآمد: {{ bd.collected_revenue|currency }} × {{ bd.rate }}% = {{ bd.amount|currency }}
+                                    {% endif %}
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </details>
+                        {% else %}
+                            —
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if item.existing_payment %}
+                            {% if item.existing_payment.status == 'PAID' %}
+                                <span class="badge badge-success">پرداخت شده</span>
+                            {% else %}
+                                <span class="badge badge-warning">در انتظار پرداخت</span>
+                            {% endif %}
+                        {% else %}
+                            <span class="badge badge-secondary">محاسبه نشده</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if item.summary.total_sessions > 0 and not item.existing_payment %}
+                        <form method="POST" action="{{ url_for('admin.payroll_finalize') }}" style="display:inline;">
+                            {{ csrf_field() }}
+                            <input type="hidden" name="teacher_user_id" value="{{ item.teacher.id }}">
+                            <input type="hidden" name="period_start" value="{{ period_start|to_jalali_input }}">
+                            <input type="hidden" name="period_end" value="{{ period_end|to_jalali_input }}">
+                            <input type="hidden" name="deductions" value="0">
+                            <button type="submit" class="btn btn-sm btn-primary">ثبت حقوق</button>
+                        </form>
+                        {% elif item.existing_payment and item.existing_payment.status == 'PENDING' %}
+                        <form method="POST" action="{{ url_for('admin.payroll_pay', payment_id=item.existing_payment.id) }}" style="display:inline;">
+                            {{ csrf_field() }}
+                            <button type="submit" class="btn btn-sm btn-success">پرداخت شد</button>
+                        </form>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% else %}
+<div class="empty-state">
+    <h3>معلمی یافت نشد</h3>
+    <p>برای مشاهده لیست حقوق، ابتدا معلمان و قراردادهای آنها را تعریف کنید.</p>
+</div>
+{% endif %}
+{% endblock %}

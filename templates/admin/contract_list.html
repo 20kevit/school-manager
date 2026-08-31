@@ -1,0 +1,97 @@
+{% extends "base.html" %}
+{% from "macros/utils.html" import page_header %}
+{% from "macros/forms.html" import csrf_field %}
+
+{% block title %}قراردادهای معلمان{% endblock %}
+
+{% block content %}
+{{ page_header("قراردادهای معلمان", description="مدیریت قراردادهای پرداخت معلمان", action_url=url_for('admin.contract_create'), action_label="ایجاد قرارداد") }}
+
+<div class="form-card" style="margin-bottom: var(--space-4);">
+    <form method="GET" class="form-grid" style="grid-template-columns: 1fr auto; align-items: end;">
+        <div class="form-group">
+            <label class="form-label" for="teacher_id">معلم</label>
+            <select id="teacher_id" name="teacher_id" class="form-select">
+                <option value="">همه معلمان</option>
+                {% for teacher in teachers %}
+                <option value="{{ teacher.id }}" {% if selected_teacher_id == teacher.id %}selected{% endif %}>
+                    {{ teacher.teacher_profile.first_name }} {{ teacher.teacher_profile.last_name }}
+                </option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="form-group">
+            <button type="submit" class="btn btn-primary">فیلتر</button>
+        </div>
+    </form>
+</div>
+
+{% if contracts %}
+<div class="table-container">
+    <div class="table-scroll">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>معلم</th>
+                    <th>کلاس</th>
+                    <th>نوع پرداخت</th>
+                    <th>نرخ</th>
+                    <th>تاریخ شروع</th>
+                    <th>تاریخ پایان</th>
+                    <th>وضعیت</th>
+                    <th>عملیات</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for c in contracts %}
+                <tr>
+                    <td>{{ c.id }}</td>
+                    <td>
+                        {% if c.teacher.teacher_profile %}
+                            {{ c.teacher.teacher_profile.first_name }} {{ c.teacher.teacher_profile.last_name }}
+                        {% else %}
+                            {{ c.teacher.login }}
+                        {% endif %}
+                    </td>
+                    <td>{{ c.academy_class.title if c.academy_class else "همه کلاس‌ها" }}</td>
+                    <td>
+                        {% if c.payment_type == 'PER_SESSION' %}
+                            <span class="badge badge-info">در هر جلسه</span>
+                        {% else %}
+                            <span class="badge badge-warning">درصد از درآمد</span>
+                        {% endif %}
+                    </td>
+                    <td>{{ c.rate }}{% if c.payment_type == 'PERCENTAGE_OF_REVENUE' %}%{% else %} تومان{% endif %}</td>
+                    <td>{{ c.start_date|jalali if c.start_date else "—" }}</td>
+                    <td>{{ c.end_date|jalali if c.end_date else "—" }}</td>
+                    <td>
+                        {% if c.is_active %}
+                            <span class="badge badge-success">فعال</span>
+                        {% else %}
+                            <span class="badge badge-secondary">غیرفعال</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <a href="{{ url_for('admin.contract_edit', contract_id=c.id) }}" class="btn btn-sm btn-outline">ویرایش</a>
+                        {% if c.is_active %}
+                        <form method="POST" action="{{ url_for('admin.contract_delete', contract_id=c.id) }}" style="display:inline;" onsubmit="return confirm('آیا مطمئن هستید؟')">
+                            {{ csrf_field() }}
+                            <button type="submit" class="btn btn-sm btn-danger">غیرفعال</button>
+                        </form>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% else %}
+<div class="empty-state">
+    <h3>هیچ قراردادی تعریف نشده</h3>
+    <p>اولین قرارداد پرداخت معلم را ایجاد کنید.</p>
+    <a href="{{ url_for('admin.contract_create') }}" class="btn btn-primary">ایجاد قرارداد</a>
+</div>
+{% endif %}
+{% endblock %}

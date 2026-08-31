@@ -1,17 +1,33 @@
 # Project Status
 
-**Current Phase:** P23 — Academic Calendar & Semester Management — Completed
-**Current Objective:** Academic years, semesters, holidays, smart session generation with holiday skipping.
+**Current Phase:** P24 — Teacher Salaries & Payroll Management — Completed
+**Current Objective:** Teacher contract management, automated payroll calculation, and payment tracking.
 
-**Previous Phase:** P22 — Public Enrollment Portal & Excel Power
+**Previous Phase:** P23 — Academic Calendar & Semester Management
 
 ## Status
 
-P22 is complete. Admins can bulk-import students via Excel, export reports as .xlsx, and new students can apply online via a public enrollment form. All 782 tests pass.
+P24 is complete. Admins can define per-session or percentage-based contracts for teachers, generate monthly payroll reports with Jalali month selection, and mark payments as paid. All 869 tests pass.
 
 ## Completed
 
-### P22 — Public Enrollment Portal & Excel Power
+### P24 — Teacher Salaries & Payroll Management
+- [x] `TeacherContract` domain entity and `TeacherContractModel` — PER_SESSION or PERCENTAGE_OF_REVENUE contracts per class
+- [x] `TeacherPayment` domain entity and `TeacherPaymentModel` — payout records with PENDING/PAID status
+- [x] Contract CRUD service: create, update, soft-delete, list, get
+- [x] Payroll calculation: completed sessions × rate (PER_SESSION) or collected tuition × percentage (PERCENTAGE_OF_REVENUE)
+- [x] Collected tuition = sum of PAYMENT transactions with category=TUITION for the class in the period
+- [x] Class-specific contract priority over generic (class_id=None) fallback
+- [x] Finalize payroll: creates TeacherPayment with gross amount and deductions
+- [x] Mark payment paid: updates status and paid_at timestamp
+- [x] Teacher payroll summary: list all teachers with calculated amounts for a period
+- [x] Admin UI: contract management (list, create, edit, deactivate)
+- [x] Admin UI: payroll dashboard with Jalali month selector and per-class breakdown
+- [x] Database migration: teacher_contracts, teacher_payments tables
+- [x] 41 new tests: contract CRUD, mixed contract types, non-completed session exclusion, finalization, payment status, admin routes, generic contract fallback, date range filtering
+- [x] 869 total tests passing, Ruff check/format clean
+
+### P23 — Academic Calendar & Semester Management
 - [x] `excel_service.py` — Application-layer service for Excel import/export using openpyxl
 - [x] Excel import: reads .xlsx with columns first_name, last_name, national_id, mobile_phone, birth_date, gender
 - [x] Duplicate detection by national_id — skips existing students

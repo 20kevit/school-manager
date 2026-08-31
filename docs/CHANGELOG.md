@@ -6,6 +6,27 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 
 ## Unreleased
 
+## P24 — Teacher Salaries & Payroll Management (2026-09-01)
+
+### Added
+- `TeacherContract` domain entity and `TeacherContractModel` — defines payment terms for teachers per class (PER_SESSION or PERCENTAGE_OF_REVENUE)
+- `TeacherPayment` domain entity and `TeacherPaymentModel` — records finalized payouts with status (PENDING, PAID), deductions, and period dates
+- `PaymentType` enum: PER_SESSION, PERCENTAGE_OF_REVENUE
+- `PayrollStatus` enum: PENDING, PAID
+- Payroll calculation service: `calculate_teacher_payroll()` — computes gross amount based on completed sessions and active contracts
+- PERCENTAGE_OF_REVENUE logic: based on collected tuition (PAYMENT transactions with category=TUITION) in the period, not total charges
+- Contract-specific fallback: class-specific contracts take priority over generic (class_id=None) contracts
+- Contract CRUD: `create_contract`, `update_contract`, `delete_contract` (soft-delete), `list_contracts`, `get_contract`
+- Payroll finalization: `finalize_payroll()` — creates TeacherPayment record with calculated amounts and deductions
+- Payment status management: `mark_payment_paid()` — updates status to PAID with timestamp
+- Teacher payroll summary: `list_teachers_with_payroll_summary()` — returns all teachers with calculated payroll for a period
+- Admin routes: `/admin/contracts` (list, create, edit, delete), `/admin/payroll` (dashboard, finalize, mark paid)
+- Admin UI templates: `contract_list.html`, `contract_form.html`, `payroll.html`
+- Jalali month selector on payroll page with automatic Gregorian date range conversion
+- Collapsible per-class breakdown on payroll page showing session counts and amounts
+- Database migration: 2 new tables (teacher_contracts, teacher_payments)
+- 41 new tests: Contract CRUD, PER_SESSION calculation, PERCENTAGE_OF_REVENUE calculation, non-completed session exclusion, finalization, payment status, admin UI routes, generic contract fallback, date range filtering
+
 ## P23 — Academic Calendar & Semester Management (2026-09-01)
 
 ### Added
