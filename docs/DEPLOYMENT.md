@@ -142,3 +142,59 @@ Nginx serves static files (`/static/`) directly for better performance. Uploads 
 - [ ] Set `SEED_MODE=` (empty) for real production use
 - [ ] Configure SSL/TLS (e.g., via Nginx with Let's Encrypt)
 - [ ] Restrict PostgreSQL access to internal network only
+
+---
+
+## cPanel Shared Hosting Deployment
+
+cPanel shared hosting uses Phusion Passenger as the WSGI server instead of Gunicorn. Background daemon threads are killed by the host, so scheduled tasks must use Cron Jobs.
+
+### Setup
+
+1. **Upload the project** to your cPanel home directory (e.g., `~/school_manager/`).
+
+2. **Configure the Python app** in cPanel > Setup Python App:
+   - Python version: 3.12
+   - App root: `school_manager`
+   - WSGI file: `passenger_wsgi.py`
+   - Application startup: `passenger_wsgi.py`
+
+3. **Install dependencies** via cPanel Terminal or SSH:
+   ```bash
+   cd ~/school_manager
+   pip install -r requirements.txt
+   ```
+
+4. **Configure environment variables** in cPanel > Setup Python App > Environment Variables:
+   - `SECRET_KEY` = (generate a strong random value)
+   - `DATABASE_URL` = (your PostgreSQL or MySQL connection string)
+   - `FLASK_APP` = `passenger_wsgi.py`
+   - `FLASK_ENV` = `production`
+
+5. **Run migrations and seed**:
+   ```bash
+   cd ~/school_manager
+   flask db upgrade
+   flask seed-demo  # or flask seed for basic data
+   ```
+
+### Scheduler (Cron Job)
+
+Background daemon threads are killed on shared hosting. The scheduler must run via Cron instead.
+
+In cPanel > Cron Jobs, add a new cron job:
+
+```
+Minute: 0
+Hour: */1
+Command: cd ~/school_manager && python -m flask run-jobs
+```
+
+This runs `flask run-jobs` every hour. The command is idempotent — running it multiple times per day is safe.
+
+### Important Notes
+
+- `passenger_wsgi.py` is the WSGI entry point for Passenger (equivalent to `wsgi.py` for Gunicorn).
+- The scheduler daemon thread is automatically started but will be killed by the host. The Cron Job replaces it.
+- `flask run-jobs` runs both the daily class reminder and weekly payment reminder in one invocation.
+- If your host only supports MySQL, set `DATABASE_URL` to a `mysql+pymysql://` connection string.
