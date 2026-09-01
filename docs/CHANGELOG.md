@@ -6,6 +6,35 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 
 ## Unreleased
 
+## P27 — Deployment Readiness (Docker & Production Config) (2026-09-01)
+
+### Added
+- Multi-stage `Dockerfile` based on Python 3.12-slim with non-root `appuser`
+- `docker-compose.yml` orchestrating PostgreSQL 15, Flask (Gunicorn), and Nginx
+- `.dockerignore` to exclude dev artifacts from Docker image
+- `wsgi.py` as dedicated Gunicorn entry point
+- `gunicorn_config.py` with configurable workers, timeout (120s), and logging
+- `entrypoint.sh` script: waits for PostgreSQL, runs migrations, conditionally seeds based on `SEED_MODE` env var (`demo`, `basic`, or empty to skip)
+- `nginx/nginx.conf` with reverse proxy, static file serving, gzip compression, and upload size limit
+- `docs/DEPLOYMENT.md` with step-by-step deployment instructions
+- `.env` with Docker-appropriate default configuration
+
+### Changed
+- `config/__init__.py`: Added `SQLALCHEMY_ENGINE_OPTIONS = {"pool_pre_ping": True}` to `ProductionConfig` for PostgreSQL connection reliability
+- `README.md`: Added Production Deployment section and Deployment Guide link
+
+### Design Decisions
+- Entrypoint seeding is conditional via `SEED_MODE` env var: `demo` (rich data), `basic` (roles/admin only), or empty (skip) — safe for real production
+- Gunicorn uses `wsgi:app` to align with dedicated `wsgi.py` entry point
+- Multi-stage Docker build separates build dependencies (gcc, libpq-dev) from runtime image
+- Nginx serves static files directly for performance; uploads shared via Docker volume
+- Scheduler remains in-process (idempotent, safe with multiple workers); documented for future consideration
+
+### Metrics
+- 905 tests passing (unchanged)
+- Ruff check and format clean
+- Docker image built and verified
+
 ## P26 — Automated Tasks & Audit Logging (2026-09-01)
 
 ### Added

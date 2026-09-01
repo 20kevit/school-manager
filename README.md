@@ -20,6 +20,17 @@ python run.py
 pytest
 ```
 
+## Production Deployment
+
+```bash
+cp .env.example .env
+# Edit .env with production secrets
+docker-compose up -d
+# App is now running on http://localhost
+```
+
+See [Deployment Guide](docs/DEPLOYMENT.md) for full instructions.
+
 ## Tech Stack
 
 - Python 3.14+
@@ -32,6 +43,7 @@ pytest
 
 - [Architecture](docs/ARCHITECTURE.md)
 - [Development Guide](docs/DEVELOPMENT.md)
+- [Deployment Guide](docs/DEPLOYMENT.md)
 - [Project Status](docs/PROJECT_STATUS.md)
 - [Roadmap](docs/TODO.md)
 - [Changelog](docs/CHANGELOG.md)

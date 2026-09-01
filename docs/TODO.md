@@ -336,3 +336,16 @@
 - [x] Audit logging in finance corrections and reversals
 - [x] Admin audit log viewer with filters
 - [x] 19 new tests, 905 total tests passing
+
+## P27 — Deployment Readiness (Docker & Production Config)
+
+- [x] Multi-stage Dockerfile (Python 3.12-slim, non-root user)
+- [x] docker-compose.yml (PostgreSQL 15, Gunicorn, Nginx)
+- [x] .dockerignore
+- [x] wsgi.py Gunicorn entry point
+- [x] gunicorn_config.py (workers, timeout, logging)
+- [x] entrypoint.sh (DB wait, migrations, conditional seeding)
+- [x] nginx/nginx.conf (reverse proxy, static files, gzip)
+- [x] pool_pre_ping for PostgreSQL connection reliability
+- [x] docs/DEPLOYMENT.md
+- [x] 905 tests passing, Ruff check/format clean

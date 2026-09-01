@@ -1,0 +1,59 @@
+# Git
+.git/
+.gitignore
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.egg-info/
+dist/
+build/
+*.egg
+
+# Virtual environments
+venv/
+.venv/
+env/
+
+# Environment (secrets never in image)
+.env
+.env.local
+.env.production
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+coverage.xml
+test_storage/
+
+# Linting
+.ruff_cache/
+
+# Database files
+*.db
+*.sqlite3
+
+# Instance folder
+instance/
+
+# Dev database copies
+school_manager_dev.db
+
+# Documentation (not needed in image)
+docs/
+*.md
+LICENSE
+
+# OS
+.DS_Store
+Thumbs.db

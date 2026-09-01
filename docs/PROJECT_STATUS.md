@@ -1,15 +1,28 @@
 # Project Status
 
-**Current Phase:** P26 — Automated Tasks & Audit Logging — Completed
-**Current Objective:** Background scheduler for automated notifications and audit trail for sensitive data changes.
+**Current Phase:** P27 — Deployment Readiness — Completed
+**Current Objective:** Docker containerization, production server configuration, and deployment documentation.
 
-**Previous Phase:** P25 — Online Class Integration & Session Links
+**Previous Phase:** P26 — Automated Tasks & Audit Logging
 
 ## Status
 
-P26 is complete. A lightweight background scheduler sends daily class reminders and weekly payment reminders via in-app notifications. All grade corrections and financial transaction corrections/reversals are logged in the audit trail. Admins can view and filter audit logs. All 905 tests pass.
+P27 is complete. The application is containerized with Docker, using Gunicorn as the production WSGI server, PostgreSQL 15 as the database, and Nginx as a reverse proxy. Entrypoint script handles migration and conditional seeding. All 905 tests pass.
 
 ## Completed
+
+### P27 — Deployment Readiness (Docker & Production Config)
+- [x] Multi-stage `Dockerfile` (Python 3.12-slim, non-root user, build stages)
+- [x] `docker-compose.yml` with PostgreSQL 15, Gunicorn web service, Nginx reverse proxy
+- [x] `.dockerignore` excluding dev artifacts
+- [x] `wsgi.py` as dedicated Gunicorn entry point
+- [x] `gunicorn_config.py` with configurable workers and 120s timeout
+- [x] `entrypoint.sh` with DB wait, migration, and conditional seeding (`SEED_MODE`)
+- [x] `nginx/nginx.conf` with reverse proxy, static files, gzip, upload limits
+- [x] `pool_pre_ping=True` added to ProductionConfig for PostgreSQL reliability
+- [x] `.env` with Docker-appropriate defaults
+- [x] `docs/DEPLOYMENT.md` deployment guide
+- [x] 905 tests passing, Ruff check/format clean
 
 ### P26 — Automated Tasks & Audit Logging
 - [x] Lightweight background scheduler (`app/scheduler.py`) using daemon threads
