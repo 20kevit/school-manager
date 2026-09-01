@@ -273,6 +273,16 @@ def correct_transaction(
     if original.status != "ACTIVE":
         raise FinanceError("Only active transactions can be corrected.")
 
+    # Capture old state for audit logging
+    old_values = {
+        "amount": float(original.amount),
+        "transaction_type": original.transaction_type,
+        "category": original.category,
+        "description": original.description,
+        "reference_number": original.reference_number,
+        "status": original.status,
+    }
+
     # Mark original as CORRECTED (excluded from balance)
     original.status = "CORRECTED"
 
@@ -303,6 +313,28 @@ def correct_transaction(
     )
     db.session.add(corrected)
     db.session.commit()
+
+    # Audit log
+    if corrected_by is not None:
+        new_values = {
+            "amount": float(corrected_amount),
+            "transaction_type": corrected.transaction_type,
+            "category": corrected.category,
+            "description": corrected_desc,
+            "reference_number": corrected_ref,
+            "status": "ACTIVE",
+        }
+        from app.application.audit.audit_service import log as audit_log
+
+        audit_log(
+            user_id=corrected_by,
+            action="CORRECT",
+            entity_type="FINANCIAL_TRANSACTION",
+            entity_id=original.id,
+            old_values=old_values,
+            new_values=new_values,
+        )
+
     return corrected
 
 
@@ -323,6 +355,15 @@ def reverse_transaction(
     if original.status != "ACTIVE":
         raise FinanceError("Only active transactions can be reversed.")
 
+    # Capture old state for audit logging
+    old_values = {
+        "amount": float(original.amount),
+        "transaction_type": original.transaction_type,
+        "category": original.category,
+        "description": original.description,
+        "status": original.status,
+    }
+
     reversal_amount = _compute_reversal_amount(original)
 
     reversal = FinancialTransactionModel(
@@ -340,6 +381,27 @@ def reverse_transaction(
     )
     db.session.add(reversal)
     db.session.commit()
+
+    # Audit log
+    if reversed_by is not None:
+        new_values = {
+            "amount": float(reversal_amount),
+            "transaction_type": "REVERSAL",
+            "category": original.category,
+            "description": description or f"Reversal of transaction #{original.id}",
+            "status": "ACTIVE",
+        }
+        from app.application.audit.audit_service import log as audit_log
+
+        audit_log(
+            user_id=reversed_by,
+            action="REVERSE",
+            entity_type="FINANCIAL_TRANSACTION",
+            entity_id=original.id,
+            old_values=old_values,
+            new_values=new_values,
+        )
+
     return reversal
 
 

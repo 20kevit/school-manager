@@ -303,3 +303,36 @@
 - [x] Sidebar links for calendar management
 - [x] Database migration (3 new tables, 1 altered)
 - [x] 46 new tests, 828 total tests passing
+
+## P24 — Teacher Salaries & Payroll Management
+
+- [x] TeacherContract domain entity and model
+- [x] TeacherPayment domain entity and model
+- [x] Contract CRUD service
+- [x] Payroll calculation service
+- [x] Admin contract and payroll management routes
+- [x] Admin UI templates for contracts and payroll
+- [x] Database migration
+- [x] 58 new tests, 886 total tests passing
+
+## P25 — Online Class Integration & Session Links
+
+- [x] `online_link` on AcademyClassModel and SessionModel
+- [x] Class and session edit forms for online links
+- [x] Student/teacher timetable "Join Online Class" button
+- [x] In-app notification when session link is set
+- [x] Database migration
+- [x] 17 new tests, 886 total tests passing
+
+## P26 — Automated Tasks & Audit Logging
+
+- [x] Background scheduler (daemon thread)
+- [x] Daily class reminder notifications
+- [x] Weekly payment reminder notifications
+- [x] CLI commands (`flask run-scheduler`, `flask run-jobs`)
+- [x] AuditLog domain entity and AuditLogModel
+- [x] AuditService (log, query, count)
+- [x] Audit logging in assessment grade corrections
+- [x] Audit logging in finance corrections and reversals
+- [x] Admin audit log viewer with filters
+- [x] 19 new tests, 905 total tests passing

@@ -960,3 +960,101 @@ def payroll_pay(payment_id):
 
     jd = jdatetime.date.fromgregorian(date=payment.period_start)
     return redirect(url_for("admin.payroll", year=jd.year, month=jd.month))
+
+
+# ---------------------------------------------------------------------------
+# Audit Logs
+# ---------------------------------------------------------------------------
+
+
+@admin_bp.route("/audit-logs")
+@login_required
+@role_required("ADMIN")
+def audit_logs():
+    """Display filterable audit logs."""
+    from app.application.audit.audit_service import count_audit_logs, get_audit_logs
+
+    user_id = request.args.get("user_id", type=int)
+    entity_type = request.args.get("entity_type", "").strip() or None
+    action = request.args.get("action", "").strip() or None
+    start_date_str = request.args.get("start_date", "").strip() or None
+    end_date_str = request.args.get("end_date", "").strip() or None
+    page = request.args.get("page", 1, type=int)
+    per_page = 50
+
+    start_date = None
+    end_date = None
+    if start_date_str:
+        try:
+            from app.utils.date_utils import parse_jalali_date
+
+            start_date = parse_jalali_date(start_date_str)
+            from datetime import datetime as _dt
+
+            start_date = _dt.combine(start_date, _dt.min.time())
+        except Exception:
+            pass
+    if end_date_str:
+        try:
+            from app.utils.date_utils import parse_jalali_date
+
+            end_date = parse_jalali_date(end_date_str)
+            from datetime import datetime as _dt
+
+            end_date = _dt.combine(end_date, _dt.max.time())
+        except Exception:
+            pass
+
+    total = count_audit_logs(
+        user_id=user_id,
+        entity_type=entity_type,
+        action=action,
+        start_date=start_date,
+        end_date=end_date,
+    )
+    total_pages = (total + per_page - 1) // per_page
+    offset = (page - 1) * per_page
+
+    logs = get_audit_logs(
+        user_id=user_id,
+        entity_type=entity_type,
+        action=action,
+        start_date=start_date,
+        end_date=end_date,
+        limit=per_page,
+        offset=offset,
+    )
+
+    # Pre-fetch user logins for display
+    from app.infrastructure.database.models import UserModel
+
+    user_ids = {log.user_id for log in logs}
+    users_map = {}
+    if user_ids:
+        users = UserModel.query.filter(UserModel.id.in_(user_ids)).all()
+        users_map = {u.id: u.login for u in users}
+
+    # Unique entity types for filter dropdown
+    entity_types = [
+        "ASSESSMENT_RESULT",
+        "FINANCIAL_TRANSACTION",
+    ]
+
+    # Unique actions for filter dropdown
+    actions_list = ["CREATE", "UPDATE", "DELETE", "CORRECT", "REVERSE"]
+
+    return render_template(
+        "admin/audit_logs.html",
+        logs=logs,
+        users_map=users_map,
+        total=total,
+        page=page,
+        total_pages=total_pages,
+        user_id_filter=user_id or "",
+        entity_type_filter=entity_type or "",
+        action_filter=action or "",
+        start_date_filter=start_date_str or "",
+        end_date_filter=end_date_str or "",
+        entity_types=entity_types,
+        actions_list=actions_list,
+    )

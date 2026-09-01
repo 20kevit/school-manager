@@ -1446,3 +1446,39 @@ class TeacherPaymentModel(db.Model):
             f"gross={self.gross_amount} "
             f"status={self.status}>"
         )
+
+
+# ---------------------------------------------------------------------------
+# P26 — Audit Logging
+# ---------------------------------------------------------------------------
+
+
+class AuditLogModel(db.Model):
+    """Audit log table — tracks changes to sensitive data."""
+
+    __tablename__ = "audit_logs"
+
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)
+    action = db.Column(db.String(20), nullable=False)
+    entity_type = db.Column(db.String(50), nullable=False)
+    entity_id = db.Column(db.Integer, nullable=False)
+    old_values = db.Column(db.JSON, nullable=True)
+    new_values = db.Column(db.JSON, nullable=True)
+    timestamp = db.Column(db.DateTime, server_default=db.func.now(), nullable=False)
+
+    user = db.relationship("UserModel", foreign_keys=[user_id])
+
+    __table_args__ = (
+        db.Index("ix_audit_user", "user_id"),
+        db.Index("ix_audit_action", "action"),
+        db.Index("ix_audit_entity", "entity_type", "entity_id"),
+        db.Index("ix_audit_timestamp", "timestamp"),
+    )
+
+    def __repr__(self) -> str:
+        return (
+            f"<AuditLogModel id={self.id} action={self.action!r} "
+            f"entity={self.entity_type}:{self.entity_id} "
+            f"user={self.user_id}>"
+        )

@@ -6,6 +6,39 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 
 ## Unreleased
 
+## P26 — Automated Tasks & Audit Logging (2026-09-01)
+
+### Added
+- Lightweight background scheduler (`app/scheduler.py`) using daemon threads
+- Daily automated class reminder: sends in-app notifications to enrolled students for tomorrow's sessions
+- Weekly automated payment reminder: sends in-app notifications to students with outstanding debt
+- CLI commands: `flask run-scheduler` (continuous loop), `flask run-jobs` (one-shot execution)
+- Scheduler auto-starts on app creation (except in testing mode)
+- `AuditLog` domain entity (`app/domain/audit.py`) for tracking sensitive data changes
+- `AuditLogModel` database table with indexes on user, action, entity, and timestamp
+- `AuditService` application service: `log()`, `get_audit_logs()`, `count_audit_logs()`
+- Audit logging integrated into `assessment_service.record_result()` — captures old/new state on grade corrections
+- Audit logging integrated into `assessment_service.update_result()` — captures old/new state on grade corrections
+- Audit logging integrated into `finance_service.correct_transaction()` — captures old/new state on corrections
+- Audit logging integrated into `finance_service.reverse_transaction()` — captures old/new state on reversals
+- Admin route `/admin/audit-logs` with filterable table (user, entity type, action, date range)
+- Admin sidebar link "گزارش تغییرات" for audit log access
+- Audit log template with expandable JSON diff view for old/new values
+- 19 new tests covering audit service, assessment audit integration, finance audit integration, scheduler jobs, and admin routes
+
+### Design Decisions
+- Scheduler uses `threading.Thread` with `daemon=True` — no external dependencies (no Celery, no Redis)
+- Scheduler runs hourly interval, checks for daily/weekly jobs based on date
+- Audit logs use JSON columns for old/new values with automatic datetime/Decimal serialization
+- Audit logging is additive — existing service behavior unchanged, audit calls added after successful commits
+- Grade history (`GradeHistoryModel`) continues to work alongside the new audit log system
+- Audit log viewer uses collapsible `<details>` for JSON diff to keep the table compact
+
+### Metrics
+- 905 tests passing (886 + 19 new)
+- Ruff check and format clean
+- Database schema updated with `audit_logs` table
+
 ## P25 — Online Class Integration & Session Links (2026-09-01)
 
 ### Added

@@ -1,15 +1,29 @@
 # Project Status
 
-**Current Phase:** P25 — Online Class Integration & Session Links — Completed
-**Current Objective:** Online meeting link management for hybrid/online classes.
+**Current Phase:** P26 — Automated Tasks & Audit Logging — Completed
+**Current Objective:** Background scheduler for automated notifications and audit trail for sensitive data changes.
 
-**Previous Phase:** P24 — Teacher Salaries & Payroll Management
+**Previous Phase:** P25 — Online Class Integration & Session Links
 
 ## Status
 
-P25 is complete. Admins and teachers can set a default online link for classes, override it per session, and students see a "Join Online Class" button in their timetable when a session is imminent. All 886 tests pass.
+P26 is complete. A lightweight background scheduler sends daily class reminders and weekly payment reminders via in-app notifications. All grade corrections and financial transaction corrections/reversals are logged in the audit trail. Admins can view and filter audit logs. All 905 tests pass.
 
 ## Completed
+
+### P26 — Automated Tasks & Audit Logging
+- [x] Lightweight background scheduler (`app/scheduler.py`) using daemon threads
+- [x] Daily automated class reminder: in-app notifications for tomorrow's sessions
+- [x] Weekly automated payment reminder: in-app notifications for students with outstanding debt
+- [x] CLI commands: `flask run-scheduler` and `flask run-jobs`
+- [x] `AuditLog` domain entity and `AuditLogModel` database table
+- [x] `AuditService` with `log()`, `get_audit_logs()`, `count_audit_logs()`
+- [x] Audit logging in `assessment_service.record_result()` and `update_result()`
+- [x] Audit logging in `finance_service.correct_transaction()` and `reverse_transaction()`
+- [x] Admin route `/admin/audit-logs` with filterable table
+- [x] Admin sidebar link and audit log template
+- [x] 19 new tests covering audit, scheduler, and admin routes
+- [x] 905 total tests passing, Ruff check/format clean
 
 ### P25 — Online Class Integration & Session Links
 - [x] `online_link` nullable column on `AcademyClassModel` — default class online meeting link

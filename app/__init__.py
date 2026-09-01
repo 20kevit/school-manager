@@ -28,6 +28,11 @@ def create_app(config_name="development"):
     _register_routes(app)
     _register_cli(app)
 
+    if config_name != "testing":
+        from app.scheduler import start_scheduler
+
+        start_scheduler(app, interval_seconds=3600)
+
     return app
 
 
@@ -239,6 +244,7 @@ def _register_template_filters(app):
 
 def _register_cli(app):
     """Register Flask CLI commands."""
+    import time
 
     @app.cli.command("seed")
     def seed_command():
@@ -571,6 +577,46 @@ def _register_cli(app):
 
         db.session.commit()
         print("\nSeed completed successfully.")
+
+    @app.cli.command("run-scheduler")
+    def run_scheduler_command():
+        """Start the background scheduler (blocks until interrupted).
+
+        Runs automated daily and weekly jobs in a loop.
+        """
+        import signal
+        import sys
+
+        from app.scheduler import start_scheduler, stop_scheduler
+
+        def _shutdown(sig, frame):
+            print("\nShutting down scheduler...")
+            stop_scheduler()
+            sys.exit(0)
+
+        signal.signal(signal.SIGINT, _shutdown)
+        signal.signal(signal.SIGTERM, _shutdown)
+
+        print("Starting scheduler (Ctrl+C to stop)...")
+        start_scheduler(app, interval_seconds=3600)
+
+        # Keep the main thread alive
+        try:
+            while True:
+                time.sleep(60)
+        except KeyboardInterrupt, SystemExit:
+            stop_scheduler()
+
+    @app.cli.command("run-jobs")
+    def run_jobs_command():
+        """Run all scheduled jobs once immediately (for testing/debugging)."""
+        from app.scheduler import run_jobs_now
+
+        print("Running scheduled jobs...")
+        results = run_jobs_now()
+        for job, result in results.items():
+            print(f"  {job}: {result}")
+        print("Done.")
 
     @app.cli.command("seed-demo")
     def seed_demo_command():

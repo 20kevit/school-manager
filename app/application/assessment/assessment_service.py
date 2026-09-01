@@ -355,6 +355,19 @@ def record_result(
                 reason="Grade updated",
             )
 
+        # Capture old state for audit logging
+        old_values = {
+            "score": float(existing.score) if existing.score is not None else None,
+            "wrong_count": existing.wrong_count,
+            "percentage": float(existing.percentage)
+            if existing.percentage is not None
+            else None,
+            "result_status": existing.result_status,
+            "presence_status": existing.presence_status,
+            "pass_fail": existing.pass_fail,
+            "comments": existing.comments,
+        }
+
         existing.score = (
             Decimal(str(effective_score)) if effective_score is not None else None
         )
@@ -375,6 +388,31 @@ def record_result(
             existing.graded_at = now
         existing.updated_at = now
         db.session.commit()
+
+        # Audit log for grade correction
+        if graded_by is not None and existing.result_status == "GRADED":
+            new_values = {
+                "score": float(effective_score)
+                if effective_score is not None
+                else None,
+                "wrong_count": wrong_count,
+                "percentage": round(percentage, 2) if percentage is not None else None,
+                "result_status": existing.result_status,
+                "presence_status": presence_status,
+                "pass_fail": pass_fail,
+                "comments": comments or existing.comments,
+            }
+            from app.application.audit.audit_service import log as audit_log
+
+            audit_log(
+                user_id=graded_by,
+                action="UPDATE",
+                entity_type="ASSESSMENT_RESULT",
+                entity_id=existing.id,
+                old_values=old_values,
+                new_values=new_values,
+            )
+
         return existing
 
     result = AssessmentResultModel(
@@ -491,6 +529,18 @@ def update_result(
             reason="Grade corrected",
         )
 
+    # Capture old state for audit logging
+    old_values = {
+        "score": float(result.score) if result.score is not None else None,
+        "percentage": float(result.percentage)
+        if result.percentage is not None
+        else None,
+        "result_status": result.result_status,
+        "presence_status": result.presence_status,
+        "pass_fail": result.pass_fail,
+        "comments": result.comments,
+    }
+
     now = datetime.now()
     result.score = Decimal(str(new_score)) if new_score is not None else None
     result.percentage = Decimal(str(percentage)) if percentage is not None else None
@@ -504,6 +554,28 @@ def update_result(
         result.graded_at = now
     result.updated_at = now
     db.session.commit()
+
+    # Audit log for grade correction
+    if graded_by is not None:
+        new_values = {
+            "score": float(new_score) if new_score is not None else None,
+            "percentage": round(percentage, 2) if percentage is not None else None,
+            "result_status": result.result_status,
+            "presence_status": new_presence,
+            "pass_fail": pass_fail,
+            "comments": comments if comments is not None else result.comments,
+        }
+        from app.application.audit.audit_service import log as audit_log
+
+        audit_log(
+            user_id=graded_by,
+            action="UPDATE",
+            entity_type="ASSESSMENT_RESULT",
+            entity_id=result.id,
+            old_values=old_values,
+            new_values=new_values,
+        )
+
     return result
 
 
