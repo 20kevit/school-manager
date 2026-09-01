@@ -68,9 +68,9 @@
                         <td>{{ result.assessment.title if result.assessment else '—' }}</td>
                         <td>{{ result.score if result.score is not none else '—' }}</td>
                         <td>
-                            {% if result.pass_fail_status == 'PASS' %}
+                            {% if result.pass_fail == 'PASS' %}
                                 {{ status_badge("PASS") }}
-                            {% elif result.pass_fail_status == 'FAIL' %}
+                            {% elif result.pass_fail == 'FAIL' %}
                                 {{ status_badge("FAIL") }}
                             {% else %}
                                 <span class="text-muted">—</span>

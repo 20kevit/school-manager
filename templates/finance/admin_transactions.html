@@ -73,7 +73,7 @@
         <div style="margin-top: 1rem; display: flex; gap: 0.5rem;">
             <button type="submit" class="btn btn-primary btn-sm">اعمال فیلتر</button>
             {% if filters.student_id or filters.class_id or filters.transaction_type or filters.category or filters.payment_method or filters.start_date or filters.end_date %}
-            <a href="{{ url_for('finance.admin_transaction_list') }}" class="btn btn-outline btn-sm">پاک کردن فیلترها</a>
+            <a href="{{ url_for('finance.admin_transactions') }}" class="btn btn-outline btn-sm">پاک کردن فیلترها</a>
             {% endif %}
         </div>
     </form>

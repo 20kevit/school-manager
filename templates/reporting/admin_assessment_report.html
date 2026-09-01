@@ -108,7 +108,7 @@
                     <tr>
                         <td>
                             <a href="{{ url_for('reporting.admin_student_report', student_id=result.student_user_id) }}">
-                                {{ result.student.profile.first_name }} {{ result.student.profile.last_name }}
+                                {{ result.student.student_profile.first_name }} {{ result.student.student_profile.last_name }}
                             </a>
                         </td>
                         <td>{{ result.score }}</td>

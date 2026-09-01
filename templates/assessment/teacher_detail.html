@@ -35,7 +35,7 @@
 
 <div style="margin: 1rem 0; display: flex; gap: 0.5rem; flex-wrap: wrap;">
     <a href="{{ url_for('assessment.teacher_grade_assessment', assessment_id=assessment.id) }}" class="btn btn-sm btn-outline btn-success">نمره‌گذاری</a>
-    <a href="{{ url_for('assessment.teacher_history', assessment_id=assessment.id) }}" class="btn btn-sm btn-ghost">تاریخچه</a>
+    <a href="{{ url_for('assessment.teacher_grade_history', assessment_id=assessment.id) }}" class="btn btn-sm btn-ghost">تاریخچه</a>
 </div>
 
 <div class="page-header" style="margin-top: 2rem;">
@@ -89,8 +89,8 @@
                     <td>{{ r.score if r.score is not none else '—' }}</td>
                     <td>{{ r.max_score }}</td>
                     <td>{{ r.percentage if r.percentage is not none else '—' }}</td>
-                    <td>{{ status_badge(r.pass_fail.value) }}</td>
-                    <td>{{ status_badge(r.presence_status.value) }}</td>
+                    <td>{{ status_badge(r.pass_fail) }}</td>
+                    <td>{{ status_badge(r.presence_status) }}</td>
                     <td>
                         {% if r.id %}
                         <a href="{{ url_for('assessment.teacher_edit_result', assessment_id=assessment.id, result_id=r.id) }}" class="btn btn-sm btn-ghost">ویرایش</a>

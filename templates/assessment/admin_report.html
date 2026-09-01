@@ -96,8 +96,8 @@
                     <td>{{ r.score if r.score is not none else '—' }}</td>
                     <td>{{ r.max_score }}</td>
                     <td>{{ r.percentage if r.percentage is not none else '—' }}</td>
-                    <td>{{ status_badge(r.pass_fail.value) }}</td>
-                    <td>{{ status_badge(r.presence_status.value) }}</td>
+                    <td>{{ status_badge(r.pass_fail) }}</td>
+                    <td>{{ status_badge(r.presence_status) }}</td>
                 </tr>
                 {% endfor %}
             </tbody>

@@ -49,6 +49,9 @@ def _register_extensions(app):
 
     CSRFProtect(app)
 
+    app.jinja_env.globals["any"] = any
+    app.jinja_env.globals["all"] = all
+
     from app.infrastructure.database.models import UserModel
 
     @login_manager.user_loader

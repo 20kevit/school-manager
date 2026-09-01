@@ -21,8 +21,8 @@
                 {% for t in templates %}
                 <tr>
                     <td>{{ t.name }}</td>
-                    <td>{{ status_badge(t.notification_type.value) }}</td>
-                    <td>{{ status_badge(t.channel.value) }}</td>
+                    <td>{{ status_badge(t.notification_type) }}</td>
+                    <td>{{ status_badge(t.channel) }}</td>
                     <td>{{ status_badge('YES' if t.is_active else 'NO') }}</td>
                     <td>
                         <a href="{{ url_for('notification.admin_template_edit', template_id=t.id) }}" class="btn btn-sm btn-outline">ویرایش</a>

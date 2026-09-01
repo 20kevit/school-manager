@@ -33,7 +33,7 @@
                     <td class="truncate" style="max-width: 200px;" title="{{ f.original_filename }}">{{ f.original_filename }}</td>
                     <td><code>{{ f.extension }}</code></td>
                     <td>{{ f.file_size }}</td>
-                    <td>{{ status_badge(f.category.value) }}</td>
+                    <td>{{ status_badge(f.category) }}</td>
                     <td>{{ f.entity_type or 'ندارد' }} {{ f.entity_id or '' }}</td>
                     <td>
                         <div class="actions">

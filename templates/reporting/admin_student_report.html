@@ -13,15 +13,15 @@
     <div class="detail-header"><h3>مشخصات فردی</h3></div>
     <div class="detail-row">
         <span class="detail-row-label">نام و نام خانوادگی</span>
-        <span class="detail-row-value">{{ report.student.profile.first_name }} {{ report.student.profile.last_name }}</span>
+        <span class="detail-row-value">{{ report.student.student_profile.first_name }} {{ report.student.student_profile.last_name }}</span>
     </div>
     <div class="detail-row">
         <span class="detail-row-label">کد ملی</span>
-        <span class="detail-row-value">{{ report.student.profile.national_id }}</span>
+        <span class="detail-row-value">{{ report.student.student_profile.national_id }}</span>
     </div>
     <div class="detail-row">
         <span class="detail-row-label">جنسیت</span>
-        <span class="detail-row-value">{{ report.student.profile.gender|persian_label }}</span>
+        <span class="detail-row-value">{{ report.student.student_profile.gender|persian_label }}</span>
     </div>
 </div>
 

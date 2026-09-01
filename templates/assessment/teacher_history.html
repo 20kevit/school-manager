@@ -17,7 +17,7 @@
     </div>
     <div class="detail-row">
         <span class="detail-row-label">وضعیت قبولی</span>
-        <span class="detail-row-value">{{ status_badge(item.result.pass_fail.value) }}</span>
+        <span class="detail-row-value">{{ status_badge(item.result.pass_fail) }}</span>
     </div>
 </div>
 
@@ -46,8 +46,8 @@
                     <td>{{ h.corrected_at|jalali_datetime }}</td>
                     <td>{{ h.previous_score if h.previous_score is not none else '—' }}</td>
                     <td>{{ h.new_score if h.new_score is not none else '—' }}</td>
-                    <td>{{ status_badge(h.previous_pass_fail.value) if h.previous_pass_fail else '—' }}</td>
-                    <td>{{ status_badge(h.new_pass_fail.value) if h.new_pass_fail else '—' }}</td>
+                    <td>{{ status_badge(h.previous_pass_fail) if h.previous_pass_fail else '—' }}</td>
+                    <td>{{ status_badge(h.new_pass_fail) if h.new_pass_fail else '—' }}</td>
                     <td>{{ h.reason or '—' }}</td>
                 </tr>
                 {% endfor %}

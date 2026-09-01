@@ -33,7 +33,7 @@
                 <tr style="{% if n.read_status == 'UNREAD' %}font-weight: var(--font-weight-semibold);{% endif %}">
                     <td>{{ n.title }}</td>
                     <td class="truncate" style="max-width: 300px;">{{ n.message }}</td>
-                    <td>{{ status_badge(n.notification_type.value) }}</td>
+                    <td>{{ status_badge(n.notification_type) }}</td>
                     <td>{{ status_badge(n.read_status) }}</td>
                     <td>{{ n.created_at|jalali_datetime }}</td>
                     <td>

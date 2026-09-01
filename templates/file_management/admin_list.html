@@ -69,8 +69,8 @@
                             {{ "%.1f"|format(f.file_size / 1048576) }} MB
                         {% endif %}
                     </td>
-                    <td>{{ status_badge(f.category.value) }}</td>
-                    <td>{{ status_badge(f.status.value) }}</td>
+                    <td>{{ status_badge(f.category) }}</td>
+                    <td>{{ status_badge(f.status) }}</td>
                     <td>{{ f.created_at|jalali_datetime }}</td>
                     <td>
                         <div class="actions">
