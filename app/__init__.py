@@ -22,13 +22,17 @@ def create_app(config_name="development"):
         static_folder=os.path.join(PROJECT_ROOT, "static"),
     )
     app.config.from_object(config[config_name])
+    config[config_name].init_app(app)
 
     _register_extensions(app)
     _register_blueprints(app)
     _register_routes(app)
     _register_cli(app)
 
-    if config_name != "testing":
+    if (
+        config_name != "testing"
+        and os.environ.get("ENABLE_SCHEDULER", "").lower() == "true"
+    ):
         from app.scheduler import start_scheduler
 
         start_scheduler(app, interval_seconds=3600)
@@ -157,7 +161,7 @@ def _register_template_filters(app):
         try:
             val = float(amount)
             return f"{val:,.0f} تومان"
-        except ValueError, TypeError:
+        except (ValueError, TypeError):  # fmt: skip
             return str(amount)
 
     @app.template_filter("persian_label")
@@ -604,7 +608,7 @@ def _register_cli(app):
         try:
             while True:
                 time.sleep(60)
-        except KeyboardInterrupt, SystemExit:
+        except (KeyboardInterrupt, SystemExit):  # fmt: skip
             stop_scheduler()
 
     @app.cli.command("run-jobs")

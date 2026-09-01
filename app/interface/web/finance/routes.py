@@ -582,7 +582,7 @@ def student_pay_online():
     amount_str = request.form.get("amount", "")
     try:
         amount = Decimal(amount_str)
-    except InvalidOperation, TypeError:
+    except (InvalidOperation, TypeError):  # fmt: skip
         flash("مبلغ وارد شده معتبر نیست.", "error")
         return redirect(url_for("finance.student_my_finance"))
 
@@ -630,7 +630,7 @@ def parent_pay_online(child_user_id):
     amount_str = request.form.get("amount", "")
     try:
         amount = Decimal(amount_str)
-    except InvalidOperation, TypeError:
+    except (InvalidOperation, TypeError):  # fmt: skip
         flash("مبلغ وارد شده معتبر نیست.", "error")
         return redirect(
             url_for("finance.parent_child_statement", child_user_id=child_user_id)

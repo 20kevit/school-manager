@@ -18,7 +18,7 @@ def get_engine():
     try:
         # this works with Flask-SQLAlchemy<3 and Alchemical
         return current_app.extensions["migrate"].db.get_engine()
-    except TypeError, AttributeError:
+    except (TypeError, AttributeError):  # fmt: skip
         # this works with Flask-SQLAlchemy>=3
         return current_app.extensions["migrate"].db.engine
 
@@ -93,6 +93,9 @@ def run_migrations_online():
     connectable = get_engine()
 
     with connectable.connect() as connection:
+        if connectable.url.drivername.startswith("mysql"):
+            connection.execute("SET NAMES utf8mb4;")
+
         context.configure(
             connection=connection, target_metadata=get_metadata(), **conf_args
         )

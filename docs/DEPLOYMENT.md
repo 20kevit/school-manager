@@ -127,7 +127,12 @@ cat backup.sql | docker-compose exec -T db psql -U school_user -d school_manager
 
 ### Scheduler
 
-The application includes an in-process background scheduler that runs as a daemon thread. With multiple Gunicorn workers, multiple scheduler instances may run concurrently. The scheduler is idempotent, so duplicate execution is safe. For strict single-instance scheduling, set `GUNICORN_WORKERS=1` or consider a dedicated scheduler process in a future phase.
+The application includes an in-process background scheduler that runs as a daemon thread. **The scheduler is disabled by default** and only starts when the `ENABLE_SCHEDULER=True` environment variable is set.
+
+- **Docker / VPS**: Set `ENABLE_SCHEDULER=True` in your `.env` file to enable the background scheduler.
+- **cPanel shared hosting**: Do NOT set this variable. Use Cron Jobs instead (see cPanel section below).
+
+With multiple Gunicorn workers, multiple scheduler instances may run concurrently when enabled. The scheduler is idempotent, so duplicate execution is safe. For strict single-instance scheduling, set `GUNICORN_WORKERS=1` or consider a dedicated scheduler process in a future phase.
 
 ### Static Files
 
@@ -170,6 +175,7 @@ cPanel shared hosting uses Phusion Passenger as the WSGI server instead of Gunic
    - `DATABASE_URL` = (your PostgreSQL or MySQL connection string)
    - `FLASK_APP` = `passenger_wsgi.py`
    - `FLASK_ENV` = `production`
+   - Do NOT set `ENABLE_SCHEDULER` — the scheduler must remain disabled on shared hosting.
 
 5. **Run migrations and seed**:
    ```bash
@@ -181,6 +187,8 @@ cPanel shared hosting uses Phusion Passenger as the WSGI server instead of Gunic
 ### Scheduler (Cron Job)
 
 Background daemon threads are killed on shared hosting. The scheduler must run via Cron instead.
+
+**Important**: The `ENABLE_SCHEDULER` environment variable must NOT be set to `True` on cPanel. The background scheduler is disabled by default, making the app safe for shared hosting.
 
 In cPanel > Cron Jobs, add a new cron job:
 
@@ -194,7 +202,8 @@ This runs `flask run-jobs` every hour. The command is idempotent — running it 
 
 ### Important Notes
 
-- `passenger_wsgi.py` is the WSGI entry point for Passenger (equivalent to `wsgi.py` for Gunicorn).
-- The scheduler daemon thread is automatically started but will be killed by the host. The Cron Job replaces it.
+- `passenger_wsgi.py` is the WSGI entry point for Passenger (equivalent to `wsgi.py` for Gunicorn). It includes a fallback mechanism to load environment variables from `.env` if cPanel env vars are not configured.
+- The scheduler daemon thread is **disabled by default** and will NOT start unless `ENABLE_SCHEDULER=True` is set. On cPanel, use the Cron Job instead.
 - `flask run-jobs` runs both the daily class reminder and weekly payment reminder in one invocation.
-- If your host only supports MySQL, set `DATABASE_URL` to a `mysql+pymysql://` connection string.
+- If your host only supports MySQL, set `DATABASE_URL` to a `mysql+pymysql://` connection string. The application automatically configures `utf8mb4` charset for MySQL connections.
+- MySQL migrations automatically use `utf8mb4` charset and collation for full Persian character support.

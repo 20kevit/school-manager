@@ -44,7 +44,7 @@ def public_apply():
 
         try:
             class_id = int(class_id_str)
-        except ValueError, TypeError:
+        except (ValueError, TypeError):  # fmt: skip
             flash("کلاس نامعتبر است.", "error")
             return _render_form()
 

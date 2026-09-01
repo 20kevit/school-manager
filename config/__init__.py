@@ -81,6 +81,18 @@ class ProductionConfig(Config):
     SESSION_COOKIE_SAMESITE = "Lax"
     PERMANENT_SESSION_LIFETIME = 8 * 3600  # 8 hours
 
+    @staticmethod
+    def init_app(app):
+        db_url = app.config.get("SQLALCHEMY_DATABASE_URI") or ""
+        if db_url.startswith("mysql"):
+            app.config.setdefault("SQLALCHEMY_ENGINE_OPTIONS", {})
+            app.config["SQLALCHEMY_ENGINE_OPTIONS"].update(
+                {
+                    "pool_pre_ping": True,
+                    "connect_args": {"charset": "utf8mb4"},
+                }
+            )
+
 
 config = {
     "development": DevelopmentConfig,
