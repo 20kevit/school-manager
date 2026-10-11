@@ -2,6 +2,10 @@
 
 This guide covers deploying the Academy Management System using Docker and Docker Compose.
 
+> Note: Docker is one supported deployment option. The live VPS deployment uses
+> Gunicorn behind system Nginx under systemd instead — see
+> [VPS Deployment](VPS_DEPLOYMENT.md) for the general architecture and workflow.
+
 ## Prerequisites
 
 - Docker Engine 20.10+

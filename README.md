@@ -22,6 +22,8 @@ pytest
 
 ## Production Deployment
 
+Docker-based deployment:
+
 ```bash
 cp .env.example .env
 # Edit .env with production secrets
@@ -30,6 +32,11 @@ docker-compose up -d
 ```
 
 See [Deployment Guide](docs/DEPLOYMENT.md) for full instructions.
+
+> Note: the live VPS deployment does not use Docker. It runs Gunicorn behind
+> system Nginx under systemd; see [VPS Deployment](docs/VPS_DEPLOYMENT.md) for
+> the general architecture and workflow. Machine-specific instructions live in
+> `DEPLOYMENT.local.md` on the VPS only (never committed).
 
 ## Tech Stack
 
