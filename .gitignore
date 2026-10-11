@@ -53,3 +53,9 @@ Thumbs.db
 # Ruff
 .ruff_cache/
 test_storage/
+
+# Local-only operational docs (NEVER commit)
+/DEPLOYMENT.local.md
+
+# Local runtime junk (e.g. PulseAudio state when this dir is a service user's HOME)
+.config/
