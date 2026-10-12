@@ -1,9 +1,12 @@
 from __future__ import annotations
 
+from datetime import datetime, timedelta
+
+from flask import current_app, request
 from flask_login import login_user, logout_user
 
 from app.extensions import db
-from app.infrastructure.database.models import RoleModel, UserModel
+from app.infrastructure.database.models import LoginAttemptModel, RoleModel, UserModel
 
 
 class AuthenticationError(Exception):
@@ -44,15 +47,39 @@ def logout_current_user() -> None:
     logout_user()
 
 
+def _predictable_password_values(user: UserModel) -> set[str]:
+    """Personal identifiers that must never be accepted as a password."""
+    values = {user.login or ""}
+    for profile in (
+        user.student_profile,
+        user.teacher_profile,
+        user.parent_profile,
+    ):
+        if profile is None:
+            continue
+        values.add(getattr(profile, "national_id", "") or "")
+        values.add(getattr(profile, "mobile_phone", "") or "")
+    return {v for v in values if v}
+
+
 def change_password(user: UserModel, current_password: str, new_password: str) -> None:
     """Change a user's password.
 
     Raises AuthenticationError if the current password is incorrect.
+    Raises ValueError if the new password is a predictable personal
+    identifier (login, national ID, phone number).
+    Clears the must_change_password flag on success.
     """
     if not user.check_password(current_password):
         raise AuthenticationError("Current password is incorrect.")
 
+    if new_password in _predictable_password_values(user):
+        raise ValueError(
+            "New password must not be your login, national ID, or phone number."
+        )
+
     user.set_password(new_password)
+    user.must_change_password = False
     db.session.commit()
 
 
@@ -103,11 +130,14 @@ def create_student_user(
 ) -> UserModel:
     """Create a new student user with initial credentials.
 
-    Initial password is the national_id.
+    Initial password is the national_id. The account is flagged
+    must_change_password so the bootstrap credential is rotated at
+    first login and can never remain a standing password.
     """
     from app.infrastructure.database.models import StudentProfileModel
 
     user = create_user(login, national_id)
+    user.must_change_password = True
     assign_role(user, "STUDENT")
 
     profile = StudentProfileModel(
@@ -313,3 +343,82 @@ def list_users(
     total = query.count()
     users = query.offset((page - 1) * per_page).limit(per_page).all()
     return users, total
+
+
+# ---------------------------------------------------------------------------
+# Login throttling (DB-backed, shared across Gunicorn workers)
+# ---------------------------------------------------------------------------
+
+
+def _throttle_config(name: str, default: int) -> int:
+    try:
+        return int(current_app.config.get(name, default))
+    except (RuntimeError, ValueError, TypeError):
+        return default
+
+
+def get_client_ip() -> str:
+    """Best-effort client IP behind Cloudflare/Nginx.
+
+    Prefers CF-Connecting-IP (set by Cloudflare, passed through by our
+    Nginx) and falls back to the direct peer. Headers are spoofable by
+    clients reaching the origin directly, so throttling ALSO keys on the
+    account login, which cannot be spoofed. Never use this IP for
+    authorization decisions.
+    """
+    try:
+        forwarded = request.headers.get("CF-Connecting-IP", "").strip()
+    except RuntimeError:
+        forwarded = ""
+    if forwarded:
+        return forwarded[:45]
+    try:
+        return (request.remote_addr or "unknown")[:45]
+    except RuntimeError:
+        return "unknown"
+
+
+def _throttle_window_start() -> datetime:
+    minutes = _throttle_config("LOGIN_THROTTLE_WINDOW_MINUTES", 15)
+    return datetime.now() - timedelta(minutes=minutes)
+
+
+def is_login_throttled(login: str, ip_address: str) -> bool:
+    """True when recent failures exceed the per-account or per-IP budget.
+
+    Temporary by design (sliding window) — accounts are never permanently
+    locked, so this cannot be abused for denial of service.
+    """
+    window_start = _throttle_window_start()
+    max_per_account = _throttle_config("LOGIN_THROTTLE_MAX_ATTEMPTS", 5)
+    max_per_ip = _throttle_config("LOGIN_THROTTLE_MAX_PER_IP", 30)
+
+    base = LoginAttemptModel.query.filter(
+        LoginAttemptModel.successful.is_(False),
+        LoginAttemptModel.attempted_at >= window_start,
+    )
+    account_failures = base.filter(
+        LoginAttemptModel.login == login.strip().lower()
+    ).count()
+    if account_failures >= max_per_account:
+        return True
+    ip_failures = base.filter(LoginAttemptModel.ip_address == ip_address).count()
+    return ip_failures >= max_per_ip
+
+
+def record_login_attempt(login: str, ip_address: str, successful: bool) -> None:
+    """Persist a login attempt and prune entries outside the window."""
+    normalized = login.strip().lower()
+    db.session.add(
+        LoginAttemptModel(
+            login=normalized, ip_address=ip_address, successful=successful
+        )
+    )
+    if successful:
+        # A success resets the account's failure budget.
+        LoginAttemptModel.query.filter_by(login=normalized, successful=False).delete()
+    else:
+        db.session.query(LoginAttemptModel).filter(
+            LoginAttemptModel.attempted_at < _throttle_window_start()
+        ).delete()
+    db.session.commit()

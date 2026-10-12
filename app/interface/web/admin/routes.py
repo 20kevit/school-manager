@@ -256,6 +256,8 @@ def user_edit(user_id):
                 flash("رمز عبور جدید باید حداقل ۶ کاراکتر باشد.", "error")
             else:
                 user.set_password(new_password)
+                # Admin-assigned passwords are not user-chosen: force rotation.
+                user.must_change_password = True
                 db.session.commit()
                 flash("رمز عبور با موفقیت تغییر کرد.", "success")
 

@@ -73,12 +73,20 @@ class SmsProvider(NotificationProvider):
     def _send_via_api(self, recipient: str, body: str) -> ProviderResult:
         """Send SMS via configured API.
 
-        This is a placeholder for actual provider integration.
-        Replace with real HTTP calls when provider credentials are available.
+        No generic HTTP delivery is implemented: provider request formats
+        differ per vendor and must not be fabricated. Callers must treat
+        SMS as unavailable until a real provider integration lands, instead
+        of recording a delivery that never happened.
         """
-        # Placeholder: log and simulate
+        import logging
+
+        logging.getLogger(__name__).warning(
+            "SMS delivery requested for %s but no provider HTTP integration "
+            "exists; reporting failure instead of a false success.",
+            self.name,
+        )
         return ProviderResult(
-            success=True,
-            provider_message_id="",
+            success=False,
+            error="SMS provider HTTP delivery is not implemented.",
             provider_name=self.name,
         )

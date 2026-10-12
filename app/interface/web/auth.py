@@ -4,11 +4,38 @@ from flask_login import current_user, login_required
 from app.application.auth.services import (
     AuthenticationError,
     change_password,
+    get_client_ip,
+    is_login_throttled,
     login_authenticated_user,
     logout_current_user,
+    record_login_attempt,
 )
 
 auth_bp = Blueprint("auth", __name__, url_prefix="/auth")
+
+
+@auth_bp.before_app_request
+def enforce_password_rotation():
+    """Force users with a system-assigned bootstrap password to rotate it.
+
+    Runs for every request (blueprint-registered app-wide hook) but only
+    redirects flagged accounts, and never blocks the rotation/logout flow
+    itself or static assets.
+    """
+    if not current_user.is_authenticated:
+        return None
+    endpoint = request.endpoint or ""
+    if endpoint in {
+        "auth.change_password_view",
+        "auth.logout",
+        "auth.login",
+        "static",
+    }:
+        return None
+    if getattr(current_user, "must_change_password", False):
+        flash("به دلایل امنیتی، ابتدا رمز عبور خود را تغییر دهید.", "warning")
+        return redirect(url_for("auth.change_password_view"))
+    return None
 
 
 @auth_bp.route("/login", methods=["GET", "POST"])
@@ -23,14 +50,30 @@ def login():
             flash("لطفاً نام کاربری و رمز عبور را وارد کنید.", "error")
             return render_template("auth/login.html"), 400
 
+        ip_address = get_client_ip()
+        if is_login_throttled(login_id, ip_address):
+            flash(
+                "تلاش‌های ناموفق زیاد است. لطفاً چند دقیقه بعد دوباره تلاش کنید.",
+                "error",
+            )
+            return render_template("auth/login.html"), 429
+
         try:
             from app.application.auth.services import authenticate
 
             user = authenticate(login_id, password)
+            record_login_attempt(login_id, ip_address, True)
             login_authenticated_user(user, remember=remember)
+            if user.must_change_password:
+                flash(
+                    "به دلایل امنیتی، لطفاً رمز عبور خود را تغییر دهید.",
+                    "warning",
+                )
+                return redirect(url_for("auth.change_password_view"))
             flash("ورود با موفقیت انجام شد.", "success")
             return redirect(url_for("auth.dashboard"))
         except AuthenticationError:
+            record_login_attempt(login_id, ip_address, False)
             flash("نام کاربری یا رمز عبور نادرست است.", "error")
             return render_template("auth/login.html"), 401
 
@@ -88,6 +131,9 @@ def change_password_view():
             return redirect(url_for("auth.dashboard"))
         except AuthenticationError:
             flash("رمز عبور فعلی نادرست است.", "error")
+            return render_template("auth/change_password.html"), 400
+        except ValueError as e:
+            flash(str(e), "error")
             return render_template("auth/change_password.html"), 400
 
     return render_template("auth/change_password.html")

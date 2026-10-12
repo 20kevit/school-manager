@@ -304,6 +304,19 @@ class TestProviders:
         # Without env vars, should not be available
         assert p.is_available() is False
 
+    def test_sms_configured_never_reports_false_success(self, monkeypatch):
+        """A configured-but-unimplemented provider must fail, not fake success."""
+        from app.infrastructure.notification.sms_provider import SmsProvider
+
+        monkeypatch.setenv("SMS_API_KEY", "test-key")
+        monkeypatch.setenv("SMS_SENDER", "09120000000")
+        monkeypatch.setenv("SMS_API_URL", "https://sms.example.invalid/send")
+        p = SmsProvider()
+        assert p.is_available() is True
+        result = p.send("09121234567", "subject", "body")
+        assert result.success is False
+        assert "not implemented" in result.error
+
     def test_sms_validate_recipient(self):
         from app.infrastructure.notification.sms_provider import SmsProvider
 

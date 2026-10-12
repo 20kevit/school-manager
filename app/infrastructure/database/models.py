@@ -53,6 +53,10 @@ class UserModel(UserMixin, db.Model):
     login = db.Column(db.String(150), unique=True, nullable=False, index=True)
     password_hash = db.Column(db.String(256), nullable=False)
     is_active_user = db.Column(db.Boolean, default=True, nullable=False)
+    # True when the current password was assigned by the system (e.g. a
+    # bootstrap national-ID password) and the user must pick their own
+    # password on next login. See auth password-rotation flow.
+    must_change_password = db.Column(db.Boolean, default=False, nullable=False)
     created_at = db.Column(db.DateTime, server_default=db.func.now(), nullable=False)
     updated_at = db.Column(
         db.DateTime,
@@ -105,6 +109,37 @@ class UserModel(UserMixin, db.Model):
 
     def __repr__(self) -> str:
         return f"<UserModel id={self.id} login={self.login!r}>"
+
+
+class LoginAttemptModel(db.Model):
+    """Login attempt table — DB-backed brute-force protection.
+
+    Shared across Gunicorn workers (unlike any in-process counter), so
+    throttling cannot be bypassed by retrying against another worker.
+    Old rows are pruned opportunistically when new attempts are recorded.
+    """
+
+    __tablename__ = "login_attempts"
+
+    id = db.Column(db.Integer, primary_key=True)
+    login = db.Column(db.String(150), nullable=False)
+    ip_address = db.Column(db.String(45), nullable=False)
+    successful = db.Column(db.Boolean, default=False, nullable=False)
+    attempted_at = db.Column(
+        db.DateTime, server_default=db.func.now(), nullable=False
+    )
+
+    __table_args__ = (
+        db.Index("ix_login_attempt_login", "login"),
+        db.Index("ix_login_attempt_ip", "ip_address"),
+        db.Index("ix_login_attempt_at", "attempted_at"),
+    )
+
+    def __repr__(self) -> str:
+        return (
+            f"<LoginAttemptModel id={self.id} login={self.login!r} "
+            f"successful={self.successful!r}>"
+        )
 
 
 class StudentProfileModel(db.Model):

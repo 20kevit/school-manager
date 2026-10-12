@@ -13,6 +13,33 @@ login_manager.login_message_category = "error"
 
 PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
+#: Secrets that must never sign production sessions/CSRF tokens.
+_REJECTED_PRODUCTION_SECRETS = frozenset(
+    {"", "change-me", "changeme", "secret", "password", "development", "test"}
+)
+
+
+def _reject_insecure_production_secret(app) -> None:
+    """Refuse to boot production on a missing/default/weak SECRET_KEY.
+
+    A public default would let anyone forge session cookies and CSRF tokens.
+    The secret value itself is never included in the error. Development and
+    testing configs keep their convenient fallback (with a warning).
+    """
+    secret = app.config.get("SECRET_KEY") or ""
+    if not secret or secret.strip().lower() in _REJECTED_PRODUCTION_SECRETS:
+        raise RuntimeError(
+            "Refusing to start in production: SECRET_KEY is missing or uses a "
+            "known-default value. Set a strong random SECRET_KEY environment variable."
+        )
+    if len(secret) < 32:
+        # Warn only: refusing here could break deployments whose existing
+        # secret predates this check. Rotate to >= 32 characters.
+        app.logger.warning(
+            "SECRET_KEY is shorter than 32 characters; "
+            "use a strong random value of at least 32 characters."
+        )
+
 
 def create_app(config_name="development"):
     """Application factory."""
@@ -23,6 +50,9 @@ def create_app(config_name="development"):
     )
     app.config.from_object(config[config_name])
     config[config_name].init_app(app)
+
+    if config_name == "production":
+        _reject_insecure_production_secret(app)
 
     _register_extensions(app)
     _register_blueprints(app)

@@ -160,6 +160,8 @@ def parse_excel_file(file_content: bytes) -> ImportResult:
 
             user = UserModel(login=national_id)
             user.set_password(national_id)
+            # Bootstrap credential: must be rotated at first login.
+            user.must_change_password = True
             db.session.add(user)
             db.session.flush()
 

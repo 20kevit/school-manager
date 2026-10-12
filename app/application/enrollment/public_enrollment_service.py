@@ -64,6 +64,9 @@ def submit_public_enrollment(
     else:
         user = UserModel(login=national_id)
         user.set_password(national_id)
+        # Bootstrap credential: unusable until approval activates the account,
+        # and must be rotated at first login (see auth password-rotation flow).
+        user.must_change_password = True
         user.is_active_user = False
         db.session.add(user)
         db.session.flush()
@@ -105,7 +108,9 @@ def approve_and_activate_enrollment(enrollment: EnrollmentModel) -> EnrollmentMo
     """Approve a public enrollment and activate the user account.
 
     - Activates the user account (is_active_user=True).
-    - Sets password to national_id (if not already set differently).
+    - On first activation only, assigns the bootstrap national-ID password
+      and flags must_change_password so it is rotated at first login.
+      Already-active accounts are never touched here.
     - Approves the enrollment.
     """
     from app.application.enrollment.enrollment_service import approve_enrollment
@@ -121,6 +126,7 @@ def approve_and_activate_enrollment(enrollment: EnrollmentModel) -> EnrollmentMo
     if not user.is_active_user:
         user.is_active_user = True
         user.set_password(profile.national_id)
+        user.must_change_password = True
 
     db.session.flush()
 
