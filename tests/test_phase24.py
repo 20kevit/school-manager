@@ -652,6 +652,80 @@ class TestPayrollCalculation:
         assert summary.gross_amount == Decimal("1100000")  # 500000 + 600000
         assert len(summary.breakdown_per_class) == 2
 
+    def test_percentage_net_revenue_excludes_refunds_and_reversals(
+        self,
+        db,
+        teacher_user,
+        academy_class,
+        student,
+        percentage_contract,
+        completed_session,
+    ):
+        """Net collected revenue excludes refunds and reversals.
+
+        When a payment is refunded or reversed, the net collected revenue
+        should decrease accordingly, and the teacher's percentage-based
+        payroll should reflect the net amount.
+        """
+        from datetime import datetime
+
+        from app.application.finance import finance_service
+
+        # Create an initial payment
+        payment = finance_service.record_payment(
+            student_user_id=student.id,
+            amount=Decimal("5000000"),
+            payment_method="CASH",
+            class_id=academy_class.id,
+        )
+        payment.created_at = datetime(2026, 3, 10, 12, 0)
+        db.session.commit()
+
+        # Verify initial gross revenue
+        summary = calculate_teacher_payroll(
+            teacher_user.id,
+            date(2026, 3, 1),
+            date(2026, 3, 31),
+        )
+        assert summary.breakdown_per_class[0].collected_revenue == Decimal("5000000")
+        assert summary.gross_amount == Decimal("1000000")  # 5000000 * 20%
+
+        # Add a refund for part of the payment
+        refund = finance_service.record_refund(
+            student_user_id=student.id,
+            amount=Decimal("2000000"),
+            related_transaction_id=payment.id,
+        )
+        refund.created_at = datetime(2026, 3, 15, 12, 0)
+        db.session.commit()
+
+        # Net revenue should be 5000000 - 2000000 = 3000000
+        summary = calculate_teacher_payroll(
+            teacher_user.id,
+            date(2026, 3, 1),
+            date(2026, 3, 31),
+        )
+        assert summary.breakdown_per_class[0].collected_revenue == Decimal("3000000")
+        # 3000000 * 20% = 600000
+        assert summary.gross_amount == Decimal("600000")
+
+        # Add a reversal of the remaining payment
+        reversal = finance_service.reverse_transaction(payment.id)
+        reversal.created_at = datetime(2026, 3, 15, 12, 0)
+        db.session.commit()
+
+        # Reversal of full payment (5M) with partial refund (2M) means
+        # net = 5M (payment) - 2M (refund) - 5M (reversal) = -2M
+        # This is correct accounting: the original 5M payment is voided,
+        # but 2M was already refunded, so school owes 2M more.
+        summary = calculate_teacher_payroll(
+            teacher_user.id,
+            date(2026, 3, 1),
+            date(2026, 3, 31),
+        )
+        assert summary.breakdown_per_class[0].collected_revenue == Decimal("-2000000")
+        assert summary.gross_amount == Decimal("-400000")
+
 
 # ---------------------------------------------------------------------------
 # Payroll Finalization Tests

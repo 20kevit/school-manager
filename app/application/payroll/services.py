@@ -190,6 +190,10 @@ def _get_collected_tuition(class_id: int, start_date: date, end_date: date) -> D
     online channels is recorded with category OTHER, while seeds use
     TUITION — all of it is collected tuition for the class. Only ACTIVE
     rows count, so pending/failed/corrected payments are excluded.
+
+    Refunds, reversals, and discounts are NOT subtracted here: this is
+    gross collected revenue. Net revenue accounting is left to the
+    payroll/finance policy layer if needed.
     """
     from datetime import datetime, timedelta
 
@@ -210,6 +214,90 @@ def _get_collected_tuition(class_id: int, start_date: date, end_date: date) -> D
         .scalar()
     )
     return Decimal(str(result))
+
+
+def _get_net_collected_tuition(
+    class_id: int, start_date: date, end_date: date
+) -> Decimal:
+    """Sum net collected tuition for a class in a date range.
+
+    This is gross PAYMENT amount minus REFUND and REVERSAL amounts
+    related to payments for the same class, within the same date range.
+    This provides a net collected revenue figure for accurate payroll
+    calculations when the PERCENTAGE_OF_REVENUE model is used.
+
+    Policy decision: Percentage-based payroll uses NET collected revenue
+    (payments minus refunds/reversals) to avoid overpaying on reversed
+    or refunded transactions.
+    """
+    from datetime import datetime, timedelta
+
+    from sqlalchemy.orm import aliased
+
+    start_datetime = datetime(start_date.year, start_date.month, start_date.day)
+    end_datetime = datetime(end_date.year, end_date.month, end_date.day) + timedelta(
+        days=1
+    )
+
+    # Gross payments
+    gross = (
+        db.session.query(func.coalesce(func.sum(FinancialTransactionModel.amount), 0))
+        .filter(
+            FinancialTransactionModel.class_id == class_id,
+            FinancialTransactionModel.transaction_type == "PAYMENT",
+            FinancialTransactionModel.status == "ACTIVE",
+            FinancialTransactionModel.created_at >= start_datetime,
+            FinancialTransactionModel.created_at < end_datetime,
+        )
+        .scalar()
+    )
+
+    # Alias for the original payment table (left side of join)
+    original_payment = aliased(FinancialTransactionModel)
+
+    # Refunds linked to payments in this class (via related_transaction_id)
+    refunds = (
+        db.session.query(func.coalesce(func.sum(FinancialTransactionModel.amount), 0))
+        .select_from(FinancialTransactionModel)
+        .join(
+            original_payment,
+            FinancialTransactionModel.related_transaction_id == original_payment.id,
+        )
+        .filter(
+            FinancialTransactionModel.class_id == class_id,
+            FinancialTransactionModel.transaction_type == "REFUND",
+            FinancialTransactionModel.status == "ACTIVE",
+            FinancialTransactionModel.created_at >= start_datetime,
+            FinancialTransactionModel.created_at < end_datetime,
+        )
+        .scalar()
+    )
+
+    # Reversals of payments in this class
+    reversals = (
+        db.session.query(func.coalesce(func.sum(FinancialTransactionModel.amount), 0))
+        .select_from(FinancialTransactionModel)
+        .join(
+            original_payment,
+            FinancialTransactionModel.related_transaction_id == original_payment.id,
+        )
+        .filter(
+            FinancialTransactionModel.class_id == class_id,
+            FinancialTransactionModel.transaction_type == "REVERSAL",
+            FinancialTransactionModel.status == "ACTIVE",
+            FinancialTransactionModel.created_at >= start_datetime,
+            FinancialTransactionModel.created_at < end_datetime,
+        )
+        .scalar()
+    )
+
+    gross_val = Decimal(str(gross or 0))
+    refunds_val = Decimal(str(refunds or 0))
+    reversals_val = Decimal(str(reversals or 0))
+    # REVERSAL amounts are already signed (negative for payment reversals),
+    # so we ADD them (they're already negative for payment reversals).
+    # REFUND amounts are stored positive, so we subtract them.
+    return gross_val - refunds_val + reversals_val
 
 
 def _get_enrollment_count(class_id: int) -> int:
@@ -278,7 +366,9 @@ def calculate_teacher_payroll(
         if contract.payment_type == "PER_SESSION":
             breakdown.amount = Decimal(str(len(sessions))) * contract.rate
         elif contract.payment_type == "PERCENTAGE_OF_REVENUE":
-            collected = _get_collected_tuition(class_id, start_date, end_date)
+            # Use net collected revenue (gross payments minus refunds/reversals)
+            # to avoid overpaying on refunded or reversed transactions.
+            collected = _get_net_collected_tuition(class_id, start_date, end_date)
             breakdown.collected_revenue = collected
             breakdown.amount = (collected * contract.rate) / Decimal("100")
 

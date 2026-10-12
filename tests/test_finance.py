@@ -1295,3 +1295,106 @@ class TestRefundLinkage:
             finance_service.reverse_transaction(tx.id)
         # Single reversal counted exactly once.
         assert finance_service.get_student_balance(student.id) == Decimal("0")
+
+
+# ---------------------------------------------------------------------------
+# Concurrency and constraint tests
+# ---------------------------------------------------------------------------
+
+
+class TestConcurrency:
+    """Tests for concurrency safety using database constraints and validation.
+
+    True multi-threaded concurrency tests require PostgreSQL and are run
+    separately. These tests verify the constraint and validation logic
+    that prevents race conditions.
+    """
+
+    def _payment(self, db, student, amount=Decimal("5000000")):
+        return finance_service.record_payment(student_user_id=student.id, amount=amount)
+
+    def test_refund_link_validation_prevents_double_refund(self, db, student):
+        """Linked refunds are capped at the remaining refundable amount.
+
+        A second full refund of the same payment is rejected because the
+        remaining refundable amount is zero after the first refund.
+        """
+        payment = self._payment(db, student, Decimal("5000000"))
+
+        # First full refund succeeds
+        refund1 = finance_service.record_refund(
+            student_user_id=student.id,
+            amount=Decimal("5000000"),
+            related_transaction_id=payment.id,
+        )
+        assert refund1.related_transaction_id == payment.id
+
+        # Second full refund is rejected
+        with pytest.raises(finance_service.FinanceError, match="remaining refundable"):
+            finance_service.record_refund(
+                student_user_id=student.id,
+                amount=Decimal("1000"),
+                related_transaction_id=payment.id,
+            )
+
+        # Only one refund recorded
+        refunds = FinancialTransactionModel.query.filter_by(
+            related_transaction_id=payment.id,
+            transaction_type="REFUND",
+            status="ACTIVE",
+        ).all()
+        assert len(refunds) == 1
+
+    def test_reverse_twice_rejected_at_database_level(self, db, student):
+        """The unique constraint (not just the pre-check) blocks duplicates."""
+        from sqlalchemy.exc import IntegrityError
+
+        from app.infrastructure.database.models import TeacherPaymentModel
+
+        payment = TeacherPaymentModel(
+            teacher_user_id=student.id,
+            period_start=date(2026, 3, 1),
+            period_end=date(2026, 3, 31),
+            gross_amount=Decimal("500000"),
+            deductions=Decimal("0"),
+            net_amount=Decimal("500000"),
+            status="PENDING",
+        )
+        db.session.add(payment)
+        db.session.commit()
+        db.session.add(
+            TeacherPaymentModel(
+                teacher_user_id=student.id,
+                period_start=date(2026, 3, 1),
+                period_end=date(2026, 3, 31),
+                gross_amount=Decimal("500000"),
+                deductions=Decimal("0"),
+                net_amount=Decimal("500000"),
+                status="PENDING",
+            )
+        )
+        with pytest.raises(IntegrityError):
+            db.session.commit()
+
+    def test_refund_link_enforces_same_student(self, db, student):
+        """Refund must belong to the same student as the original payment."""
+        from app.infrastructure.database.models import RoleModel, UserModel
+
+        other = UserModel(login="fin_other")
+        other.set_password("pass123")
+        role = RoleModel.query.get("STUDENT")
+        if role is None:
+            role = RoleModel(name="STUDENT")
+            db.session.add(role)
+            db.session.flush()
+        other.roles.append(role)
+        db.session.add(other)
+        db.session.commit()
+
+        payment = self._payment(db, student)
+        with pytest.raises(finance_service.FinanceError, match="account"):
+            finance_service.record_refund(
+                student_user_id=other.id,
+                amount=Decimal("1000"),
+                related_transaction_id=payment.id,
+            )

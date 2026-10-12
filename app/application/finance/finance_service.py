@@ -160,6 +160,9 @@ def record_refund(
     and the refund is capped at the remaining refundable amount, so the
     same payment cannot be refunded twice. Without a link, a standalone
     goodwill refund is recorded as before.
+
+    If the refund is linked to a payment, the class_id is automatically
+    inherited from the original payment for revenue tracking purposes.
     """
     if amount <= 0:
         raise FinanceError("Refund amount must be positive.")
@@ -168,6 +171,11 @@ def record_refund(
 
     if related_transaction_id is not None:
         _validate_refund_link(student_user_id, amount, related_transaction_id)
+        # Inherit class_id from the original payment if not explicitly provided
+        if class_id is None:
+            original = FinancialTransactionModel.query.get(related_transaction_id)
+            if original is not None:
+                class_id = original.class_id
 
     transaction = FinancialTransactionModel(
         student_user_id=student_user_id,
