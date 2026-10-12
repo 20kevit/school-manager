@@ -6,6 +6,35 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 
 ## Unreleased
 
+### Security
+- Transcript route scoped to the teacher's own classes (IDOR fix)
+- Bootstrap national-ID passwords force rotation at first login; predictable
+  new passwords rejected; admin resets force rotation
+- DB-backed login throttling (per-account + per-IP sliding window, no lockout)
+- Production refuses to boot on missing/default `SECRET_KEY`
+- File uploads: category/visibility allow-lists, entity authorization,
+  entity-scoped reads, sanitized filenames
+- SMS provider reports unimplemented delivery as failure (no fake success)
+
+### Financial integrity
+- Adjustments stored signed; reversal math negates signed entries
+- Linked refunds validated against the original payment and capped at the
+  remaining refundable amount; transactions reversible only once
+- Online callbacks idempotent with immutable authority (`gateway_ref_id`)
+- Percentage payroll counts all class payment channels (was TUITION-only)
+- One payroll payment per teacher-period (unique constraint); deductions bounded
+
+### Reliability
+- Notification handler contract fixed; event-key deduplication + unique index
+- Reminder jobs idempotent with owned cadence; systemd timer templates in `deploy/`
+- Fresh PostgreSQL upgrades verified to head (boolean defaults fixed, missing
+  audit/file tables added); PG migration check added to CI
+
+### Tests
+- Full suite green: 974 passed, 0 failed (was 903/1); ruff check/format clean
+- Session-regeneration tests made date-relative (were wall-clock fragile)
+- Python policy pinned to 3.12 across docs and CI; demo credentials marked local-only
+
 ## P27 — Deployment Readiness (Docker & Production Config) (2026-09-01)
 
 ### Added

@@ -24,6 +24,12 @@ flask seed
 
 This creates the 4 standard roles, test users, and a fully populated test environment:
 
+> **Local-only test credentials.** The accounts below exist solely in throwaway
+> local/dev databases created by `flask seed`. They are not production
+> credentials, must never be created on production, and must never be reused
+> as real passwords. Production accounts use system-assigned bootstrap
+> passwords that are force-rotated at first login.
+
 | Role | Login | Password |
 |------|-------|----------|
 | Admin | `admin` | `admin123` |
@@ -459,6 +465,9 @@ Open `http://127.0.0.1:5000` in browser.
 | `http://127.0.0.1:5000/health` | Health check | Public |
 
 ## Test Credentials
+
+> **Local-only.** Valid only in throwaway databases seeded by `flask seed`.
+> Never create these accounts on production or reuse these passwords.
 
 | Role | Login | Password |
 |------|-------|----------|
