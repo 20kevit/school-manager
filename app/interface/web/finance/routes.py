@@ -684,13 +684,14 @@ def payment_callback():
         flash("کد پیگیری پرداخت یافت نشد.", "error")
         return redirect(url_for("auth.dashboard"))
 
-    # We don't have the amount in the callback, so we look up the transaction
+    # We don't have the amount in the callback, so we look up the transaction.
+    # Any status: the service resolves first deliveries, duplicate
+    # deliveries of verified payments, and retries idempotently.
     from app.infrastructure.database.models import FinancialTransactionModel
 
     transaction = FinancialTransactionModel.query.filter_by(
         reference_number=authority,
         payment_method="ONLINE",
-        status="PENDING",
     ).first()
 
     if transaction is None:

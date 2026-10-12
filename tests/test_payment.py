@@ -406,7 +406,11 @@ class TestPaymentService:
         # Verify transaction is now ACTIVE
         tx_updated = FinancialTransactionModel.query.get(tx.id)
         assert tx_updated.status == "ACTIVE"
-        assert tx_updated.reference_number == "123456789"
+        # Authority is immutable; provider ref_id lands in gateway_ref_id.
+        assert (
+            tx_updated.reference_number == "S00000000000000000000000000001234567"
+        )
+        assert tx_updated.gateway_ref_id == "123456789"
 
     @patch("app.application.finance.payment_service._get_gateway")
     def test_process_callback_user_cancelled(self, mock_get_gateway, db, student):
@@ -447,6 +451,142 @@ class TestPaymentService:
 
         assert result["success"] is False
         assert result["transaction_id"] is None
+
+    @patch("app.application.finance.payment_service._get_gateway")
+    def test_callback_duplicate_delivery_is_idempotent(
+        self, mock_get_gateway, db, student
+    ):
+        """A redelivered callback must not create a second credit."""
+        from app.infrastructure.database.models import FinancialTransactionModel
+
+        tx = FinancialTransactionModel(
+            student_user_id=student.id,
+            amount=Decimal("100000"),
+            transaction_type="PAYMENT",
+            category="OTHER",
+            description="Test",
+            reference_number="S0000000000000000000000000000DUP001",
+            payment_method="ONLINE",
+            status="PENDING",
+        )
+        db.session.add(tx)
+        db.session.commit()
+
+        mock_gateway = MagicMock()
+        mock_gateway.verify_payment.return_value = PaymentVerificationResult(
+            success=True,
+            ref_id="REFDUP001",
+        )
+        mock_get_gateway.return_value = mock_gateway
+
+        first = payment_service.process_payment_callback(
+            authority="S0000000000000000000000000000DUP001",
+            amount=Decimal("100000"),
+            callback_status="OK",
+        )
+        assert first["success"] is True
+
+        # Second delivery: no gateway call, same success, authority intact.
+        mock_get_gateway.reset_mock()
+        second = payment_service.process_payment_callback(
+            authority="S0000000000000000000000000000DUP001",
+            amount=Decimal("100000"),
+            callback_status="OK",
+        )
+        assert second["success"] is True
+        assert second["transaction_id"] == tx.id
+        assert second["ref_id"] == "REFDUP001"
+        mock_get_gateway.assert_not_called()
+
+        tx_updated = FinancialTransactionModel.query.get(tx.id)
+        assert (
+            tx_updated.reference_number == "S0000000000000000000000000000DUP001"
+        )
+        assert tx_updated.gateway_ref_id == "REFDUP001"
+        active_count = FinancialTransactionModel.query.filter_by(
+            reference_number="S0000000000000000000000000000DUP001",
+            status="ACTIVE",
+        ).count()
+        assert active_count == 1
+        from app.application.finance import finance_service
+
+        assert finance_service.get_student_balance(student.id) == Decimal("100000")
+
+    @patch("app.application.finance.payment_service._get_gateway")
+    def test_callback_amount_mismatch_rejected(
+        self, mock_get_gateway, db, student
+    ):
+        from app.infrastructure.database.models import FinancialTransactionModel
+
+        tx = FinancialTransactionModel(
+            student_user_id=student.id,
+            amount=Decimal("100000"),
+            transaction_type="PAYMENT",
+            category="OTHER",
+            description="Test",
+            reference_number="S0000000000000000000000000000AMT001",
+            payment_method="ONLINE",
+            status="PENDING",
+        )
+        db.session.add(tx)
+        db.session.commit()
+
+        result = payment_service.process_payment_callback(
+            authority="S0000000000000000000000000000AMT001",
+            amount=Decimal("99999"),
+            callback_status="OK",
+        )
+        assert result["success"] is False
+        mock_get_gateway.assert_not_called()
+        assert FinancialTransactionModel.query.get(tx.id).status == "PENDING"
+
+    @patch("app.application.finance.payment_service._get_gateway")
+    def test_callback_retry_after_failure_reverifies(
+        self, mock_get_gateway, db, student
+    ):
+        """A transient verify failure must not permanently block payment."""
+        from app.infrastructure.database.models import FinancialTransactionModel
+
+        tx = FinancialTransactionModel(
+            student_user_id=student.id,
+            amount=Decimal("100000"),
+            transaction_type="PAYMENT",
+            category="OTHER",
+            description="Test",
+            reference_number="S0000000000000000000000000000RTY001",
+            payment_method="ONLINE",
+            status="PENDING",
+        )
+        db.session.add(tx)
+        db.session.commit()
+
+        mock_gateway = MagicMock()
+        mock_gateway.verify_payment.return_value = PaymentVerificationResult(
+            success=False,
+            error="timeout",
+        )
+        mock_get_gateway.return_value = mock_gateway
+        failed = payment_service.process_payment_callback(
+            authority="S0000000000000000000000000000RTY001",
+            amount=Decimal("100000"),
+            callback_status="OK",
+        )
+        assert failed["success"] is False
+        assert FinancialTransactionModel.query.get(tx.id).status == "FAILED"
+
+        mock_gateway.verify_payment.return_value = PaymentVerificationResult(
+            success=True,
+            ref_id="REFRTY001",
+        )
+        retried = payment_service.process_payment_callback(
+            authority="S0000000000000000000000000000RTY001",
+            amount=Decimal("100000"),
+            callback_status="OK",
+        )
+        assert retried["success"] is True
+        tx_updated = FinancialTransactionModel.query.get(tx.id)
+        assert tx_updated.status == "ACTIVE"
+        assert tx_updated.gateway_ref_id == "REFRTY001"
 
 
 # ---------------------------------------------------------------------------

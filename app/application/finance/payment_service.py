@@ -119,6 +119,10 @@ def process_payment_callback(
     Called when ZarinPal redirects the user back after payment.
     Verifies the payment with ZarinPal and updates the transaction status.
 
+    The lookup authority (reference_number) is immutable: verification
+    results are stored in gateway_ref_id and the authority is preserved,
+    so duplicate callbacks stay correlatable and idempotent.
+
     Args:
         authority: The authority code from the callback query.
         amount: The payment amount (must match the original).
@@ -127,11 +131,11 @@ def process_payment_callback(
     Returns:
         dict with 'success', 'transaction_id', 'ref_id', 'message'.
     """
-    # Find the PENDING transaction by authority code
+    # Find the transaction by authority code (any status: PENDING for first
+    # delivery, ACTIVE/FAILED for duplicate or retried deliveries).
     transaction = FinancialTransactionModel.query.filter_by(
         reference_number=authority,
         payment_method="ONLINE",
-        status="PENDING",
     ).first()
 
     if transaction is None:
@@ -141,6 +145,27 @@ def process_payment_callback(
             "transaction_id": None,
             "ref_id": "",
             "message": "تراکنش یافت نشد.",
+        }
+
+    if Decimal(str(amount)) != Decimal(str(transaction.amount)):
+        logger.warning(
+            "Payment callback amount mismatch: transaction_id=%d", transaction.id
+        )
+        return {
+            "success": False,
+            "transaction_id": transaction.id,
+            "ref_id": transaction.gateway_ref_id or "",
+            "message": "مبلغ پرداخت مطابقت ندارد.",
+        }
+
+    # Duplicate delivery of an already-verified payment: idempotent success.
+    # No state changes, no new ledger rows, no duplicate notifications.
+    if transaction.status == "ACTIVE":
+        return {
+            "success": True,
+            "transaction_id": transaction.id,
+            "ref_id": transaction.gateway_ref_id or "",
+            "message": "پرداخت قبلاً ثبت شده است.",
         }
 
     # If ZarinPal reported user cancellation
@@ -159,7 +184,9 @@ def process_payment_callback(
             "message": "پرداخت لغو شد.",
         }
 
-    # Verify with ZarinPal
+    # Verify with ZarinPal (also for previously FAILED rows: a transient
+    # failure must not permanently block a completed payment, and the
+    # provider remains the ground truth).
     gateway = _get_gateway()
     result = gateway.verify_payment(
         authority=authority,
@@ -168,7 +195,7 @@ def process_payment_callback(
 
     if result.success:
         transaction.status = "ACTIVE"
-        transaction.reference_number = result.ref_id or authority
+        transaction.gateway_ref_id = result.ref_id or transaction.gateway_ref_id
         db.session.commit()
         logger.info(
             "Payment verified: transaction_id=%d, ref_id=%s",
@@ -212,7 +239,7 @@ def _notify_payment_success(transaction: FinancialTransactionModel) -> None:
         from app.application.notification import notification_service
         from app.domain.notification import NotificationType
 
-        ref_id = transaction.reference_number or "-"
+        ref_id = transaction.gateway_ref_id or transaction.reference_number or "-"
         amount_str = f"{transaction.amount:,.0f}"
 
         notification_service.create_in_app_notification(

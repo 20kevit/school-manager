@@ -832,6 +832,9 @@ class FinancialTransactionModel(db.Model):
     category = db.Column(db.String(20), nullable=False)
     description = db.Column(db.Text, default="")
     reference_number = db.Column(db.String(100), default="")
+    # Provider-issued payment identifier (e.g. ZarinPal ref_id). The authority
+    # in reference_number is immutable once set; verification results land here.
+    gateway_ref_id = db.Column(db.String(100), nullable=True)
     payment_method = db.Column(db.String(20), nullable=True)
     enrollment_id = db.Column(
         db.Integer, db.ForeignKey("enrollments.id"), nullable=True
