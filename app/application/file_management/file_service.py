@@ -8,11 +8,127 @@ from datetime import datetime
 from flask import current_app
 
 from app.extensions import db
-from app.infrastructure.database.models import StoredFileModel
+from app.infrastructure.database.models import (
+    AcademyClassModel,
+    ActivityModel,
+    ActivitySubmissionModel,
+    ParentProfileModel,
+    StoredFileModel,
+    StudentProfileModel,
+    TeacherProfileModel,
+)
 from app.infrastructure.storage import (
     generate_storage_key,
     get_storage_backend,
 )
+
+# ---------------------------------------------------------------------------
+# Controlled vocabularies
+# ---------------------------------------------------------------------------
+
+#: Categories accepted on upload (admin UI list plus seed-time tuition docs).
+ALLOWED_CATEGORIES = frozenset(
+    {
+        "PROFILE_PHOTO",
+        "STUDENT_DOCUMENT",
+        "ACTIVITY_ATTACHMENT",
+        "ACTIVITY_SUBMISSION",
+        "FINANCE_DOCUMENT",
+        "EDUCATIONAL_MATERIAL",
+        "TUITION",
+        "OTHER",
+    }
+)
+
+#: Visibility values accepted on upload.
+ALLOWED_VISIBILITY = frozenset({"PRIVATE", "PUBLIC"})
+
+#: Entity types the upload trust boundary understands. Anything else is
+#: rejected at the route layer; the service stores only what callers pass
+#: after route-level authorization (trusted server-side callers pass
+#: pre-verified entities).
+ATTACHABLE_ENTITY_TYPES = frozenset(
+    {
+        "",
+        "activity_submission",
+        "student_profile",
+        "teacher_profile",
+        "parent_profile",
+    }
+)
+
+
+def _validate_category_visibility(category: str, visibility: str) -> None:
+    if category not in ALLOWED_CATEGORIES:
+        raise FileError(f"File category '{category}' is not supported.")
+    if visibility not in ALLOWED_VISIBILITY:
+        raise FileError(f"File visibility '{visibility}' is not supported.")
+
+
+def authorize_entity_attachment(
+    user, entity_type: str | None, entity_id: int | None
+) -> None:
+    """Verify the user may attach files to the given entity.
+
+    Raises FileError (generic message, no existence oracle) when the entity
+    type is unsupported, the entity does not exist, or the user has no
+    relationship to it. Unattached uploads (empty type / null id) are
+    uploader-scoped and always allowed here.
+    """
+    entity_type = entity_type or ""
+    if not entity_type and entity_id is None:
+        return
+    if entity_type not in ATTACHABLE_ENTITY_TYPES:
+        raise FileError("Attaching files to this item is not allowed.")
+    if entity_id is None:
+        raise FileError("Attaching files to this item is not allowed.")
+
+    if user.has_role("ADMIN"):
+        # Admins may attach anywhere, but the entity must still exist.
+        if _find_attach_entity(entity_type, entity_id) is None:
+            raise FileError("Attaching files to this item is not allowed.")
+        return
+
+    if entity_type == "activity_submission":
+        submission = ActivitySubmissionModel.query.get(entity_id)
+        if submission is None:
+            raise FileError("Attaching files to this item is not allowed.")
+        activity = ActivityModel.query.get(submission.activity_id)
+        if activity is None:
+            raise FileError("Attaching files to this item is not allowed.")
+        if submission.student_user_id == user.id:
+            return
+        academy_class = (
+            AcademyClassModel.query.get(activity.class_id)
+            if activity.class_id
+            else None
+        )
+        if academy_class is not None and academy_class.teacher_user_id == user.id:
+            return
+        raise FileError("Attaching files to this item is not allowed.")
+
+    profile = _find_profile(entity_type, entity_id)
+    if profile is None:
+        raise FileError("Attaching files to this item is not allowed.")
+    if profile.user_id == user.id:
+        return
+    raise FileError("Attaching files to this item is not allowed.")
+
+
+def _find_attach_entity(entity_type: str, entity_id: int):
+    if entity_type == "activity_submission":
+        return ActivitySubmissionModel.query.get(entity_id)
+    return _find_profile(entity_type, entity_id)
+
+
+def _find_profile(entity_type: str, entity_id: int):
+    if entity_type == "student_profile":
+        return StudentProfileModel.query.get(entity_id)
+    if entity_type == "teacher_profile":
+        return TeacherProfileModel.query.get(entity_id)
+    if entity_type == "parent_profile":
+        return ParentProfileModel.query.get(entity_id)
+    return None
 
 # ---------------------------------------------------------------------------
 # Validation
@@ -108,6 +224,7 @@ def upload_file(
         StoredFileModel record
     """
     validate_upload(filename, file_size, content_type, allowed_extensions, max_size)
+    _validate_category_visibility(category, visibility)
 
     ext = os.path.splitext(filename)[1].lower().lstrip(".")
     storage_key = generate_storage_key(category, ext)
@@ -116,7 +233,7 @@ def upload_file(
     actual_size = backend.save_stream(storage_key, file_storage)
 
     record = StoredFileModel(
-        original_filename=filename,
+        original_filename=sanitize_filename(filename),
         stored_filename=os.path.basename(storage_key),
         extension=ext,
         mime_type=content_type or "application/octet-stream",
@@ -147,13 +264,16 @@ def upload_file_bytes(
 ) -> StoredFileModel:
     """Upload raw bytes and create a metadata record."""
     ext = os.path.splitext(filename)[1].lower().lstrip(".")
+    if not ext:
+        raise FileError("File must have an extension.")
+    _validate_category_visibility(category, visibility)
     storage_key = generate_storage_key(category, ext)
 
     backend = get_storage_backend()
     backend.save(storage_key, data)
 
     record = StoredFileModel(
-        original_filename=filename,
+        original_filename=sanitize_filename(filename),
         stored_filename=os.path.basename(storage_key),
         extension=ext,
         mime_type=content_type or "application/octet-stream",
@@ -271,7 +391,7 @@ def replace_file(
     # Save new file
     actual_size = backend.save_stream(new_storage_key, file_storage)
 
-    record.original_filename = filename
+    record.original_filename = sanitize_filename(filename)
     record.stored_filename = os.path.basename(new_storage_key)
     record.extension = ext
     record.mime_type = content_type or "application/octet-stream"
@@ -354,8 +474,10 @@ def can_access_file(user, file_record: StoredFileModel) -> bool:
     Rules:
     - Admin: always yes
     - Uploader: yes
-    - PUBLIC files: yes
-    - Entity-specific checks are done at the caller level
+    - PUBLIC files: yes (any authenticated user)
+    - Entity-scoped readers: profile owners for *_profile entities;
+      submission owners and class teachers for activity_submission entities
+    - Unknown/unattached entities: uploader/admin/PUBLIC only
     """
     if user.has_role("ADMIN"):
         return True
@@ -363,7 +485,32 @@ def can_access_file(user, file_record: StoredFileModel) -> bool:
         return True
     if file_record.visibility == "PUBLIC":
         return True
-    return False
+    return _entity_read_allowed(user, file_record)
+
+
+def _entity_read_allowed(user, file_record: StoredFileModel) -> bool:
+    """Entity-scoped read access for PRIVATE files (additive only)."""
+    entity_type = file_record.entity_type or ""
+    entity_id = file_record.entity_id
+    if not entity_type or entity_id is None:
+        return False
+    if entity_type == "activity_submission":
+        submission = ActivitySubmissionModel.query.get(entity_id)
+        if submission is None:
+            return False
+        if submission.student_user_id == user.id:
+            return True
+        activity = ActivityModel.query.get(submission.activity_id)
+        if activity is None or not activity.class_id:
+            return False
+        academy_class = AcademyClassModel.query.get(activity.class_id)
+        return (
+            academy_class is not None and academy_class.teacher_user_id == user.id
+        )
+    profile = _find_profile(entity_type, entity_id)
+    if profile is None:
+        return False
+    return profile.user_id == user.id
 
 
 def can_download_file(user, file_record: StoredFileModel) -> bool:

@@ -893,3 +893,336 @@ class TestExistingActivityFilesPreserved:
         assert hasattr(StoredFileModel, "storage_key")
         assert hasattr(StoredFileModel, "category")
         assert hasattr(StoredFileModel, "entity_type")
+
+
+# ---------------------------------------------------------------------------
+# Upload trust-boundary authorization (regression coverage)
+# ---------------------------------------------------------------------------
+
+
+class TestUploadAuthorization:
+    """Caller-controlled entity_type/entity_id/visibility must be authorized."""
+
+    def _login_session(self, client, user):
+        with client.session_transaction() as sess:
+            sess["_user_id"] = str(user.id)
+
+    def _file_storage(self, content=b"x" * 10, filename="ok.pdf"):
+        fs = MagicMock()
+        fs.filename = filename
+        fs.content_type = "application/pdf"
+        fs.read = MagicMock(side_effect=[content, b""])
+        fs.seek = MagicMock()
+        fs.tell = MagicMock(return_value=len(content))
+        return fs
+
+    def _other_student(self, db):
+        from datetime import date
+
+        from app.infrastructure.database.models import StudentProfileModel
+
+        user = UserModel(login="victim_student")
+        user.set_password("pass123")
+        role = RoleModel.query.get("STUDENT")
+        if role is None:
+            role = RoleModel(name="STUDENT")
+            db.session.add(role)
+            db.session.flush()
+        user.roles.append(role)
+        db.session.add(user)
+        db.session.flush()
+        db.session.add(
+            StudentProfileModel(
+                user_id=user.id,
+                first_name="Victim",
+                last_name="Student",
+                national_id="1112223334",
+                mobile_phone="09120009999",
+                birth_date=date(2002, 3, 3),
+                gender="FEMALE",
+            )
+        )
+        db.session.commit()
+        return user
+
+    def _submission_setup(self, db, student_user, teacher_user):
+        from datetime import date
+
+        from app.infrastructure.database.models import (
+            AcademyClassModel,
+            ActivityModel,
+            ActivitySubmissionModel,
+            CourseModel,
+            EnrollmentModel,
+        )
+
+        course = CourseModel(title="C", description="d", num_sessions=4)
+        db.session.add(course)
+        db.session.flush()
+        cls = AcademyClassModel(
+            course_id=course.id,
+            title="K",
+            start_date=date(2026, 1, 1),
+            capacity=10,
+            num_sessions=4,
+            status="ACTIVE",
+            teacher_user_id=teacher_user.id,
+        )
+        db.session.add(cls)
+        db.session.flush()
+        enrollment = EnrollmentModel(
+            student_user_id=student_user.id, class_id=cls.id, status="APPROVED"
+        )
+        db.session.add(enrollment)
+        db.session.flush()
+        activity = ActivityModel(type="HOMEWORK", title="HW", class_id=cls.id)
+        db.session.add(activity)
+        db.session.flush()
+        submission = ActivitySubmissionModel(
+            activity_id=activity.id,
+            student_user_id=student_user.id,
+            enrollment_id=enrollment.id,
+        )
+        db.session.add(submission)
+        db.session.commit()
+        return submission
+
+    # -- service-side validation -----------------------------------------
+
+    def test_upload_rejects_unknown_category(self, app, db):
+        from app.application.file_management.file_service import upload_file
+
+        with app.app_context():
+            with pytest.raises(FileError, match="not supported"):
+                upload_file(
+                    file_storage=self._file_storage(),
+                    filename="ok.pdf",
+                    file_size=10,
+                    content_type="application/pdf",
+                    category="NOPE",
+                )
+
+    def test_upload_rejects_unknown_visibility(self, app, db):
+        from app.application.file_management.file_service import upload_file
+
+        with app.app_context():
+            with pytest.raises(FileError, match="not supported"):
+                upload_file(
+                    file_storage=self._file_storage(),
+                    filename="ok.pdf",
+                    file_size=10,
+                    content_type="application/pdf",
+                    visibility="SUPER_SECRET",
+                )
+
+    def test_upload_sanitizes_original_filename(self, app, db):
+        from app.application.file_management.file_service import upload_file
+
+        with app.app_context():
+            record = upload_file(
+                file_storage=self._file_storage(filename="../../evil.pdf"),
+                filename="../../evil.pdf",
+                file_size=10,
+                content_type="application/pdf",
+            )
+            assert "/" not in record.original_filename
+            assert ".." not in record.original_filename
+
+    # -- entity attachment authorization ----------------------------------
+
+    def test_forged_profile_attachment_rejected(
+        self, app, db, student_user
+    ):
+        from app.application.file_management.file_service import (
+            authorize_entity_attachment,
+        )
+
+        victim = self._other_student(db)
+        profile_id = victim.student_profile.id
+        with app.app_context():
+            with pytest.raises(FileError):
+                authorize_entity_attachment(student_user, "student_profile", profile_id)
+
+    def test_unknown_entity_type_rejected(self, app, db, student_user):
+        from app.application.file_management.file_service import (
+            authorize_entity_attachment,
+        )
+
+        with app.app_context():
+            with pytest.raises(FileError):
+                authorize_entity_attachment(student_user, "student", 1)
+
+    def test_missing_entity_rejected(self, app, db, student_user):
+        from app.application.file_management.file_service import (
+            authorize_entity_attachment,
+        )
+
+        with app.app_context():
+            with pytest.raises(FileError):
+                authorize_entity_attachment(
+                    student_user, "student_profile", 999999
+                )
+
+    def test_owner_may_attach_own_profile(self, app, db, student_user):
+        from app.application.file_management.file_service import (
+            authorize_entity_attachment,
+        )
+
+        with app.app_context():
+            authorize_entity_attachment(
+                student_user, "student_profile", student_user.student_profile.id
+            )
+
+    def test_admin_may_attach_existing_but_not_missing(
+        self, app, db, admin_user, student_user
+    ):
+        from app.application.file_management.file_service import (
+            authorize_entity_attachment,
+        )
+
+        with app.app_context():
+            authorize_entity_attachment(
+                admin_user, "student_profile", student_user.student_profile.id
+            )
+            with pytest.raises(FileError):
+                authorize_entity_attachment(admin_user, "student_profile", 999999)
+
+    def test_submission_attach_owner_teacher_admin(
+        self, app, db, student_user, teacher_user, admin_user
+    ):
+        from app.application.file_management.file_service import (
+            authorize_entity_attachment,
+        )
+
+        submission = self._submission_setup(db, student_user, teacher_user)
+        outsider = self._other_student(db)
+        with app.app_context():
+            authorize_entity_attachment(
+                student_user, "activity_submission", submission.id
+            )
+            authorize_entity_attachment(
+                teacher_user, "activity_submission", submission.id
+            )
+            authorize_entity_attachment(
+                admin_user, "activity_submission", submission.id
+            )
+            with pytest.raises(FileError):
+                authorize_entity_attachment(
+                    outsider, "activity_submission", submission.id
+                )
+
+    # -- download/visibility matrix ----------------------------------------
+
+    def test_private_profile_file_visible_to_owner_not_stranger(
+        self, app, db, student_user, admin_user
+    ):
+        from app.application.file_management.file_service import (
+            can_download_file,
+            upload_file,
+        )
+
+        stranger = self._other_student(db)
+        with app.app_context():
+            record = upload_file(
+                file_storage=self._file_storage(),
+                filename="doc.pdf",
+                file_size=10,
+                content_type="application/pdf",
+                category="STUDENT_DOCUMENT",
+                uploader_user_id=student_user.id,
+                entity_type="student_profile",
+                entity_id=student_user.student_profile.id,
+                visibility="PRIVATE",
+            )
+            assert can_download_file(student_user, record) is True
+            assert can_download_file(stranger, record) is False
+            assert can_download_file(admin_user, record) is True
+
+    def test_public_file_readable_by_any_authenticated_user(
+        self, app, db, student_user
+    ):
+        from app.application.file_management.file_service import (
+            can_download_file,
+            upload_file,
+        )
+
+        stranger = self._other_student(db)
+        with app.app_context():
+            record = upload_file(
+                file_storage=self._file_storage(),
+                filename="pub.pdf",
+                file_size=10,
+                content_type="application/pdf",
+                category="EDUCATIONAL_MATERIAL",
+                uploader_user_id=student_user.id,
+                entity_type="student_profile",
+                entity_id=student_user.student_profile.id,
+                visibility="PUBLIC",
+            )
+            assert can_download_file(stranger, record) is True
+
+    def test_teacher_of_class_can_download_submission_file(
+        self, app, db, student_user, teacher_user
+    ):
+        from app.application.file_management.file_service import (
+            can_download_file,
+            upload_file,
+        )
+
+        submission = self._submission_setup(db, student_user, teacher_user)
+        stranger = self._other_student(db)
+        with app.app_context():
+            record = upload_file(
+                file_storage=self._file_storage(),
+                filename="hw.pdf",
+                file_size=10,
+                content_type="application/pdf",
+                category="ACTIVITY_SUBMISSION",
+                uploader_user_id=student_user.id,
+                entity_type="activity_submission",
+                entity_id=submission.id,
+                visibility="PRIVATE",
+            )
+            assert can_download_file(student_user, record) is True
+            assert can_download_file(teacher_user, record) is True
+            assert can_download_file(stranger, record) is False
+
+    # -- route-level enforcement --------------------------------------------
+
+    def test_route_rejects_forged_entity(
+        self, client, app, db, student_user
+    ):
+        victim = self._other_student(db)
+        self._login_session(client, student_user)
+        before = StoredFileModel.query.count()
+        resp = client.post(
+            "/files/upload",
+            data={
+                "files": (io.BytesIO(b"evil"), "evil.pdf"),
+                "category": "STUDENT_DOCUMENT",
+                "entity_type": "student_profile",
+                "entity_id": str(victim.student_profile.id),
+                "visibility": "PUBLIC",
+            },
+            content_type="multipart/form-data",
+        )
+        assert resp.status_code == 302
+        assert StoredFileModel.query.count() == before
+
+    def test_route_accepts_own_profile_attachment(
+        self, client, app, db, student_user
+    ):
+        self._login_session(client, student_user)
+        before = StoredFileModel.query.count()
+        resp = client.post(
+            "/files/upload",
+            data={
+                "files": (io.BytesIO(b"mine"), "mine.pdf"),
+                "category": "STUDENT_DOCUMENT",
+                "entity_type": "student_profile",
+                "entity_id": str(student_user.student_profile.id),
+            },
+            content_type="multipart/form-data",
+        )
+        assert resp.status_code == 302
+        assert StoredFileModel.query.count() == before + 1

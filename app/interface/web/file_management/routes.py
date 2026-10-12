@@ -17,6 +17,7 @@ from flask_login import current_user, login_required
 
 from app.application.file_management.file_service import (
     FileError,
+    authorize_entity_attachment,
     can_access_file,
     can_delete_file,
     can_download_file,
@@ -168,6 +169,18 @@ def upload():
 
     success_count = 0
     errors = []
+
+    # Caller-controlled association: authorize BEFORE storing anything.
+    # Failures behave like any other upload validation error below.
+    try:
+        authorize_entity_attachment(current_user, entity_type, entity_id)
+    except FileError as e:
+        for f in uploaded_files:
+            if f.filename:
+                errors.append(f"{f.filename}: {e}")
+        for err in errors:
+            flash(err, "error")
+        return redirect(request.referrer or url_for("auth.dashboard"))
 
     for f in uploaded_files:
         if not f.filename:
