@@ -351,10 +351,13 @@ def list_users(
 
 
 def _throttle_config(name: str, default: int) -> int:
-    try:
+    # contextlib.suppress (not try/except) so the ruff formatter cannot
+    # rewrite the exception tuple into invalid syntax.
+    import contextlib
+
+    with contextlib.suppress(RuntimeError, ValueError, TypeError):
         return int(current_app.config.get(name, default))
-    except (RuntimeError, ValueError, TypeError):
-        return default
+    return default
 
 
 def get_client_ip() -> str:
