@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from datetime import date, datetime, time, timedelta
 from decimal import Decimal
+from unittest.mock import patch
 
 import pytest
 
@@ -460,6 +461,21 @@ class TestFinanceAuditLogging:
 # ---------------------------------------------------------------------------
 
 
+def _sunday():
+    """Freeze app.scheduler.date on Sunday 2026-03-08 (a Sunday).
+
+    Payment reminders run on Sundays; pinning the weekday keeps cadence
+    tests deterministic regardless of the wall-clock date.
+    """
+
+    class _SundayDate(date):
+        @classmethod
+        def today(cls):
+            return cls(2026, 3, 8)
+
+    return patch("app.scheduler.date", _SundayDate)
+
+
 class TestScheduler:
     def test_session_reminder_sends_notifications(
         self, db, student_user, academy_class, enrollment
@@ -523,8 +539,9 @@ class TestScheduler:
         db.session.add(charge)
         db.session.commit()
 
-        # Run the job
-        _weekly_payment_reminder_job()
+        # Run the job (payment reminders run on Sundays)
+        with _sunday():
+            _weekly_payment_reminder_job()
 
         notifications = get_user_in_app_notifications(student_user.id)
         assert len(notifications) >= 1
@@ -539,9 +556,60 @@ class TestScheduler:
 
         # No debt
         _weekly_payment_reminder_job()
-
         notifications = get_user_in_app_notifications(student_user.id)
         assert len(notifications) == 0
+
+    def test_daily_reminder_is_idempotent_across_runs(
+        self, db, student_user, academy_class, enrollment
+    ):
+        """Repeated/overlapping runs (e.g. N Gunicorn workers) send once."""
+        from app.application.notification.notification_service import (
+            get_user_in_app_notifications,
+        )
+        from app.scheduler import _daily_class_reminder_job
+
+        tomorrow = date.today() + timedelta(days=1)
+        session = SessionModel(
+            class_id=academy_class.id,
+            session_number=1,
+            scheduled_date=tomorrow,
+            start_time=time(10, 0),
+            end_time=time(12, 0),
+            status="SCHEDULED",
+            title="Session 1",
+        )
+        db.session.add(session)
+        db.session.commit()
+
+        _daily_class_reminder_job()
+        _daily_class_reminder_job()
+
+        notifications = get_user_in_app_notifications(student_user.id)
+        assert len(notifications) == 1
+
+    def test_weekly_reminder_is_idempotent_across_runs(self, db, student_user):
+        from app.application.notification.notification_service import (
+            get_user_in_app_notifications,
+        )
+        from app.scheduler import _weekly_payment_reminder_job
+
+        charge = FinancialTransactionModel(
+            student_user_id=student_user.id,
+            amount=Decimal("500000"),
+            transaction_type="CHARGE",
+            category="TUITION",
+            description="Tuition",
+            status="ACTIVE",
+        )
+        db.session.add(charge)
+        db.session.commit()
+
+        with _sunday():
+            _weekly_payment_reminder_job()
+            _weekly_payment_reminder_job()
+
+        notifications = get_user_in_app_notifications(student_user.id)
+        assert len(notifications) == 1
 
     def test_run_jobs_now(self, db, admin_user, student_user, academy_class):
         from app.scheduler import run_jobs_now

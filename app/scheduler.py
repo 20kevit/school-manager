@@ -16,6 +16,28 @@ _scheduler_thread: threading.Thread | None = None
 _stop_event = threading.Event()
 
 
+def _reminder_already_sent(user_id: int, link: str) -> bool:
+    """True when the same reminder link already went to the user today.
+
+    Makes reminder jobs idempotent across retries, overlapping runs, and
+    multiple Gunicorn workers: whichever runner sends first wins, the rest
+    skip instead of spamming duplicates.
+    """
+    from datetime import datetime
+
+    from app.infrastructure.database.models import InAppNotificationModel
+
+    day_start = datetime.combine(date.today(), datetime.min.time())
+    return (
+        InAppNotificationModel.query.filter(
+            InAppNotificationModel.user_id == user_id,
+            InAppNotificationModel.link == link,
+            InAppNotificationModel.created_at >= day_start,
+        ).first()
+        is not None
+    )
+
+
 def _daily_class_reminder_job() -> None:
     """Find sessions scheduled for tomorrow and send reminder notifications."""
     from app.application.notification.notification_service import (
@@ -65,12 +87,15 @@ def _daily_class_reminder_job() -> None:
             )
 
             try:
+                link = f"/portal/sessions/{session.id}"
+                if _reminder_already_sent(enrollment.student_user_id, link):
+                    continue
                 create_in_app_notification(
                     user_id=enrollment.student_user_id,
                     title=title,
                     message=message,
                     notification_type=NotificationType.SESSION_REMINDER,
-                    link=f"/portal/sessions/{session.id}",
+                    link=link,
                 )
                 sent_count += 1
             except Exception:
@@ -88,7 +113,16 @@ def _daily_class_reminder_job() -> None:
 
 
 def _weekly_payment_reminder_job() -> None:
-    """Find students with outstanding debt and send weekly reminders."""
+    """Find students with outstanding debt and send weekly reminders.
+
+    The Sunday cadence lives here (not only in the loop driver) so every
+    entry point — hourly systemd timer, CLI, worker thread — shares it.
+    Same-day repeats are additionally absorbed by per-link idempotency.
+    """
+    if date.today().weekday() != 6:
+        logger.info("Payment reminders run on Sundays; skipping today.")
+        return
+
     from sqlalchemy import func
 
     from app.application.notification.notification_service import (
@@ -195,6 +229,8 @@ def _weekly_payment_reminder_job() -> None:
         )
 
         try:
+            if _reminder_already_sent(student_user_id, "/portal/finance"):
+                continue
             create_in_app_notification(
                 user_id=student_user_id,
                 title=title,

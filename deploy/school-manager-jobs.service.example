@@ -1,0 +1,21 @@
+[Unit]
+Description=School Manager scheduled jobs (daily reminders, weekly notices)
+After=network-online.target postgresql.service school-manager.service
+Wants=network-online.target
+Requires=postgresql.service
+
+[Service]
+Type=oneshot
+# Adapt these three lines to the host (see DEPLOYMENT.local.md):
+User=school-manager
+Group=school-manager
+WorkingDirectory=/opt/projects/school-manager
+EnvironmentFile=/etc/school-manager/school-manager.env
+# Runs all due jobs once and exits. Reminder jobs are idempotent
+# (already-sent user/link pairs for the day are skipped), so overlapping
+# runs are safe. Prefer this timer over ENABLE_SCHEDULER inside Gunicorn
+# workers, which would execute every job once per worker.
+ExecStart=/opt/projects/school-manager/.venv/bin/flask --app wsgi run-jobs
+StandardOutput=journal
+StandardError=journal
+NoNewPrivileges=true

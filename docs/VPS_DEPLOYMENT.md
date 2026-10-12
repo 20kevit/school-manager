@@ -62,6 +62,16 @@ pre-deploy database backup if migrations ran forward), restart, verify.
 Automated daily backups (database plus uploads) run on the VPS with retention;
 details and the restore procedure are in `DEPLOYMENT.local.md`.
 
+## Scheduled jobs
+
+Reminder jobs are idempotent (an already-sent user/link pair for the day is
+skipped), so overlapping runs never spam duplicates. The recommended runner
+is a systemd timer invoking `flask run-jobs`; example units live in
+`deploy/` (adapt paths to the host — they are templates, not installed).
+Do not enable the in-process scheduler inside Gunicorn workers on a
+multi-worker deployment: every worker would execute each job. The in-process
+scheduler stays off unless explicitly enabled for single-process setups.
+
 ## Discovering deployment details (for future agents)
 
 - Start with `DEPLOYMENT.local.md` on the VPS (project root, Git-ignored).
