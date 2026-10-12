@@ -469,6 +469,86 @@ class TestPayrollCalculation:
         assert summary.gross_amount == Decimal("1000000")
         assert summary.breakdown_per_class[0].collected_revenue == Decimal("5000000")
 
+    def test_percentage_counts_ordinary_channel_payments(
+        self,
+        db,
+        teacher_user,
+        academy_class,
+        student,
+        percentage_contract,
+        completed_session,
+    ):
+        """Payments recorded via record_payment (category OTHER) must count.
+
+        Regression: the revenue query used to require category TUITION while
+        every real intake path writes OTHER, yielding zero payroll.
+        """
+        from datetime import datetime
+
+        from app.application.finance import finance_service
+
+        for amount in (Decimal("5000000"), Decimal("3000000")):
+            tx = finance_service.record_payment(
+                student_user_id=student.id,
+                amount=amount,
+                payment_method="CASH",
+                class_id=academy_class.id,
+            )
+            assert tx.category == "OTHER"
+            tx.created_at = datetime(2026, 3, 10, 12, 0)
+        db.session.commit()
+
+        summary = calculate_teacher_payroll(
+            teacher_user.id,
+            date(2026, 3, 1),
+            date(2026, 3, 31),
+        )
+        assert summary.breakdown_per_class[0].collected_revenue == Decimal("8000000")
+        # 8000000 * 20% = 1600000
+        assert summary.gross_amount == Decimal("1600000")
+
+    def test_percentage_ignores_unlinked_and_unsettled_payments(
+        self,
+        db,
+        teacher_user,
+        academy_class,
+        student,
+        percentage_contract,
+        completed_session,
+    ):
+        """class_id NULL, PENDING, and FAILED payments must not count."""
+        from datetime import datetime
+
+        from app.application.finance import finance_service
+        from app.infrastructure.database.models import FinancialTransactionModel
+
+        tx = finance_service.record_payment(
+            student_user_id=student.id, amount=Decimal("9000000")
+        )
+        tx.created_at = datetime(2026, 3, 10, 12, 0)
+        for status in ("PENDING", "FAILED"):
+            db.session.add(
+                FinancialTransactionModel(
+                    student_user_id=student.id,
+                    amount=Decimal("7000000"),
+                    transaction_type="PAYMENT",
+                    category="OTHER",
+                    class_id=academy_class.id,
+                    payment_method="ONLINE",
+                    status=status,
+                    created_at=datetime(2026, 3, 10, 12, 0),
+                )
+            )
+        db.session.commit()
+
+        summary = calculate_teacher_payroll(
+            teacher_user.id,
+            date(2026, 3, 1),
+            date(2026, 3, 31),
+        )
+        assert summary.breakdown_per_class[0].collected_revenue == Decimal("0")
+        assert summary.gross_amount == Decimal("0")
+
     def test_generic_contract_fallback(
         self, db, teacher_user, academy_class, generic_contract, completed_session
     ):

@@ -183,8 +183,12 @@ class PayrollSummary:
 def _get_collected_tuition(class_id: int, start_date: date, end_date: date) -> Decimal:
     """Sum collected tuition (PAYMENT transactions) for a class in a date range.
 
-    Collected tuition = sum of PAYMENT transactions with category=TUITION
-    for enrollments in the given class, filtered by transaction creation date.
+    Collected tuition = sum of ACTIVE PAYMENT transactions for the given
+    class, filtered by transaction creation date. The category is
+    deliberately NOT filtered: tuition paid through ordinary (manual) and
+    online channels is recorded with category OTHER, while seeds use
+    TUITION — all of it is collected tuition for the class. Only ACTIVE
+    rows count, so pending/failed/corrected payments are excluded.
     """
     from datetime import datetime, timedelta
 
@@ -198,7 +202,6 @@ def _get_collected_tuition(class_id: int, start_date: date, end_date: date) -> D
         .filter(
             FinancialTransactionModel.class_id == class_id,
             FinancialTransactionModel.transaction_type == "PAYMENT",
-            FinancialTransactionModel.category == "TUITION",
             FinancialTransactionModel.status == "ACTIVE",
             FinancialTransactionModel.created_at >= start_datetime,
             FinancialTransactionModel.created_at < end_datetime,
