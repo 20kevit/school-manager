@@ -916,16 +916,20 @@ def student_transcript(enrollment_id: int):
 
     enrollment = EnrollmentModel.query.get_or_404(enrollment_id)
 
-    # Authorization: student can view own, parent can view children, admin/teacher can view all
+    # Authorization: student can view own, parent can view children, admin can
+    # view all. Teachers may only view transcripts for classes they teach —
+    # a bare TEACHER role check would let any teacher read any enrollment.
     user_id = current_user.id
     is_admin = any(r.name == "ADMIN" for r in current_user.roles)
-    is_teacher = any(r.name == "TEACHER" for r in current_user.roles)
+    is_teacher_of_class = assessment_service.is_teacher_of_class(
+        user_id, enrollment.class_id
+    )
     is_student_owner = enrollment.student_user_id == user_id
     is_parent_linked = assessment_service.is_parent_of_student(
         user_id, enrollment.student_user_id
     )
 
-    if not (is_admin or is_teacher or is_student_owner or is_parent_linked):
+    if not (is_admin or is_teacher_of_class or is_student_owner or is_parent_linked):
         abort(403)
 
     try:

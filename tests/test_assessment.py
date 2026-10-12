@@ -1370,3 +1370,171 @@ class TestTranscript:
     def test_get_transcript_data_no_template(self, db, academy_class, enrollment):
         transcript = assessment_service.get_transcript_data(enrollment.id)
         assert transcript["final_grade"] is None
+
+
+# ---------------------------------------------------------------------------
+# Transcript route authorization (IDOR regression coverage)
+# ---------------------------------------------------------------------------
+
+
+class TestTranscriptAuthorization:
+    """Route-level tests for GET /assessment/student/<id>/transcript.
+
+    A teacher must only view transcripts for classes they teach; any bare
+    TEACHER-role check would let one teacher read every enrollment.
+    """
+
+    def _login(self, client, login, password):
+        return client.post(
+            "/auth/login", data={"login": login, "password": password}
+        )
+
+    def _other_teacher_class_enrollment(self, db, course):
+        """Create a second teacher, their class, and an enrollment in it."""
+        other_teacher = UserModel(login="teacher2")
+        other_teacher.set_password("teacherpass2")
+        role = RoleModel.query.get("TEACHER")
+        if role is None:
+            role = RoleModel(name="TEACHER")
+            db.session.add(role)
+            db.session.flush()
+        other_teacher.roles.append(role)
+        db.session.add(other_teacher)
+        db.session.flush()
+        other_class = AcademyClassModel(
+            course_id=course.id,
+            title="Other Class",
+            start_date=date(2026, 1, 1),
+            capacity=30,
+            num_sessions=10,
+            status="ACTIVE",
+            teacher_user_id=other_teacher.id,
+        )
+        db.session.add(other_class)
+        db.session.flush()
+        other_student = UserModel(login="otherstudent")
+        other_student.set_password("otherpass")
+        db.session.add(other_student)
+        db.session.flush()
+        other_enrollment = EnrollmentModel(
+            student_user_id=other_student.id,
+            class_id=other_class.id,
+            status="APPROVED",
+        )
+        db.session.add(other_enrollment)
+        db.session.commit()
+        return other_teacher, other_enrollment
+
+    def test_teacher_of_own_class_can_view(
+        self, client, db, teacher_user, enrollment
+    ):
+        self._login(client, "teacher", "teacherpass")
+        resp = client.get(f"/assessment/student/{enrollment.id}/transcript")
+        assert resp.status_code == 200
+
+    def test_teacher_of_other_class_denied(
+        self, client, db, course, teacher_user, student_user
+    ):
+        _, other_enrollment = self._other_teacher_class_enrollment(db, course)
+        self._login(client, "teacher", "teacherpass")
+        resp = client.get(
+            f"/assessment/student/{other_enrollment.id}/transcript"
+        )
+        assert resp.status_code == 403
+
+    def test_teacher_without_classes_denied(
+        self, client, db, course, enrollment
+    ):
+        # A teacher assigned to no class must be denied everywhere.
+        lonely = UserModel(login="lonelyteacher")
+        lonely.set_password("lonelypass")
+        role = RoleModel.query.get("TEACHER")
+        if role is None:
+            role = RoleModel(name="TEACHER")
+            db.session.add(role)
+            db.session.flush()
+        lonely.roles.append(role)
+        db.session.add(lonely)
+        db.session.commit()
+        self._login(client, "lonelyteacher", "lonelypass")
+        resp = client.get(f"/assessment/student/{enrollment.id}/transcript")
+        assert resp.status_code == 403
+
+    def test_student_owner_can_view(self, client, db, student_user, enrollment):
+        self._login(client, "student", "studentpass")
+        resp = client.get(f"/assessment/student/{enrollment.id}/transcript")
+        assert resp.status_code == 200
+
+    def test_other_student_denied(
+        self, client, db, academy_class, enrollment
+    ):
+        # A different student enrolled in the SAME class still must be denied:
+        # ownership is per-enrollment, not per-class.
+        other = UserModel(login="studentx")
+        other.set_password("studentxpass")
+        role = RoleModel.query.get("STUDENT")
+        if role is None:
+            role = RoleModel(name="STUDENT")
+            db.session.add(role)
+            db.session.flush()
+        other.roles.append(role)
+        db.session.add(other)
+        db.session.flush()
+        db.session.add(
+            EnrollmentModel(
+                student_user_id=other.id,
+                class_id=academy_class.id,
+                status="APPROVED",
+            )
+        )
+        db.session.commit()
+        self._login(client, "studentx", "studentxpass")
+        resp = client.get(f"/assessment/student/{enrollment.id}/transcript")
+        assert resp.status_code == 403
+
+    def test_linked_parent_can_view(
+        self, client, db, parent_user, student_user, enrollment
+    ):
+        from app.infrastructure.database.models import ParentProfileModel
+
+        profile = ParentProfileModel(
+            user_id=parent_user.id,
+            first_name="Parent",
+            last_name="One",
+            national_id="P1234567890",
+            mobile_phone="09120000002",
+        )
+        db.session.add(profile)
+        db.session.flush()
+        profile.children.append(student_user.student_profile)
+        db.session.commit()
+        self._login(client, "parent", "parentpass")
+        resp = client.get(f"/assessment/student/{enrollment.id}/transcript")
+        assert resp.status_code == 200
+
+    def test_unlinked_parent_denied(
+        self, client, db, parent_user, enrollment
+    ):
+        self._login(client, "parent", "parentpass")
+        resp = client.get(f"/assessment/student/{enrollment.id}/transcript")
+        assert resp.status_code == 403
+
+    def test_admin_can_view(self, client, db, admin_user, enrollment):
+        self._login(client, "admin", "adminpass")
+        resp = client.get(f"/assessment/student/{enrollment.id}/transcript")
+        assert resp.status_code == 200
+
+    def test_unauthenticated_redirected(self, client, db, enrollment):
+        resp = client.get(
+            f"/assessment/student/{enrollment.id}/transcript",
+            follow_redirects=False,
+        )
+        assert resp.status_code == 302
+        assert "/auth/login" in resp.headers["Location"]
+
+    def test_nonexistent_enrollment_404(
+        self, client, db, admin_user
+    ):
+        self._login(client, "admin", "adminpass")
+        resp = client.get("/assessment/student/999999/transcript")
+        assert resp.status_code == 404
