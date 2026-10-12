@@ -837,6 +837,42 @@ class TestEventHandlers:
         on_password_changed(student_user.id)
 
 
+class TestEventHandlerDelivery:
+    """Handlers must actually create notifications (contract regression)."""
+
+    def test_on_welcome_creates_notification(self, db, student_user):
+        from app.application.notification.event_handlers import on_welcome
+        from app.application.notification.notification_service import (
+            list_notifications,
+        )
+
+        on_welcome(student_user.id)
+        created = list_notifications(recipient_user_id=student_user.id)
+        assert len(created) == 1
+        assert created[0].notification_type == NotificationType.WELCOME.value
+
+    def test_on_password_changed_creates_notification(self, db, student_user):
+        from app.application.notification.event_handlers import on_password_changed
+        from app.application.notification.notification_service import (
+            list_notifications,
+        )
+
+        on_password_changed(student_user.id)
+        created = list_notifications(recipient_user_id=student_user.id)
+        assert len(created) == 1
+        assert created[0].notification_type == NotificationType.PASSWORD_CHANGED.value
+
+    def test_on_payment_received_creates_notification(self, db, student_user):
+        from app.application.notification.event_handlers import on_payment_received
+        from app.application.notification.notification_service import (
+            list_notifications,
+        )
+
+        on_payment_received(student_user.id, "1,000,000")
+        created = list_notifications(recipient_user_id=student_user.id)
+        assert len(created) == 1
+
+
 # ---------------------------------------------------------------------------
 # Multi-Channel Delivery Tests
 # ---------------------------------------------------------------------------
@@ -894,6 +930,47 @@ class TestDuplicatePrevention:
             event_key="welcome:1:student",
         )
         assert n.event_key == "welcome:1:student"
+
+    def test_same_event_key_returns_existing_row(self, db, student_user):
+        from app.application.notification.notification_service import (
+            create_notification,
+            list_notifications,
+        )
+
+        first = create_notification(
+            notification_type=NotificationType.WELCOME,
+            title="Welcome",
+            message="Hello!",
+            recipient_user_id=student_user.id,
+            channels=[NotificationChannel.IN_APP],
+            event_key="dedup:test:key",
+        )
+        second = create_notification(
+            notification_type=NotificationType.WELCOME,
+            title="Welcome",
+            message="Hello!",
+            recipient_user_id=student_user.id,
+            channels=[NotificationChannel.IN_APP],
+            event_key="dedup:test:key",
+        )
+        assert second.id == first.id
+        assert len(list_notifications(recipient_user_id=student_user.id)) == 1
+
+    def test_null_event_keys_are_not_deduped(self, db, student_user):
+        from app.application.notification.notification_service import (
+            create_notification,
+            list_notifications,
+        )
+
+        for _ in range(2):
+            create_notification(
+                notification_type=NotificationType.WELCOME,
+                title="Welcome",
+                message="Hello!",
+                recipient_user_id=student_user.id,
+                channels=[NotificationChannel.IN_APP],
+            )
+        assert len(list_notifications(recipient_user_id=student_user.id)) == 2
 
 
 # ---------------------------------------------------------------------------

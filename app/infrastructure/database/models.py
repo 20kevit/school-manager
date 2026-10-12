@@ -1151,7 +1151,9 @@ class NotificationModel(db.Model):
         db.Index("ix_notification_status", "status"),
         db.Index("ix_notification_type", "notification_type"),
         db.Index("ix_notification_created_at", "created_at"),
-        db.Index("ix_notification_event_key", "event_key"),
+        # Backs event_key deduplication in create_notification. NULL keys
+        # (the common case) are never constrained on PostgreSQL/SQLite.
+        db.UniqueConstraint("event_key", name="uq_notification_event_key"),
     )
 
     def __repr__(self) -> str:

@@ -43,10 +43,21 @@ def create_notification(
 ) -> NotificationModel:
     """Create a notification and its delivery records.
 
-    Returns the created NotificationModel.
+    When event_key is given and a notification with the same key already
+    exists, the existing row is returned instead of inserting a duplicate
+    (retries, double submissions, and repeated scheduler runs stay safe).
+    A unique index backs this guarantee; concurrent duplicates surface as
+    IntegrityError rather than silent double rows.
+
+    Returns the created (or existing) NotificationModel.
     """
     if channels is None:
         channels = [NotificationChannel.IN_APP]
+
+    if event_key:
+        existing = NotificationModel.query.filter_by(event_key=event_key).first()
+        if existing is not None:
+            return existing
 
     notification = NotificationModel(
         notification_type=notification_type,

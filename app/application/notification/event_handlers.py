@@ -27,7 +27,7 @@ def _send(notification_type, title, message, recipient_id, **kwargs):
             notification_type=notification_type,
             title=title,
             message=message,
-            recipient_id=recipient_id,
+            recipient_user_id=recipient_id,
             channels=channels,
             priority=priority,
             event_key=event_key,
