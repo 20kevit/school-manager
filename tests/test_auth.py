@@ -249,9 +249,7 @@ class TestPasswordRotation:
         assert sample_user.must_change_password is False
         assert sample_user.check_password("brand-new-pass-1")
 
-    def test_flagged_login_redirects_to_change_password(
-        self, client, db, sample_user
-    ):
+    def test_flagged_login_redirects_to_change_password(self, client, db, sample_user):
         sample_user.must_change_password = True
         db.session.commit()
         resp = client.post(
@@ -262,9 +260,7 @@ class TestPasswordRotation:
         assert resp.status_code == 302
         assert "/auth/change-password" in resp.headers["Location"]
 
-    def test_flagged_user_blocked_from_other_pages(
-        self, client, db, sample_user
-    ):
+    def test_flagged_user_blocked_from_other_pages(self, client, db, sample_user):
         sample_user.must_change_password = True
         db.session.commit()
         client.post(
@@ -317,9 +313,7 @@ class TestPasswordRotation:
 class TestLoginThrottling:
     """DB-backed brute-force protection shared across workers."""
 
-    def test_repeated_failures_lock_account_temporarily(
-        self, client, db, sample_user
-    ):
+    def test_repeated_failures_lock_account_temporarily(self, client, db, sample_user):
         for _ in range(5):
             resp = client.post(
                 "/auth/login",
@@ -372,9 +366,7 @@ class TestLoginThrottling:
         )
         assert resp.status_code == 302
 
-    def test_unknown_account_throttled_without_leak(
-        self, client, db, sample_user
-    ):
+    def test_unknown_account_throttled_without_leak(self, client, db, sample_user):
         for _ in range(5):
             resp = client.post(
                 "/auth/login",

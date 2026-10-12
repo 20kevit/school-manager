@@ -35,9 +35,7 @@ def upgrade():
         ),
         sa.Column("payment_type", sa.String(30), nullable=False),
         sa.Column("rate", sa.Numeric(10, 2), nullable=False),
-        sa.Column(
-            "is_active", sa.Boolean(), nullable=False, server_default=sa.true()
-        ),
+        sa.Column("is_active", sa.Boolean(), nullable=False, server_default=sa.true()),
         sa.Column("start_date", sa.Date(), nullable=True),
         sa.Column("end_date", sa.Date(), nullable=True),
         sa.Column(

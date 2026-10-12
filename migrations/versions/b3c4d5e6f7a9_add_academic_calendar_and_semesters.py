@@ -24,9 +24,7 @@ def upgrade() -> None:
         sa.Column("title", sa.String(100), nullable=False),
         sa.Column("start_date", sa.Date(), nullable=False),
         sa.Column("end_date", sa.Date(), nullable=False),
-        sa.Column(
-            "is_active", sa.Boolean(), nullable=False, server_default=sa.false()
-        ),
+        sa.Column("is_active", sa.Boolean(), nullable=False, server_default=sa.false()),
         sa.Column(
             "created_at", sa.DateTime(), server_default=sa.func.now(), nullable=False
         ),
@@ -48,9 +46,7 @@ def upgrade() -> None:
         sa.Column("title", sa.String(100), nullable=False),
         sa.Column("start_date", sa.Date(), nullable=False),
         sa.Column("end_date", sa.Date(), nullable=False),
-        sa.Column(
-            "is_active", sa.Boolean(), nullable=False, server_default=sa.false()
-        ),
+        sa.Column("is_active", sa.Boolean(), nullable=False, server_default=sa.false()),
         sa.Column(
             "created_at", sa.DateTime(), server_default=sa.func.now(), nullable=False
         ),

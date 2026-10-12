@@ -872,9 +872,7 @@ class TestPayrollAdminUI:
         )
         assert payment.net_amount == Decimal("0")
 
-    def test_duplicate_payment_rejected_at_database_level(
-        self, db, teacher_user
-    ):
+    def test_duplicate_payment_rejected_at_database_level(self, db, teacher_user):
         """The unique constraint (not just the pre-check) blocks duplicates."""
         from sqlalchemy.exc import IntegrityError
 

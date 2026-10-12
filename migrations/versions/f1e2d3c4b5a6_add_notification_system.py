@@ -25,9 +25,7 @@ def upgrade() -> None:
         sa.Column("channel", sa.String(20), nullable=False),
         sa.Column("subject", sa.String(200), server_default=""),
         sa.Column("body", sa.Text(), nullable=False),
-        sa.Column(
-            "is_active", sa.Boolean(), nullable=False, server_default=sa.true()
-        ),
+        sa.Column("is_active", sa.Boolean(), nullable=False, server_default=sa.true()),
         sa.Column(
             "created_at", sa.DateTime(), server_default=sa.func.now(), nullable=False
         ),

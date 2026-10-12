@@ -11,7 +11,6 @@ constraint violation into PayrollError. Verified duplicate-free on
 production before applying (teacher_payments is empty there).
 """
 
-import sqlalchemy as sa
 from alembic import op
 
 # revision identifiers, used by Alembic.

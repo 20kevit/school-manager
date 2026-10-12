@@ -34,7 +34,9 @@ def upgrade() -> None:
         op.create_table(
             "audit_logs",
             sa.Column("id", sa.Integer(), primary_key=True),
-            sa.Column("user_id", sa.Integer(), sa.ForeignKey("users.id"), nullable=False),
+            sa.Column(
+                "user_id", sa.Integer(), sa.ForeignKey("users.id"), nullable=False
+            ),
             sa.Column("action", sa.String(20), nullable=False),
             sa.Column("entity_type", sa.String(50), nullable=False),
             sa.Column("entity_id", sa.Integer(), nullable=False),
@@ -74,7 +76,9 @@ def upgrade() -> None:
             sa.Column(
                 "visibility", sa.String(20), nullable=False, server_default="PRIVATE"
             ),
-            sa.Column("category", sa.String(40), nullable=False, server_default="OTHER"),
+            sa.Column(
+                "category", sa.String(40), nullable=False, server_default="OTHER"
+            ),
             sa.Column(
                 "uploader_user_id",
                 sa.Integer(),

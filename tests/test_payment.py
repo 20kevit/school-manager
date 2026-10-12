@@ -407,9 +407,7 @@ class TestPaymentService:
         tx_updated = FinancialTransactionModel.query.get(tx.id)
         assert tx_updated.status == "ACTIVE"
         # Authority is immutable; provider ref_id lands in gateway_ref_id.
-        assert (
-            tx_updated.reference_number == "S00000000000000000000000000001234567"
-        )
+        assert tx_updated.reference_number == "S00000000000000000000000000001234567"
         assert tx_updated.gateway_ref_id == "123456789"
 
     @patch("app.application.finance.payment_service._get_gateway")
@@ -499,9 +497,7 @@ class TestPaymentService:
         mock_get_gateway.assert_not_called()
 
         tx_updated = FinancialTransactionModel.query.get(tx.id)
-        assert (
-            tx_updated.reference_number == "S0000000000000000000000000000DUP001"
-        )
+        assert tx_updated.reference_number == "S0000000000000000000000000000DUP001"
         assert tx_updated.gateway_ref_id == "REFDUP001"
         active_count = FinancialTransactionModel.query.filter_by(
             reference_number="S0000000000000000000000000000DUP001",
@@ -513,9 +509,7 @@ class TestPaymentService:
         assert finance_service.get_student_balance(student.id) == Decimal("100000")
 
     @patch("app.application.finance.payment_service._get_gateway")
-    def test_callback_amount_mismatch_rejected(
-        self, mock_get_gateway, db, student
-    ):
+    def test_callback_amount_mismatch_rejected(self, mock_get_gateway, db, student):
         from app.infrastructure.database.models import FinancialTransactionModel
 
         tx = FinancialTransactionModel(

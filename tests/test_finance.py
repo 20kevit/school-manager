@@ -1188,9 +1188,7 @@ class TestRefundLinkage:
     """Linked refunds are validated and capped; reversals are single-use."""
 
     def _payment(self, db, student, amount=Decimal("5000000")):
-        return finance_service.record_payment(
-            student_user_id=student.id, amount=amount
-        )
+        return finance_service.record_payment(student_user_id=student.id, amount=amount)
 
     def test_linked_full_refund(self, db, student):
         payment = self._payment(db, student)

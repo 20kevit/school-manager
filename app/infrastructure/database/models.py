@@ -125,9 +125,7 @@ class LoginAttemptModel(db.Model):
     login = db.Column(db.String(150), nullable=False)
     ip_address = db.Column(db.String(45), nullable=False)
     successful = db.Column(db.Boolean, default=False, nullable=False)
-    attempted_at = db.Column(
-        db.DateTime, server_default=db.func.now(), nullable=False
-    )
+    attempted_at = db.Column(db.DateTime, server_default=db.func.now(), nullable=False)
 
     __table_args__ = (
         db.Index("ix_login_attempt_login", "login"),

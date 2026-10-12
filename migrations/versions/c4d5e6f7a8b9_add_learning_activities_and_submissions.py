@@ -32,9 +32,7 @@ def upgrade() -> None:
         ),
         sa.Column("deadline", sa.DateTime(), nullable=True),
         sa.Column("max_score", sa.Numeric(10, 2), nullable=False, server_default="100"),
-        sa.Column(
-            "is_active", sa.Boolean(), nullable=False, server_default=sa.true()
-        ),
+        sa.Column("is_active", sa.Boolean(), nullable=False, server_default=sa.true()),
         sa.Column("sort_order", sa.Integer(), nullable=False, server_default="0"),
         sa.Column(
             "course_id",

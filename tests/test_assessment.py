@@ -1385,9 +1385,7 @@ class TestTranscriptAuthorization:
     """
 
     def _login(self, client, login, password):
-        return client.post(
-            "/auth/login", data={"login": login, "password": password}
-        )
+        return client.post("/auth/login", data={"login": login, "password": password})
 
     def _other_teacher_class_enrollment(self, db, course):
         """Create a second teacher, their class, and an enrollment in it."""
@@ -1425,9 +1423,7 @@ class TestTranscriptAuthorization:
         db.session.commit()
         return other_teacher, other_enrollment
 
-    def test_teacher_of_own_class_can_view(
-        self, client, db, teacher_user, enrollment
-    ):
+    def test_teacher_of_own_class_can_view(self, client, db, teacher_user, enrollment):
         self._login(client, "teacher", "teacherpass")
         resp = client.get(f"/assessment/student/{enrollment.id}/transcript")
         assert resp.status_code == 200
@@ -1437,14 +1433,10 @@ class TestTranscriptAuthorization:
     ):
         _, other_enrollment = self._other_teacher_class_enrollment(db, course)
         self._login(client, "teacher", "teacherpass")
-        resp = client.get(
-            f"/assessment/student/{other_enrollment.id}/transcript"
-        )
+        resp = client.get(f"/assessment/student/{other_enrollment.id}/transcript")
         assert resp.status_code == 403
 
-    def test_teacher_without_classes_denied(
-        self, client, db, course, enrollment
-    ):
+    def test_teacher_without_classes_denied(self, client, db, course, enrollment):
         # A teacher assigned to no class must be denied everywhere.
         lonely = UserModel(login="lonelyteacher")
         lonely.set_password("lonelypass")
@@ -1465,9 +1457,7 @@ class TestTranscriptAuthorization:
         resp = client.get(f"/assessment/student/{enrollment.id}/transcript")
         assert resp.status_code == 200
 
-    def test_other_student_denied(
-        self, client, db, academy_class, enrollment
-    ):
+    def test_other_student_denied(self, client, db, academy_class, enrollment):
         # A different student enrolled in the SAME class still must be denied:
         # ownership is per-enrollment, not per-class.
         other = UserModel(login="studentx")
@@ -1512,9 +1502,7 @@ class TestTranscriptAuthorization:
         resp = client.get(f"/assessment/student/{enrollment.id}/transcript")
         assert resp.status_code == 200
 
-    def test_unlinked_parent_denied(
-        self, client, db, parent_user, enrollment
-    ):
+    def test_unlinked_parent_denied(self, client, db, parent_user, enrollment):
         self._login(client, "parent", "parentpass")
         resp = client.get(f"/assessment/student/{enrollment.id}/transcript")
         assert resp.status_code == 403
@@ -1532,9 +1520,7 @@ class TestTranscriptAuthorization:
         assert resp.status_code == 302
         assert "/auth/login" in resp.headers["Location"]
 
-    def test_nonexistent_enrollment_404(
-        self, client, db, admin_user
-    ):
+    def test_nonexistent_enrollment_404(self, client, db, admin_user):
         self._login(client, "admin", "adminpass")
         resp = client.get("/assessment/student/999999/transcript")
         assert resp.status_code == 404

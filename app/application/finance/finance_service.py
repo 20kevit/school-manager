@@ -374,13 +374,11 @@ def reverse_transaction(
     if original.status != "ACTIVE":
         raise FinanceError("Only active transactions can be reversed.")
 
-    existing_reversal = (
-        FinancialTransactionModel.query.filter_by(
-            related_transaction_id=original.id,
-            transaction_type="REVERSAL",
-            status="ACTIVE",
-        ).first()
-    )
+    existing_reversal = FinancialTransactionModel.query.filter_by(
+        related_transaction_id=original.id,
+        transaction_type="REVERSAL",
+        status="ACTIVE",
+    ).first()
     if existing_reversal is not None:
         raise FinanceError("This transaction has already been reversed.")
 
@@ -1002,9 +1000,7 @@ def get_remaining_refundable(payment_id: int) -> Decimal:
     if original is None:
         return Decimal("0")
     refunded = (
-        db.session.query(
-            func.coalesce(func.sum(FinancialTransactionModel.amount), 0)
-        )
+        db.session.query(func.coalesce(func.sum(FinancialTransactionModel.amount), 0))
         .filter(
             FinancialTransactionModel.related_transaction_id == payment_id,
             FinancialTransactionModel.transaction_type == "REFUND",

@@ -1030,9 +1030,7 @@ class TestUploadAuthorization:
 
     # -- entity attachment authorization ----------------------------------
 
-    def test_forged_profile_attachment_rejected(
-        self, app, db, student_user
-    ):
+    def test_forged_profile_attachment_rejected(self, app, db, student_user):
         from app.application.file_management.file_service import (
             authorize_entity_attachment,
         )
@@ -1059,9 +1057,7 @@ class TestUploadAuthorization:
 
         with app.app_context():
             with pytest.raises(FileError):
-                authorize_entity_attachment(
-                    student_user, "student_profile", 999999
-                )
+                authorize_entity_attachment(student_user, "student_profile", 999999)
 
     def test_owner_may_attach_own_profile(self, app, db, student_user):
         from app.application.file_management.file_service import (
@@ -1189,9 +1185,7 @@ class TestUploadAuthorization:
 
     # -- route-level enforcement --------------------------------------------
 
-    def test_route_rejects_forged_entity(
-        self, client, app, db, student_user
-    ):
+    def test_route_rejects_forged_entity(self, client, app, db, student_user):
         victim = self._other_student(db)
         self._login_session(client, student_user)
         before = StoredFileModel.query.count()
@@ -1209,9 +1203,7 @@ class TestUploadAuthorization:
         assert resp.status_code == 302
         assert StoredFileModel.query.count() == before
 
-    def test_route_accepts_own_profile_attachment(
-        self, client, app, db, student_user
-    ):
+    def test_route_accepts_own_profile_attachment(self, client, app, db, student_user):
         self._login_session(client, student_user)
         before = StoredFileModel.query.count()
         resp = client.post(

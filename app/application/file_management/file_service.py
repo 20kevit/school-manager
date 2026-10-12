@@ -130,6 +130,7 @@ def _find_profile(entity_type: str, entity_id: int):
         return ParentProfileModel.query.get(entity_id)
     return None
 
+
 # ---------------------------------------------------------------------------
 # Validation
 # ---------------------------------------------------------------------------
@@ -504,9 +505,7 @@ def _entity_read_allowed(user, file_record: StoredFileModel) -> bool:
         if activity is None or not activity.class_id:
             return False
         academy_class = AcademyClassModel.query.get(activity.class_id)
-        return (
-            academy_class is not None and academy_class.teacher_user_id == user.id
-        )
+        return academy_class is not None and academy_class.teacher_user_id == user.id
     profile = _find_profile(entity_type, entity_id)
     if profile is None:
         return False

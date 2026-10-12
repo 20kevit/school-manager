@@ -11,7 +11,6 @@ are unaffected on PostgreSQL and SQLite. Verified safe: the production
 notifications table is empty.
 """
 
-import sqlalchemy as sa
 from alembic import op
 
 # revision identifiers, used by Alembic.
@@ -24,9 +23,7 @@ depends_on = None
 def upgrade() -> None:
     with op.batch_alter_table("notifications") as batch_op:
         batch_op.drop_index("ix_notification_event_key")
-        batch_op.create_unique_constraint(
-            "uq_notification_event_key", ["event_key"]
-        )
+        batch_op.create_unique_constraint("uq_notification_event_key", ["event_key"])
 
 
 def downgrade() -> None:
