@@ -153,11 +153,21 @@ def record_refund(
     class_id: int | None = None,
     created_by: int | None = None,
 ) -> FinancialTransactionModel:
-    """Record a refund to a student."""
+    """Record a refund to a student.
+
+    When related_transaction_id is given, the original payment is validated
+    (must exist, belong to the same student, be ACTIVE, and be a PAYMENT)
+    and the refund is capped at the remaining refundable amount, so the
+    same payment cannot be refunded twice. Without a link, a standalone
+    goodwill refund is recorded as before.
+    """
     if amount <= 0:
         raise FinanceError("Refund amount must be positive.")
 
     _validate_student(student_user_id)
+
+    if related_transaction_id is not None:
+        _validate_refund_link(student_user_id, amount, related_transaction_id)
 
     transaction = FinancialTransactionModel(
         student_user_id=student_user_id,
@@ -354,13 +364,25 @@ def reverse_transaction(
     """Reverse a transaction by creating an opposite entry.
 
     The original remains ACTIVE for historical preservation.
-    The REVERSAL entry undoes its financial impact.
+    The REVERSAL entry undoes its financial impact. Each transaction may be
+    reversed at most once: a second reversal would double-count, so it is
+    rejected while the original stays ACTIVE for history.
     """
     original = FinancialTransactionModel.query.get(transaction_id)
     if original is None:
         raise FinanceError("Transaction not found.")
     if original.status != "ACTIVE":
         raise FinanceError("Only active transactions can be reversed.")
+
+    existing_reversal = (
+        FinancialTransactionModel.query.filter_by(
+            related_transaction_id=original.id,
+            transaction_type="REVERSAL",
+            status="ACTIVE",
+        ).first()
+    )
+    if existing_reversal is not None:
+        raise FinanceError("This transaction has already been reversed.")
 
     # Capture old state for audit logging
     old_values = {
@@ -972,6 +994,50 @@ def _validate_student(student_user_id: int) -> None:
         raise FinanceError("Student not found.")
     if not student.has_role("STUDENT"):
         raise FinanceError("User is not a student.")
+
+
+def get_remaining_refundable(payment_id: int) -> Decimal:
+    """Remaining refundable amount for a payment (never negative)."""
+    original = FinancialTransactionModel.query.get(payment_id)
+    if original is None:
+        return Decimal("0")
+    refunded = (
+        db.session.query(
+            func.coalesce(func.sum(FinancialTransactionModel.amount), 0)
+        )
+        .filter(
+            FinancialTransactionModel.related_transaction_id == payment_id,
+            FinancialTransactionModel.transaction_type == "REFUND",
+            FinancialTransactionModel.status == "ACTIVE",
+        )
+        .scalar()
+    )
+    remaining = Decimal(str(original.amount)) - Decimal(str(refunded))
+    return remaining if remaining > 0 else Decimal("0")
+
+
+def _validate_refund_link(
+    student_user_id: int, amount: Decimal, related_transaction_id: int
+) -> None:
+    """Validate a refund against its original payment.
+
+    The original must exist, belong to the same student, be ACTIVE, and be
+    a PAYMENT; the refund must not exceed the remaining refundable amount.
+    """
+    original = FinancialTransactionModel.query.get(related_transaction_id)
+    if original is None:
+        raise FinanceError("Original transaction not found.")
+    if original.student_user_id != student_user_id:
+        raise FinanceError("Refund does not belong to the original payment account.")
+    if original.status != "ACTIVE":
+        raise FinanceError("Only active payments can be refunded.")
+    if original.transaction_type != "PAYMENT":
+        raise FinanceError("Only payments can be refunded.")
+    remaining = get_remaining_refundable(related_transaction_id)
+    if Decimal(str(amount)) > remaining:
+        raise FinanceError(
+            f"Refund exceeds the remaining refundable amount ({remaining})."
+        )
 
 
 def _get_all_student_balances() -> dict[int, Decimal]:

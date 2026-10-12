@@ -1177,3 +1177,123 @@ class TestSignedAdjustments:
         reversal = finance_service.reverse_transaction(tx.id)
         assert reversal.amount == Decimal("-80000")
         assert finance_service.get_student_balance(student.id) == Decimal("0")
+
+
+# ---------------------------------------------------------------------------
+# Refund linkage and reversal-once regression tests
+# ---------------------------------------------------------------------------
+
+
+class TestRefundLinkage:
+    """Linked refunds are validated and capped; reversals are single-use."""
+
+    def _payment(self, db, student, amount=Decimal("5000000")):
+        return finance_service.record_payment(
+            student_user_id=student.id, amount=amount
+        )
+
+    def test_linked_full_refund(self, db, student):
+        payment = self._payment(db, student)
+        refund = finance_service.record_refund(
+            student_user_id=student.id,
+            amount=Decimal("5000000"),
+            related_transaction_id=payment.id,
+        )
+        assert refund.related_transaction_id == payment.id
+        assert finance_service.get_student_balance(student.id) == Decimal("0")
+
+    def test_second_full_refund_rejected(self, db, student):
+        payment = self._payment(db, student)
+        finance_service.record_refund(
+            student_user_id=student.id,
+            amount=Decimal("5000000"),
+            related_transaction_id=payment.id,
+        )
+        with pytest.raises(finance_service.FinanceError, match="remaining refundable"):
+            finance_service.record_refund(
+                student_user_id=student.id,
+                amount=Decimal("1000"),
+                related_transaction_id=payment.id,
+            )
+        # Balance unchanged by the rejected refund.
+        assert finance_service.get_student_balance(student.id) == Decimal("0")
+
+    def test_partial_refunds_capped_at_paid_total(self, db, student):
+        payment = self._payment(db, student)
+        finance_service.record_refund(
+            student_user_id=student.id,
+            amount=Decimal("3000000"),
+            related_transaction_id=payment.id,
+        )
+        assert finance_service.get_remaining_refundable(payment.id) == Decimal(
+            "2000000"
+        )
+        with pytest.raises(finance_service.FinanceError, match="remaining refundable"):
+            finance_service.record_refund(
+                student_user_id=student.id,
+                amount=Decimal("2000001"),
+                related_transaction_id=payment.id,
+            )
+        finance_service.record_refund(
+            student_user_id=student.id,
+            amount=Decimal("2000000"),
+            related_transaction_id=payment.id,
+        )
+        assert finance_service.get_student_balance(student.id) == Decimal("0")
+
+    def test_refund_missing_original_rejected(self, db, student):
+        with pytest.raises(finance_service.FinanceError, match="not found"):
+            finance_service.record_refund(
+                student_user_id=student.id,
+                amount=Decimal("1000"),
+                related_transaction_id=999999,
+            )
+
+    def test_refund_foreign_student_rejected(self, db, student):
+        from app.infrastructure.database.models import RoleModel, UserModel
+
+        other = UserModel(login="fin_other")
+        other.set_password("pass123")
+        role = RoleModel.query.get("STUDENT")
+        if role is None:
+            role = RoleModel(name="STUDENT")
+            db.session.add(role)
+            db.session.flush()
+        other.roles.append(role)
+        db.session.add(other)
+        db.session.commit()
+        payment = self._payment(db, student)
+        with pytest.raises(finance_service.FinanceError, match="account"):
+            finance_service.record_refund(
+                student_user_id=other.id,
+                amount=Decimal("1000"),
+                related_transaction_id=payment.id,
+            )
+
+    def test_refund_non_payment_rejected(self, db, student):
+        charge = finance_service.create_charge(
+            student_user_id=student.id,
+            amount=Decimal("100000"),
+            category="TUITION",
+        )
+        with pytest.raises(finance_service.FinanceError, match="Only payments"):
+            finance_service.record_refund(
+                student_user_id=student.id,
+                amount=Decimal("50000"),
+                related_transaction_id=charge.id,
+            )
+
+    def test_standalone_goodwill_refund_still_allowed(self, db, student):
+        # Unlinked refunds keep their historical behavior.
+        finance_service.record_refund(
+            student_user_id=student.id, amount=Decimal("50000")
+        )
+        assert finance_service.get_student_balance(student.id) == Decimal("-50000")
+
+    def test_reverse_twice_rejected(self, db, student):
+        tx = self._payment(db, student)
+        finance_service.reverse_transaction(tx.id)
+        with pytest.raises(finance_service.FinanceError, match="already been reversed"):
+            finance_service.reverse_transaction(tx.id)
+        # Single reversal counted exactly once.
+        assert finance_service.get_student_balance(student.id) == Decimal("0")
