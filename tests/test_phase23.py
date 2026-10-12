@@ -1,6 +1,6 @@
 """Tests for Phase 23 — Academic Calendar & Semester Management."""
 
-from datetime import date, time
+from datetime import date, time, timedelta
 
 import pytest
 
@@ -417,6 +417,22 @@ def _mon_wed_schedule():
     ]
 
 
+def _upcoming_monday():
+    """Next Monday strictly in the future (regeneration treats these as future)."""
+    day = date.today() + timedelta(days=1)
+    while day.weekday() != 0:
+        day += timedelta(days=1)
+    return day
+
+
+def _past_monday(weeks_ago=6):
+    """A Monday safely in the past (regeneration preserves these sessions)."""
+    day = date.today() - timedelta(weeks=weeks_ago)
+    while day.weekday() != 0:
+        day -= timedelta(days=1)
+    return day
+
+
 class TestSessionGenerationWithHolidays:
     """Tests for smart session generation that skips holidays."""
 
@@ -531,11 +547,14 @@ class TestRegenerateSessions:
         assert len(regenerated) == 4
 
     def test_regenerate_with_attendance_preserved(self, db):
+        # Past-relative start: sessions are always in the past, so the
+        # preserve-past branch is exercised deterministically.
+        start = _past_monday()
         course = create_course(title="Python", num_sessions=4)
         cls = create_class(
             course_id=course.id,
             title="Test Class",
-            start_date=date(2026, 9, 7),
+            start_date=start,
             num_sessions=4,
             schedule=_mon_wed_schedule(),
         )
@@ -583,27 +602,31 @@ class TestRegenerateSessions:
         db.session.add(attendance)
         db.session.flush()
 
-        # Add holiday on session 3's date (Wednesday 2026-09-09)
+        # Add holiday on session 3's date (kept dynamic with the fixtures)
         create_calendar_event(
             title="Holiday",
-            start_date=date(2026, 9, 9),
+            start_date=sessions[2].scheduled_date,
         )
 
         regenerated = regenerate_sessions(cls)
 
         # Session 1 with attendance should be preserved
         preserved_dates = [s.scheduled_date for s in regenerated]
-        assert date(2026, 9, 7) in preserved_dates  # Session 1 preserved
+        assert sessions[0].scheduled_date in preserved_dates
 
         # All 4 sessions should exist
         assert len(regenerated) == 4
 
     def test_regenerate_no_schedule(self, db):
+        # Future-relative start: sessions are always in the future with no
+        # attendance, so regeneration deletes them and an empty schedule
+        # rebuilds nothing. (Hard-coded 2026-09-07 aged into the past and
+        # flipped this test's meaning once the wall clock passed it.)
         course = create_course(title="Python", num_sessions=4)
         cls = create_class(
             course_id=course.id,
             title="Test Class",
-            start_date=date(2026, 9, 7),
+            start_date=_upcoming_monday(),
             num_sessions=4,
             schedule=_mon_wed_schedule(),
         )
