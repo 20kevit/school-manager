@@ -59,6 +59,9 @@ Full machine-specific steps are in `DEPLOYMENT.local.md`. The general order is:
 Rollback is Git-based: check out the previous revision (restoring the
 pre-deploy database backup if migrations ran forward), restart, verify.
 
+Automated daily backups (database plus uploads) run on the VPS with retention;
+details and the restore procedure are in `DEPLOYMENT.local.md`.
+
 ## Discovering deployment details (for future agents)
 
 - Start with `DEPLOYMENT.local.md` on the VPS (project root, Git-ignored).
