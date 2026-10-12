@@ -1119,3 +1119,61 @@ class TestEdgeCases:
         # After correction, it should be CORRECTED
         original = FinancialTransactionModel.query.get(tx.id)
         assert original.status == "CORRECTED"
+
+
+# ---------------------------------------------------------------------------
+# Signed adjustment regression tests (sign must survive storage)
+# ---------------------------------------------------------------------------
+
+
+class TestSignedAdjustments:
+    """Adjustments are stored signed; balance consumes the stored sign."""
+
+    def test_negative_adjustment_debits_balance(self, db, student):
+        tx = finance_service.create_adjustment(
+            student_user_id=student.id,
+            amount=Decimal("-100000"),
+            description="Penalty",
+        )
+        assert tx.amount == Decimal("-100000")
+        assert finance_service.get_student_balance(student.id) == Decimal("-100000")
+
+    def test_positive_adjustment_credits_balance(self, db, student):
+        tx = finance_service.create_adjustment(
+            student_user_id=student.id,
+            amount=Decimal("100000"),
+            description="Goodwill credit",
+        )
+        assert tx.amount == Decimal("100000")
+        assert finance_service.get_student_balance(student.id) == Decimal("100000")
+
+    def test_mixed_adjustments_net_correctly(self, db, student):
+        finance_service.create_adjustment(
+            student_user_id=student.id, amount=Decimal("250000")
+        )
+        finance_service.create_adjustment(
+            student_user_id=student.id, amount=Decimal("-100000")
+        )
+        assert finance_service.get_student_balance(student.id) == Decimal("150000")
+
+    def test_zero_adjustment_rejected(self, db, student):
+        with pytest.raises(finance_service.FinanceError, match="zero"):
+            finance_service.create_adjustment(
+                student_user_id=student.id, amount=Decimal("0")
+            )
+
+    def test_reversal_of_negative_adjustment_nets_to_zero(self, db, student):
+        tx = finance_service.create_adjustment(
+            student_user_id=student.id, amount=Decimal("-80000")
+        )
+        reversal = finance_service.reverse_transaction(tx.id)
+        assert reversal.amount == Decimal("80000")
+        assert finance_service.get_student_balance(student.id) == Decimal("0")
+
+    def test_reversal_of_positive_adjustment_nets_to_zero(self, db, student):
+        tx = finance_service.create_adjustment(
+            student_user_id=student.id, amount=Decimal("80000")
+        )
+        reversal = finance_service.reverse_transaction(tx.id)
+        assert reversal.amount == Decimal("-80000")
+        assert finance_service.get_student_balance(student.id) == Decimal("0")

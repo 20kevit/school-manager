@@ -228,15 +228,22 @@ def create_adjustment(
     reference_number: str = "",
     created_by: int | None = None,
 ) -> FinancialTransactionModel:
-    """Create a manual adjustment (positive or negative)."""
-    if amount == 0:
+    """Create a manual adjustment (positive or negative).
+
+    The sign is preserved: a positive amount credits the account, a
+    negative amount debits it. Balance calculations consume the stored
+    signed value directly, so stripping the sign here would silently
+    turn every debit adjustment into a credit.
+    """
+    signed_amount = Decimal(str(amount))
+    if signed_amount == 0:
         raise FinanceError("Adjustment amount cannot be zero.")
 
     _validate_student(student_user_id)
 
     transaction = FinancialTransactionModel(
         student_user_id=student_user_id,
-        amount=abs(amount),
+        amount=signed_amount,
         transaction_type="ADJUSTMENT",
         category=category,
         description=description or "Manual adjustment",
@@ -937,11 +944,14 @@ def _compute_reversal_amount(original: FinancialTransactionModel) -> Decimal:
     CHARGE (-amt)  → REVERSAL (+amt)
     DISCOUNT (+amt) → REVERSAL (-amt)
     REFUND (-amt)  → REVERSAL (+amt)
+    ADJUSTMENT/REVERSAL (stored signed) → REVERSAL (-stored)
     """
     if original.transaction_type in ("PAYMENT", "DISCOUNT"):
         return -abs(original.amount)
-    # CHARGE, REFUND, ADJUSTMENT, REVERSAL
-    return abs(original.amount)
+    if original.transaction_type in ("CHARGE", "REFUND"):
+        return abs(original.amount)
+    # ADJUSTMENT and REVERSAL amounts are stored signed: negate exactly.
+    return -Decimal(str(original.amount))
 
 
 def _signed_amount(tx: FinancialTransactionModel) -> Decimal:
