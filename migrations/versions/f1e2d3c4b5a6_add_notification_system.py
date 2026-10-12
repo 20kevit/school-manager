@@ -26,7 +26,7 @@ def upgrade() -> None:
         sa.Column("subject", sa.String(200), server_default=""),
         sa.Column("body", sa.Text(), nullable=False),
         sa.Column(
-            "is_active", sa.Boolean(), nullable=False, server_default=sa.text("1")
+            "is_active", sa.Boolean(), nullable=False, server_default=sa.true()
         ),
         sa.Column(
             "created_at", sa.DateTime(), server_default=sa.func.now(), nullable=False
@@ -121,7 +121,7 @@ def upgrade() -> None:
         sa.Column("user_id", sa.Integer(), sa.ForeignKey("users.id"), nullable=False),
         sa.Column("notification_type", sa.String(40), nullable=False),
         sa.Column("channel", sa.String(20), nullable=False),
-        sa.Column("enabled", sa.Boolean(), nullable=False, server_default=sa.text("1")),
+        sa.Column("enabled", sa.Boolean(), nullable=False, server_default=sa.true()),
         sa.Column(
             "created_at", sa.DateTime(), server_default=sa.func.now(), nullable=False
         ),
