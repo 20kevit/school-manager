@@ -2,7 +2,7 @@
 
 ## Requirements
 
-- Python 3.14+
+- Python 3.12 (verified runtime, CI, and Docker policy)
 - PostgreSQL
 - Git
 

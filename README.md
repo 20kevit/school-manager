@@ -40,7 +40,7 @@ See [Deployment Guide](docs/DEPLOYMENT.md) for full instructions.
 
 ## Tech Stack
 
-- Python 3.14+
+- Python 3.12 (verified runtime, CI, and Docker policy)
 - Flask
 - SQLAlchemy + Flask-Migrate
 - PostgreSQL

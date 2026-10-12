@@ -32,3 +32,45 @@ jobs:
 
       - name: Run tests (SQLite, no external services)
         run: pytest tests/ -q --tb=short
+
+  migrate-postgres:
+    # Migration integrity on real PostgreSQL: fresh `flask db upgrade` must
+    # reach the repo head with zero errors. Uses dummy credentials only.
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:15-alpine
+        env:
+          POSTGRES_DB: ci_migrations
+          POSTGRES_USER: ci_user
+          POSTGRES_PASSWORD: ci_password
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U ci_user -d ci_migrations"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: requirements.txt
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Upgrade empty database to head
+        env:
+          SECRET_KEY: ci-only-dummy-secret-key-for-migration-check-0123456789
+          DATABASE_URL: postgresql+psycopg2://ci_user:ci_password@localhost:5432/ci_migrations
+          FLASK_APP: wsgi
+        run: |
+          flask --app wsgi db upgrade
+          flask --app wsgi db current
