@@ -1475,6 +1475,14 @@ class TeacherPaymentModel(db.Model):
         db.Index("ix_tp_teacher", "teacher_user_id"),
         db.Index("ix_tp_period", "period_start", "period_end"),
         db.Index("ix_tp_status", "status"),
+        # One finalized payment per teacher and period. The service also
+        # pre-checks, but only this constraint survives concurrent requests.
+        db.UniqueConstraint(
+            "teacher_user_id",
+            "period_start",
+            "period_end",
+            name="uq_teacher_payment_period",
+        ),
     )
 
     def __repr__(self) -> str:

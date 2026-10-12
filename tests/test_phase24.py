@@ -849,3 +849,59 @@ class TestPayrollAdminUI:
         )
         response = client.get("/admin/payroll?year=1405&month=6")
         assert response.status_code == 200
+
+    def test_finalize_excessive_deductions_raises(
+        self, db, teacher_user, per_session_contract, completed_session
+    ):
+        with pytest.raises(PayrollError, match="بیشتر"):
+            finalize_payroll(
+                teacher_user.id,
+                date(2026, 3, 1),
+                date(2026, 3, 31),
+                deductions=Decimal("600000"),
+            )
+
+    def test_finalize_deductions_equal_gross_allowed(
+        self, db, teacher_user, per_session_contract, completed_session
+    ):
+        payment = finalize_payroll(
+            teacher_user.id,
+            date(2026, 3, 1),
+            date(2026, 3, 31),
+            deductions=Decimal("500000"),
+        )
+        assert payment.net_amount == Decimal("0")
+
+    def test_duplicate_payment_rejected_at_database_level(
+        self, db, teacher_user
+    ):
+        """The unique constraint (not just the pre-check) blocks duplicates."""
+        from sqlalchemy.exc import IntegrityError
+
+        from app.infrastructure.database.models import TeacherPaymentModel
+
+        db.session.add(
+            TeacherPaymentModel(
+                teacher_user_id=teacher_user.id,
+                period_start=date(2026, 3, 1),
+                period_end=date(2026, 3, 31),
+                gross_amount=Decimal("500000"),
+                deductions=Decimal("0"),
+                net_amount=Decimal("500000"),
+                status="PENDING",
+            )
+        )
+        db.session.commit()
+        db.session.add(
+            TeacherPaymentModel(
+                teacher_user_id=teacher_user.id,
+                period_start=date(2026, 3, 1),
+                period_end=date(2026, 3, 31),
+                gross_amount=Decimal("500000"),
+                deductions=Decimal("0"),
+                net_amount=Decimal("500000"),
+                status="PENDING",
+            )
+        )
+        with pytest.raises(IntegrityError):
+            db.session.commit()

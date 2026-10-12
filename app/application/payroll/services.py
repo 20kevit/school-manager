@@ -7,6 +7,7 @@ from datetime import date
 from decimal import Decimal
 
 from sqlalchemy import func
+from sqlalchemy.exc import IntegrityError
 
 from app.extensions import db
 from app.infrastructure.database.models import (
@@ -367,6 +368,8 @@ def finalize_payroll(
 
     if deductions < 0:
         raise PayrollError("کسورات نمی‌تواند منفی باشد.")
+    if deductions > summary.gross_amount:
+        raise PayrollError("کسورات نمی‌تواند از مبلغ ناخالص بیشتر باشد.")
 
     payment = TeacherPaymentModel(
         teacher_user_id=teacher_user_id,
@@ -378,7 +381,12 @@ def finalize_payroll(
         status="PENDING",
     )
     db.session.add(payment)
-    db.session.commit()
+    try:
+        db.session.commit()
+    except IntegrityError:
+        # Concurrent finalization won the race after our pre-check read.
+        db.session.rollback()
+        raise PayrollError("قرارداد پرداخت برای این دوره قبلاً ایجاد شده است.")
     return payment
 
 
