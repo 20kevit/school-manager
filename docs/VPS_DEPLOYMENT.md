@@ -62,6 +62,21 @@ pre-deploy database backup if migrations ran forward), restart, verify.
 Automated daily backups (database plus uploads) run on the VPS with retention;
 details and the restore procedure are in `DEPLOYMENT.local.md`.
 
+> **Local backups do not protect against VPS loss or compromise.** All backup
+> files live on the same host as the database. Until off-host copies exist,
+> a host failure, disk loss, or attacker with root access can destroy both
+> the data and its backups. Treat off-host setup as the next operational
+> priority.
+>
+> Recommended design (not yet implemented — needs owner-provided
+> infrastructure, no credentials exist in the repo): encrypt each dump with
+> GPG to an owner-held public key (`gpg --encrypt --recipient <owner-key>`),
+> then upload the ciphertext to owner-controlled storage (e.g. `rclone` to
+> S3-compatible/Drive/SFTP) from a timer unit. The VPS must never hold the
+> decryption private key or storage write credentials in plaintext files —
+> prefer a restricted IAM role or an SSH key limited to one append-only path.
+> Verify by periodic restore drills from the off-host copy.
+
 ## Scheduled jobs
 
 Reminder jobs are idempotent (an already-sent user/link pair for the day is

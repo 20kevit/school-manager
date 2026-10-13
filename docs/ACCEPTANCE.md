@@ -34,16 +34,25 @@ credentials, or production rollout verification.
 | 11b | Telegram/Bale delivery | Tokens unconfigured; in-app channel verified |
 | 15 | Mobile viewport usability | Requires browser testing; templates are responsive by design, unverified |
 | 16b | Production rollout of new migrations | Migrations verified on scratch PG only; owner applies via documented sequence |
-| 16c | Backup cron firing on schedule | Timer enabled 2026-10-12; first manual runs verified, unattended firing not yet observed |
-| — | Concurrent-refund/payroll races under load | Sequential guards tested; true multi-process races need load testing |
+| 16c | Backup cron firing on schedule | Timer enabled 2026-10-12; unattended firing observed 2026-10-13 (dump verified) |
+| — | Concurrent-refund/payroll/callback races | Proven on PostgreSQL with threaded tests (see `tests/test_pg_concurrency.py`); load testing still pending |
 
-## Open product decisions (owner)
+## Decided policies (binding unless explicitly revised)
 
-- Standalone (unlinked) goodwill refunds: kept allowed; confirm or forbid.
-- Payroll basis: gross collected (current) vs net of refunds/reversals/discounts.
-- Negative net payroll (advances/penalties): currently rejected above gross.
-- Online payments carry no class attribution: percentage payroll excludes them
-  until intake captures enrollment context.
-- Phone-ownership proof for public registration: no SMS infra; process decision needed.
-- Forged `Status=NOK` callbacks can fail others' PENDING payments: low impact
-  (re-initiation), no provider signature exists to gate on.
+- Ordinary refunds must link to a real eligible payment (`record_refund`
+  requires `related_transaction_id`); goodwill without a payment uses the
+  explicit, reasoned, auditable `record_goodwill_credit()` path.
+- Payroll revenue basis is **net collected revenue** (ACTIVE payments minus
+  linked ACTIVE refunds/reversals per class); discounts excluded; unattributed
+  (`class_id` NULL) payments reported on the summary, excluded from classes.
+- Negative salary payments are never created: per-class revenue share floors
+  at zero with an explicit note; deductions must stay within [0, gross].
+  Advances/debts have no workflow and are rejected.
+- Online payments without class attribution stay visible in financial
+  reporting but excluded from class payroll until intake captures context.
+- Phone numbers are **unverified contact data**: possession of a number or a
+  submitted form is never proof of ownership. SMS delivery honestly reports
+  unavailability; no OTP/verification flow exists. Phone numbers must not
+  gate authentication or authorization decisions.
+- Failure callbacks are untrusted input: only provider verification mutates
+  payment state (see `process_payment_callback` security model).
