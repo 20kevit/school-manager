@@ -464,12 +464,18 @@ def finalize_payroll(
         db.session, f"payroll:{teacher_user_id}:{period_start}:{period_end}"
     )
 
-    # Check for existing payment in this period
-    existing = TeacherPaymentModel.query.filter_by(
-        teacher_user_id=teacher_user_id,
-        period_start=period_start,
-        period_end=period_end,
-    ).first()
+    # Check for existing live payment in this period. VOIDED rows are
+    # history, not live state: they neither block re-finalization nor count
+    # (the partial unique constraint enforces the same rule in the DB).
+    existing = (
+        TeacherPaymentModel.query.filter_by(
+            teacher_user_id=teacher_user_id,
+            period_start=period_start,
+            period_end=period_end,
+        )
+        .filter(TeacherPaymentModel.status != "VOIDED")
+        .first()
+    )
     if existing is not None:
         raise PayrollError("قرارداد پرداخت برای این دوره قبلاً ایجاد شده است.")
 
@@ -507,11 +513,37 @@ def mark_payment_paid(
     """Mark a teacher payment as paid."""
     if payment.status == "PAID":
         raise PayrollError("این پرداخت قبلاً پرداخت شده است.")
+    if payment.status == "VOIDED":
+        raise PayrollError("پرداخت باطل‌شده را نمی‌توان پرداخت‌شده کرد.")
 
     from datetime import datetime
 
     payment.status = "PAID"
     payment.paid_at = datetime.now()
+    db.session.commit()
+    return payment
+
+
+def void_payroll_payment(
+    payment: TeacherPaymentModel,
+) -> TeacherPaymentModel:
+    """Void an unpaid finalized payroll record (auditable correction path).
+
+    Only PENDING records can be voided. PAID records are immutable history.
+    The VOIDED row is preserved (never deleted); re-finalization for the
+    same period becomes possible because liveness checks and the partial
+    unique constraint both ignore VOIDED rows. Use this when a finalized
+    payroll was computed from wrong inputs (wrong deductions, stale data):
+    void it, fix the inputs, and finalize again.
+    """
+    if payment.status == "PAID":
+        raise PayrollError(
+            "پرداخت انجام‌شده را نمی‌توان باطل کرد؛ سوابق پرداخت نهایی است."
+        )
+    if payment.status == "VOIDED":
+        raise PayrollError("این پرداخت قبلاً باطل شده است.")
+
+    payment.status = "VOIDED"
     db.session.commit()
     return payment
 

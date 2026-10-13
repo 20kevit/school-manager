@@ -248,6 +248,34 @@ class TestConcurrentFinalizePG:
             ).all()
             assert len(rows) == 1
 
+    def test_void_then_refinalize_on_postgres(self, pg_app, pg_db):
+        """The partial unique index permits a replacement row after a void."""
+        from app.application.payroll import services as payroll_services
+        from app.infrastructure.database.models import TeacherPaymentModel
+
+        teacher = _make_teacher_setup(pg_db)
+        teacher_id = teacher.id
+
+        with pg_app.app_context():
+            first = payroll_services.finalize_payroll(
+                teacher_user_id=teacher_id,
+                period_start=date(2026, 3, 1),
+                period_end=date(2026, 3, 31),
+            )
+            payroll_services.void_payroll_payment(first)
+            second = payroll_services.finalize_payroll(
+                teacher_user_id=teacher_id,
+                period_start=date(2026, 3, 1),
+                period_end=date(2026, 3, 31),
+            )
+            assert second.status == "PENDING"
+            rows = TeacherPaymentModel.query.filter_by(
+                teacher_user_id=teacher_id,
+                period_start=date(2026, 3, 1),
+                period_end=date(2026, 3, 31),
+            ).all()
+            assert sorted(r.status for r in rows) == ["PENDING", "VOIDED"]
+
 
 class TestConcurrentCallbacksPG:
     def _pending_tx(self, db, student_id, ref, amount=Decimal("100000")):

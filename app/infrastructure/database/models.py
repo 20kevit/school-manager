@@ -1475,14 +1475,13 @@ class TeacherPaymentModel(db.Model):
         db.Index("ix_tp_teacher", "teacher_user_id"),
         db.Index("ix_tp_period", "period_start", "period_end"),
         db.Index("ix_tp_status", "status"),
-        # One finalized payment per teacher and period. The service also
-        # pre-checks, but only this constraint survives concurrent requests.
-        db.UniqueConstraint(
-            "teacher_user_id",
-            "period_start",
-            "period_end",
-            name="uq_teacher_payment_period",
-        ),
+        # NOTE: liveness uniqueness (one non-VOIDED payment per
+        # teacher+period) is enforced by a PARTIAL unique index created in
+        # migrations (uq_teacher_payment_period ... WHERE status <>
+        # 'VOIDED'), not here: SQLAlchemy UniqueConstraint cannot express
+        # partial indexes portably. The service pre-check enforces the same
+        # rule on every backend; the index is the race backstop on
+        # PostgreSQL. See migration f9a0b1c2d3e4.
     )
 
     def __repr__(self) -> str:

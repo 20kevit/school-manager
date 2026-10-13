@@ -25,6 +25,7 @@ from app.infrastructure.database.models import (
     SessionModel,
     StudentProfileModel,
     TeacherContractModel,
+    TeacherPaymentModel,
     UserModel,
 )
 
@@ -815,6 +816,94 @@ class TestPayrollFinalization:
                 date(2026, 3, 31),
             )
 
+    def test_void_pending_then_refinalize(
+        self, db, teacher_user, per_session_contract, completed_session
+    ):
+        """Auditable correction: void the wrong PENDING payroll, fix inputs,
+        finalize again. The VOIDED row stays as history."""
+        from app.application.payroll.services import void_payroll_payment
+
+        first = finalize_payroll(
+            teacher_user.id,
+            date(2026, 3, 1),
+            date(2026, 3, 31),
+            deductions=Decimal("100000"),
+        )
+        voided = void_payroll_payment(first)
+        assert voided.status == "VOIDED"
+
+        second = finalize_payroll(
+            teacher_user.id,
+            date(2026, 3, 1),
+            date(2026, 3, 31),
+            deductions=Decimal("50000"),
+        )
+        assert second.status == "PENDING"
+        assert second.net_amount == Decimal("450000")
+
+        rows = TeacherPaymentModel.query.filter_by(
+            teacher_user_id=teacher_user.id,
+            period_start=date(2026, 3, 1),
+            period_end=date(2026, 3, 31),
+        ).all()
+        assert sorted(r.status for r in rows) == ["PENDING", "VOIDED"]
+
+    def test_void_paid_rejected(self, db, teacher_user, per_session_contract, completed_session):
+        """PAID payroll is immutable history."""
+        from app.application.payroll.services import (
+            mark_payment_paid,
+            void_payroll_payment,
+        )
+
+        payment = finalize_payroll(
+            teacher_user.id,
+            date(2026, 3, 1),
+            date(2026, 3, 31),
+        )
+        mark_payment_paid(payment)
+        with pytest.raises(PayrollError, match="باطل"):
+            void_payroll_payment(payment)
+
+    def test_void_twice_rejected(
+        self, db, teacher_user, per_session_contract, completed_session
+    ):
+        from app.application.payroll.services import void_payroll_payment
+
+        payment = finalize_payroll(
+            teacher_user.id,
+            date(2026, 3, 1),
+            date(2026, 3, 31),
+        )
+        void_payroll_payment(payment)
+        with pytest.raises(PayrollError, match="باطل"):
+            void_payroll_payment(payment)
+
+    def test_unique_constraint_ignores_voided_duplicates(self, db, teacher_user):
+        """The partial unique index permits two VOIDED rows for one key."""
+        from sqlalchemy.exc import IntegrityError
+
+        for _ in range(2):
+            db.session.add(
+                TeacherPaymentModel(
+                    teacher_user_id=teacher_user.id,
+                    period_start=date(2026, 3, 1),
+                    period_end=date(2026, 3, 31),
+                    gross_amount=Decimal("500000"),
+                    deductions=Decimal("0"),
+                    net_amount=Decimal("500000"),
+                    status="VOIDED",
+                )
+            )
+        db.session.commit()  # must not raise
+        assert (
+            TeacherPaymentModel.query.filter_by(
+                teacher_user_id=teacher_user.id,
+                period_start=date(2026, 3, 1),
+                period_end=date(2026, 3, 31),
+            ).count()
+            == 2
+        )
+
     def test_finalize_negative_deductions_raises(
         self, db, teacher_user, per_session_contract, completed_session
     ):
@@ -977,11 +1066,12 @@ class TestPayrollAdminUI:
         )
         assert payment.net_amount == Decimal("0")
 
-    def test_duplicate_payment_rejected_at_database_level(self, db, teacher_user):
-        """The unique constraint (not just the pre-check) blocks duplicates."""
-        from sqlalchemy.exc import IntegrityError
-
-        from app.infrastructure.database.models import TeacherPaymentModel
+    def test_live_duplicate_guard_is_service_level_on_sqlite(self, db, teacher_user):
+        """On SQLite the model carries no partial unique index (SQLAlchemy
+        cannot express one portably), so the service pre-check is the guard
+        here; on PostgreSQL the partial unique index backs it. Either way a
+        second live finalize is rejected."""
+        from app.application.payroll.services import finalize_payroll
 
         db.session.add(
             TeacherPaymentModel(
@@ -995,16 +1085,9 @@ class TestPayrollAdminUI:
             )
         )
         db.session.commit()
-        db.session.add(
-            TeacherPaymentModel(
-                teacher_user_id=teacher_user.id,
-                period_start=date(2026, 3, 1),
-                period_end=date(2026, 3, 31),
-                gross_amount=Decimal("500000"),
-                deductions=Decimal("0"),
-                net_amount=Decimal("500000"),
-                status="PENDING",
+        with pytest.raises(PayrollError, match="قبلاً ایجاد شده"):
+            finalize_payroll(
+                teacher_user.id,
+                date(2026, 3, 1),
+                date(2026, 3, 31),
             )
-        )
-        with pytest.raises(IntegrityError):
-            db.session.commit()
