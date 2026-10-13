@@ -848,7 +848,9 @@ class TestPayrollFinalization:
         ).all()
         assert sorted(r.status for r in rows) == ["PENDING", "VOIDED"]
 
-    def test_void_paid_rejected(self, db, teacher_user, per_session_contract, completed_session):
+    def test_void_paid_rejected(
+        self, db, teacher_user, per_session_contract, completed_session
+    ):
         """PAID payroll is immutable history."""
         from app.application.payroll.services import (
             mark_payment_paid,
@@ -880,7 +882,6 @@ class TestPayrollFinalization:
 
     def test_unique_constraint_ignores_voided_duplicates(self, db, teacher_user):
         """The partial unique index permits two VOIDED rows for one key."""
-        from sqlalchemy.exc import IntegrityError
 
         for _ in range(2):
             db.session.add(

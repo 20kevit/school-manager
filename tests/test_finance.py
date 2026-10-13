@@ -1547,8 +1547,9 @@ class TestConcurrency:
         workflow, so this test pins the design. See TestConcurrencyPostgreSQL
         (skipped here) for live PostgreSQL constraint evidence.
         """
-        from app.infrastructure.database.models import TeacherPaymentModel
         from sqlalchemy import UniqueConstraint
+
+        from app.infrastructure.database.models import TeacherPaymentModel
 
         uniques = [
             c

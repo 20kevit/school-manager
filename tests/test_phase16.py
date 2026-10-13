@@ -277,7 +277,13 @@ class TestCreateAdmin:
 
     def test_create_admin_success(self, runner, db):
         result = runner.invoke(
-            args=["create-admin", "--login", "owner", "--password", "S3cure-Passphrase-99"]
+            args=[
+                "create-admin",
+                "--login",
+                "owner",
+                "--password",
+                "S3cure-Passphrase-99",
+            ]
         )
         assert result.exit_code == 0, result.output
         user = UserModel.query.filter_by(login="owner").first()
@@ -290,7 +296,13 @@ class TestCreateAdmin:
 
     def test_create_admin_duplicate_rejected(self, runner, db):
         runner.invoke(
-            args=["create-admin", "--login", "owner", "--password", "S3cure-Passphrase-99"]
+            args=[
+                "create-admin",
+                "--login",
+                "owner",
+                "--password",
+                "S3cure-Passphrase-99",
+            ]
         )
         result = runner.invoke(
             args=["create-admin", "--login", "owner", "--password", "Another-Valid-99"]

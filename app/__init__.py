@@ -769,7 +769,9 @@ def _register_cli(app):
         print("  parent1 / parent123")
 
     @app.cli.command("create-admin")
-    @click.option("--login", default="admin", show_default=True, help="Admin login name.")
+    @click.option(
+        "--login", default="admin", show_default=True, help="Admin login name."
+    )
     @click.option(
         "--password",
         default=None,
