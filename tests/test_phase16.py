@@ -258,6 +258,54 @@ class TestFlaskSeed:
         assert result.exit_code == 0
         assert "Already exists" in result.output
 
+    def test_seed_refuses_production(self, runner, db, monkeypatch):
+        """Seed must never create documented weak credentials on production."""
+        monkeypatch.setenv("FLASK_ENV", "production")
+        result = runner.invoke(args=["seed"])
+        assert result.exit_code != 0
+        assert UserModel.query.filter_by(login="admin").first() is None
+
+    def test_seed_demo_refuses_production(self, runner, db, monkeypatch):
+        monkeypatch.setenv("FLASK_ENV", "production")
+        result = runner.invoke(args=["seed-demo"])
+        assert result.exit_code != 0
+        assert UserModel.query.filter_by(login="admin").first() is None
+
+
+class TestCreateAdmin:
+    """Secure initial-administrator creation (production-safe)."""
+
+    def test_create_admin_success(self, runner, db):
+        result = runner.invoke(
+            args=["create-admin", "--login", "owner", "--password", "S3cure-Passphrase-99"]
+        )
+        assert result.exit_code == 0, result.output
+        user = UserModel.query.filter_by(login="owner").first()
+        assert user is not None
+        assert user.has_role("ADMIN")
+        assert user.check_password("S3cure-Passphrase-99")
+        # Login printed, password never printed.
+        assert "owner" in result.output
+        assert "S3cure-Passphrase-99" not in result.output
+
+    def test_create_admin_duplicate_rejected(self, runner, db):
+        runner.invoke(
+            args=["create-admin", "--login", "owner", "--password", "S3cure-Passphrase-99"]
+        )
+        result = runner.invoke(
+            args=["create-admin", "--login", "owner", "--password", "Another-Valid-99"]
+        )
+        assert result.exit_code != 0
+        assert "already exists" in result.output
+
+    def test_create_admin_weak_password_rejected(self, runner, db):
+        for weak in ("short", "admin123", "owner"):
+            result = runner.invoke(
+                args=["create-admin", "--login", "owner", "--password", weak]
+            )
+            assert result.exit_code != 0, weak
+        assert UserModel.query.filter_by(login="owner").first() is None
+
 
 # ---------------------------------------------------------------------------
 # Admin routes — UI tests (using direct URL paths)

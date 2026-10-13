@@ -1,5 +1,6 @@
 import os
 
+import click
 from flask import Flask, jsonify, render_template
 from flask_login import LoginManager
 
@@ -349,7 +350,18 @@ def _register_cli(app):
         Creates roles, 4 test users (admin, teacher, student, parent),
         profiles, and links parent1 to student1.
         Idempotent: running twice does not create duplicates.
+
+        DEVELOPMENT/TESTING ONLY: refuses to run when FLASK_ENV=production
+        so documented weak credentials (admin/admin123, …) can never be
+        created on a real installation. Use `flask create-admin` there.
         """
+        import os
+
+        if os.environ.get("FLASK_ENV", "").lower() == "production":
+            raise click.ClickException(
+                "Refusing to seed a production database with test credentials. "
+                "Use `flask create-admin` instead."
+            )
         from datetime import date
 
         from app.extensions import db
@@ -722,7 +734,16 @@ def _register_cli(app):
         4 courses, 5 classes with schedules, enrollments,
         sessions, attendance, activities, submissions,
         assessments, results, and financial transactions.
+
+        DEVELOPMENT/TESTING ONLY: refuses to run when FLASK_ENV=production.
         """
+        import os
+
+        if os.environ.get("FLASK_ENV", "").lower() == "production":
+            raise click.ClickException(
+                "Refusing to seed a production database with demo data. "
+                "Use `flask create-admin` instead."
+            )
         from app.extensions import db
         from app.seed_demo import seed_demo_data
 
@@ -746,3 +767,57 @@ def _register_cli(app):
         print("  teacher1 / teacher123")
         print("  student1 / student123")
         print("  parent1 / parent123")
+
+    @app.cli.command("create-admin")
+    @click.option("--login", default="admin", show_default=True, help="Admin login name.")
+    @click.option(
+        "--password",
+        default=None,
+        help="Admin password (prompted securely via getpass if omitted).",
+    )
+    def create_admin_command(login, password):
+        """Create the initial administrator account (safe for production).
+
+        Unlike `flask seed`, this never creates documented weak credentials:
+        the password is prompted without echo (or passed explicitly), must
+        be at least 10 characters, and must not equal the login or a known
+        default. Refuses to run if the login already exists. Prints the
+        login only — never the password.
+        """
+        import getpass
+
+        from app.application.auth.services import assign_role, create_user
+        from app.infrastructure.database.models import UserModel
+
+        if UserModel.query.filter_by(login=login).first() is not None:
+            raise click.ClickException(f"Login {login!r} already exists.")
+
+        if password is None:
+            password = getpass.getpass(f"Password for {login}: ")
+            confirm = getpass.getpass("Confirm password: ")
+            if password != confirm:
+                raise click.ClickException("Passwords do not match.")
+
+        _validate_initial_admin_password(login, password)
+
+        user = create_user(login, password)
+        assign_role(user, "ADMIN")
+        # Never print the password.
+        print(f"Administrator {login!r} created.")
+
+
+def _validate_initial_admin_password(login: str, password: str) -> None:
+    """Enforce a strong initial-admin password (raises ValueError)."""
+    import click
+
+    weak = {"", "admin", "admin123", "password", "123456", "changeme", "change-me"}
+    if (
+        not password
+        or len(password) < 10
+        or password.strip().lower() in weak
+        or password == login
+    ):
+        raise click.ClickException(
+            "Password must be at least 10 characters and must not be the "
+            "login name or a well-known default."
+        )
