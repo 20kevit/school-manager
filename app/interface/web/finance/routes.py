@@ -114,8 +114,13 @@ def admin_create_transaction():
     """Create a manual financial transaction."""
     if request.method == "POST":
         try:
+            from decimal import Decimal, InvalidOperation
+
             student_user_id = request.form.get("student_user_id", type=int)
-            amount = request.form.get("amount", type=float)
+            try:
+                amount = Decimal(str(request.form.get("amount", "")))
+            except (InvalidOperation, TypeError):
+                raise finance_service.FinanceError("مبلغ وارد شده معتبر نیست.")
             tx_type = request.form.get("transaction_type", "")
             category = request.form.get("category", "")
             payment_method = request.form.get("payment_method", "")
@@ -200,7 +205,12 @@ def admin_create_transaction():
 def admin_correct_transaction(transaction_id):
     """Correct a transaction."""
     try:
-        new_amount = request.form.get("new_amount", type=float)
+        from decimal import Decimal, InvalidOperation
+
+        try:
+            new_amount = Decimal(str(request.form.get("new_amount", "")))
+        except (InvalidOperation, TypeError):
+            raise finance_service.FinanceError("مبلغ وارد شده معتبر نیست.")
         new_description = request.form.get("new_description", "")
         finance_service.correct_transaction(
             transaction_id,

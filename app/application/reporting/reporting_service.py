@@ -166,8 +166,11 @@ class ReportingService:
                 "graded": graded_assessments,
             },
             "finance": {
-                "total_revenue": float(total_revenue),
-                "total_debt": float(total_debt),
+                # Gross figures (unscoped, un-netted): collected cash vs
+                # billed charges. Named honestly — see net_revenue in the
+                # finance reports for the reconciled figure.
+                "gross_collected": Decimal(str(total_revenue)),
+                "gross_billed": Decimal(str(total_debt)),
             },
             "notifications": {
                 "total": total_notifications,
@@ -297,26 +300,29 @@ class ReportingService:
 
         finance_stats = {
             "total_payments": sum(
-                float(t.amount) for t in transactions if t.transaction_type == "PAYMENT"
+                (t.amount for t in transactions if t.transaction_type == "PAYMENT"),
+                Decimal("0"),
             ),
             "total_charges": sum(
-                float(t.amount) for t in transactions if t.transaction_type == "CHARGE"
+                (t.amount for t in transactions if t.transaction_type == "CHARGE"),
+                Decimal("0"),
             ),
             "total_discounts": sum(
-                float(t.amount)
-                for t in transactions
-                if t.transaction_type == "DISCOUNT"
+                (t.amount for t in transactions if t.transaction_type == "DISCOUNT"),
+                Decimal("0"),
             ),
             "total_refunds": sum(
-                float(t.amount) for t in transactions if t.transaction_type == "REFUND"
+                (t.amount for t in transactions if t.transaction_type == "REFUND"),
+                Decimal("0"),
             ),
         }
 
-        finance_stats["balance"] = (
-            finance_stats["total_payments"]
-            - finance_stats["total_charges"]
-            + finance_stats["total_discounts"]
-            - finance_stats["total_refunds"]
+        # Canonical balance (same formula as the ledger): includes signed
+        # ADJUSTMENT/REVERSAL rows, which the per-type buckets above omit.
+        from app.application.finance import finance_service as _finance_service
+
+        finance_stats["balance"] = _finance_service.get_student_balance(
+            student_user_id
         )
 
         return {
@@ -798,27 +804,34 @@ class ReportingService:
 
         transactions = query.all()
 
+        def _sum_type(tx_type: str) -> Decimal:
+            return sum(
+                (t.amount for t in transactions if t.transaction_type == tx_type),
+                Decimal("0"),
+            )
+
+        def _signed_reversals() -> Decimal:
+            # REVERSAL rows are stored signed; sum them directly.
+            return sum(
+                (t.amount for t in transactions if t.transaction_type == "REVERSAL"),
+                Decimal("0"),
+            )
+
         stats = {
-            "total_payments": float(
-                sum(t.amount for t in transactions if t.transaction_type == "PAYMENT")
-            ),
-            "total_charges": float(
-                sum(t.amount for t in transactions if t.transaction_type == "CHARGE")
-            ),
-            "total_discounts": float(
-                sum(t.amount for t in transactions if t.transaction_type == "DISCOUNT")
-            ),
-            "total_refunds": float(
-                sum(t.amount for t in transactions if t.transaction_type == "REFUND")
-            ),
+            "total_payments": _sum_type("PAYMENT"),
+            "total_charges": _sum_type("CHARGE"),
+            "total_discounts": _sum_type("DISCOUNT"),
+            "total_refunds": _sum_type("REFUND"),
         }
 
-        # Net revenue: payments - refunds + discounts - charges
+        # Canonical net collected cash: payments minus refunds plus signed
+        # reversals. Discounts and charges are reported as separate lines,
+        # not folded into cash collected. Matches the finance-service
+        # revenue report definition.
         stats["net_revenue"] = (
             stats["total_payments"]
-            + stats["total_discounts"]
             - stats["total_refunds"]
-            - stats["total_charges"]
+            + _signed_reversals()
         )
 
         # Debt by student (using signed amounts: PAYMENT/DISCOUNT positive, CHARGE/REFUND negative)
@@ -878,7 +891,7 @@ class ReportingService:
                             "student_name": f"{student.student_profile.first_name} {student.student_profile.last_name}"
                             if student.student_profile
                             else student.login,
-                            "balance": float(balance),
+                            "balance": Decimal(str(balance)),
                         }
                     )
 
@@ -1087,15 +1100,62 @@ class ReportingService:
             or 0
         )
 
-        # Unpaid balances (students with negative balance)
+        # Unpaid balances (students with negative signed balance).
+        # Signed CASE mirrors the canonical ledger balance: CHARGE/REFUND
+        # debit, PAYMENT/DISCOUNT credit, REVERSAL/ADJUSTMENT stored signed.
+        # A raw SUM(amount) would be wrong because debits and credits are
+        # both stored positive.
         unpaid_balances = (
             session.query(
                 FinancialTransactionModel.student_user_id,
-                func.sum(FinancialTransactionModel.amount).label("balance"),
+                func.sum(
+                    case(
+                        (
+                            FinancialTransactionModel.transaction_type == "PAYMENT",
+                            FinancialTransactionModel.amount,
+                        ),
+                        (
+                            FinancialTransactionModel.transaction_type == "DISCOUNT",
+                            FinancialTransactionModel.amount,
+                        ),
+                        (
+                            FinancialTransactionModel.transaction_type == "CHARGE",
+                            -FinancialTransactionModel.amount,
+                        ),
+                        (
+                            FinancialTransactionModel.transaction_type == "REFUND",
+                            -FinancialTransactionModel.amount,
+                        ),
+                        else_=FinancialTransactionModel.amount,
+                    )
+                ).label("balance"),
             )
             .filter(FinancialTransactionModel.status == "ACTIVE")
             .group_by(FinancialTransactionModel.student_user_id)
-            .having(func.sum(FinancialTransactionModel.amount) < 0)
+            .having(
+                func.sum(
+                    case(
+                        (
+                            FinancialTransactionModel.transaction_type == "PAYMENT",
+                            FinancialTransactionModel.amount,
+                        ),
+                        (
+                            FinancialTransactionModel.transaction_type == "DISCOUNT",
+                            FinancialTransactionModel.amount,
+                        ),
+                        (
+                            FinancialTransactionModel.transaction_type == "CHARGE",
+                            -FinancialTransactionModel.amount,
+                        ),
+                        (
+                            FinancialTransactionModel.transaction_type == "REFUND",
+                            -FinancialTransactionModel.amount,
+                        ),
+                        else_=FinancialTransactionModel.amount,
+                    )
+                )
+                < 0
+            )
             .count()
         )
 

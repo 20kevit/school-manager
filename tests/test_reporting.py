@@ -292,8 +292,8 @@ class TestReportingService:
         assert overview["enrollments"]["pending"] == 0
         assert overview["assessments"]["total"] == 0
         assert overview["assessments"]["graded"] == 0
-        assert overview["finance"]["total_revenue"] == 0
-        assert overview["finance"]["total_debt"] == 0
+        assert overview["finance"]["gross_collected"] == 0
+        assert overview["finance"]["gross_billed"] == 0
         assert overview["notifications"]["total"] == 0
         assert overview["notifications"]["failed"] == 0
         assert overview["attendance"]["percentage"] == 0
@@ -327,7 +327,7 @@ class TestReportingService:
         assert overview["enrollments"]["pending"] == 0
         assert overview["assessments"]["total"] == 1
         assert overview["assessments"]["graded"] == 1
-        assert overview["finance"]["total_debt"] == 500000
+        assert overview["finance"]["gross_billed"] == 500000
         assert overview["attendance"]["total"] == 1
         assert overview["attendance"]["present"] == 1
         assert overview["attendance"]["percentage"] == 100.0
@@ -494,7 +494,8 @@ class TestReportingService:
         assert report["total_payments"] == 0
         assert report["total_discounts"] == 0
         assert report["total_refunds"] == 0
-        assert report["net_revenue"] == -500000
+        # Canonical net collected cash: payments - refunds + reversals.
+        assert report["net_revenue"] == 0
         assert len(report["debt_by_student"]) == 1
         assert report["debt_by_student"][0]["balance"] == -500000
 
@@ -555,6 +556,39 @@ class TestReportingService:
         assert report["sessions_without_attendance"] == 0
         assert report["failed_notifications"] == 0
         assert report["unpaid_balances"] == 0
+
+    def test_operational_report_counts_signed_debtor(self, db, student_user):
+        """A CHARGE 500k + PAYMENT 200k debtor must be counted (signed -300k).
+
+        Regression: the raw SUM(amount) treated both stored-positive legs
+        as credits and never counted such debtors.
+        """
+        from app.infrastructure.database.models import FinancialTransactionModel
+
+        db.session.add(
+            FinancialTransactionModel(
+                student_user_id=student_user.id,
+                amount=Decimal("500000"),
+                transaction_type="CHARGE",
+                category="TUITION",
+                description="Tuition",
+                status="ACTIVE",
+            )
+        )
+        db.session.add(
+            FinancialTransactionModel(
+                student_user_id=student_user.id,
+                amount=Decimal("200000"),
+                transaction_type="PAYMENT",
+                category="OTHER",
+                description="Partial",
+                status="ACTIVE",
+            )
+        )
+        db.session.commit()
+
+        report = ReportingService.get_operational_report()
+        assert report["unpaid_balances"] == 1
 
     def test_get_notification_report_empty(self, db):
         """Test notification report with empty database."""
@@ -781,9 +815,9 @@ class TestReportingService:
         assert report["total_charges"] == 500000
         assert report["total_payments"] == 300000
         assert report["total_discounts"] == 50000
-        # net_revenue = payments + discounts - refunds - charges
-        # = 300000 + 50000 - 0 - 500000 = -150000
-        assert report["net_revenue"] == -150000
+        # Canonical net collected cash = payments - refunds + reversals
+        # = 300000 - 0 + 0 = 300000 (discounts/charges are separate lines).
+        assert report["net_revenue"] == 300000
 
     def test_get_enrollment_report_with_rejected(self, db, student_user, academy_class):
         """Test enrollment report with rejected enrollments."""

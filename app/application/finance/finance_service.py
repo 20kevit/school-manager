@@ -358,10 +358,18 @@ def correct_transaction(
         raise FinanceError("Transaction not found.")
     if original.status != "ACTIVE":
         raise FinanceError("Only active transactions can be corrected.")
+    if original.transaction_type in ("REFUND", "REVERSAL"):
+        # Money-movement rows must be undone through the refund/reversal
+        # flows (which enforce caps and single-use), not by rewriting them:
+        # a corrected copy would double-count against the same original.
+        raise FinanceError(
+            "Refunds and reversals cannot be corrected; "
+            "use the refund/reversal flow instead."
+        )
 
     # Capture old state for audit logging
     old_values = {
-        "amount": float(original.amount),
+        "amount": str(original.amount),
         "transaction_type": original.transaction_type,
         "category": original.category,
         "description": original.description,
@@ -398,12 +406,23 @@ def correct_transaction(
         created_by=corrected_by,
     )
     db.session.add(corrected)
+    db.session.flush()
+    # Re-point live linked rows (refunds/reversals) at the corrected copy so
+    # caps, payroll joins, and single-use guards keep following the lineage
+    # instead of dangling off a CORRECTED original.
+    FinancialTransactionModel.query.filter(
+        FinancialTransactionModel.related_transaction_id == original.id,
+        FinancialTransactionModel.transaction_type.in_(["REFUND", "REVERSAL"]),
+        FinancialTransactionModel.status == "ACTIVE",
+    ).update(
+        {"related_transaction_id": corrected.id}, synchronize_session=False
+    )
     db.session.commit()
 
     # Audit log
     if corrected_by is not None:
         new_values = {
-            "amount": float(corrected_amount),
+            "amount": str(corrected_amount),
             "transaction_type": corrected.transaction_type,
             "category": corrected.category,
             "description": corrected_desc,
@@ -458,7 +477,7 @@ def reverse_transaction(
 
     # Capture old state for audit logging
     old_values = {
-        "amount": float(original.amount),
+        "amount": str(original.amount),
         "transaction_type": original.transaction_type,
         "category": original.category,
         "description": original.description,
@@ -486,7 +505,7 @@ def reverse_transaction(
     # Audit log
     if reversed_by is not None:
         new_values = {
-            "amount": float(reversal_amount),
+            "amount": str(reversal_amount),
             "transaction_type": "REVERSAL",
             "category": original.category,
             "description": description or f"Reversal of transaction #{original.id}",
@@ -688,23 +707,26 @@ def on_enrollment_cancelled(
     academy_class = AcademyClassModel.query.get(enrollment.class_id)
     class_title = academy_class.title if academy_class else "Unknown"
 
-    # CHARGE reversal should be positive (adds back to balance)
-    reversal_amount = _compute_reversal_amount(tuition_charge)
-
-    reversal = FinancialTransactionModel(
-        student_user_id=enrollment.student_user_id,
-        amount=reversal_amount,
-        transaction_type="REVERSAL",
-        category="TUITION",
-        description=f"Tuition reversal for cancelled enrollment in class: {class_title}",
-        enrollment_id=enrollment.id,
-        class_id=enrollment.class_id,
-        related_transaction_id=tuition_charge.id,
-        status="ACTIVE",
-    )
-    db.session.add(reversal)
-    db.session.commit()
-    return reversal
+    # Route through the audited single-use reversal path (one-shot guard,
+    # advisory lock, audit log) instead of a bespoke direct insert.
+    # Already-reversed charges raise FinanceError here; cancellation is
+    # single-fire upstream (re-cancel is rejected), so treat that as done.
+    try:
+        return reverse_transaction(
+            tuition_charge.id,
+            description=(
+                "Tuition reversal for cancelled enrollment in class: "
+                f"{class_title}"
+            ),
+        )
+    except FinanceError as exc:
+        if "already been reversed" in str(exc):
+            return FinancialTransactionModel.query.filter_by(
+                related_transaction_id=tuition_charge.id,
+                transaction_type="REVERSAL",
+                status="ACTIVE",
+            ).first()
+        raise
 
 
 # ---------------------------------------------------------------------------
@@ -783,11 +805,34 @@ def get_revenue_report(
         func.coalesce(func.sum(FinancialTransactionModel.amount), 0)
     ).scalar()
 
+    reversals = FinancialTransactionModel.query.filter(
+        FinancialTransactionModel.status == "ACTIVE",
+        FinancialTransactionModel.transaction_type == "REVERSAL",
+    )
+    if start_date is not None:
+        reversals = reversals.filter(
+            FinancialTransactionModel.created_at
+            >= datetime.combine(start_date, datetime.min.time())
+        )
+    if end_date is not None:
+        reversals = reversals.filter(
+            FinancialTransactionModel.created_at
+            <= datetime.combine(end_date, datetime.max.time())
+        )
+    reversal_total = reversals.with_entities(
+        func.coalesce(func.sum(FinancialTransactionModel.amount), 0)
+    ).scalar()
+
     return {
         "payments": Decimal(str(payments)),
         "discounts": Decimal(str(discounts)),
         "refunds": Decimal(str(refund_total)),
-        "net_revenue": Decimal(str(payments)) - Decimal(str(refund_total)),
+        "reversals": Decimal(str(reversal_total)),
+        # Canonical net collected cash, same definition as the reporting
+        # service: payments minus refunds plus signed reversals.
+        "net_revenue": Decimal(str(payments))
+        - Decimal(str(refund_total))
+        + Decimal(str(reversal_total)),
     }
 
 
@@ -810,6 +855,7 @@ def get_class_financial_summary(class_id: int) -> dict:
             "total_discounts": Decimal("0"),
             "total_refunds": Decimal("0"),
             "total_outstanding": Decimal("0"),
+            "total_debt_gross": Decimal("0"),
             "students": [],
         }
 
@@ -863,6 +909,12 @@ def get_class_financial_summary(class_id: int) -> dict:
         "total_refunds": total_refunds,
         "total_outstanding": abs(
             min(Decimal("0"), sum(s["balance"] for s in students_data))
+        ),
+        # Gross debtor exposure: per-student debts summed WITHOUT netting
+        # creditors against debtors (total_outstanding above nets them).
+        "total_debt_gross": sum(
+            (-s["balance"] for s in students_data if s["balance"] < 0),
+            Decimal("0"),
         ),
         "students": students_data,
     }
@@ -1022,7 +1074,12 @@ def get_dashboard_summary() -> dict:
         "month_payments": Decimal(str(month_payments)),
         "total_refunds": Decimal(str(total_refunds)),
         "total_discounts": Decimal(str(total_discounts)),
-        "tuition_revenue": Decimal(str(total_tuition)),
+        # Billed tuition (ACTIVE CHARGE/TUITION rows) — what was invoiced,
+        # not what was collected. Previously mislabeled tuition_revenue.
+        "billed_tuition": Decimal(str(total_tuition)),
+        # Net collected cash across all classes (canonical definition shared
+        # with get_revenue_report: payments − refunds + signed reversals).
+        "collected_revenue": get_revenue_report()["net_revenue"],
     }
 
 
@@ -1069,7 +1126,13 @@ def _validate_student(student_user_id: int) -> None:
 
 
 def get_remaining_refundable(payment_id: int) -> Decimal:
-    """Remaining refundable amount for a payment (never negative)."""
+    """Remaining refundable amount for a payment (never negative).
+
+    Subtracts ACTIVE linked REFUNDs and the magnitude of ACTIVE linked
+    REVERSALs: reversing a payment consumes its refundable value, so a
+    reversed payment cannot additionally be refunded (that would pay out
+    twice for the same money).
+    """
     original = FinancialTransactionModel.query.get(payment_id)
     if original is None:
         return Decimal("0")
@@ -1082,7 +1145,21 @@ def get_remaining_refundable(payment_id: int) -> Decimal:
         )
         .scalar()
     )
-    remaining = Decimal(str(original.amount)) - Decimal(str(refunded))
+    reversed_rows = (
+        FinancialTransactionModel.query.filter_by(
+            related_transaction_id=payment_id,
+            transaction_type="REVERSAL",
+            status="ACTIVE",
+        ).all()
+    )
+    reversed_magnitude = sum(
+        (abs(Decimal(str(r.amount))) for r in reversed_rows), Decimal("0")
+    )
+    remaining = (
+        Decimal(str(original.amount))
+        - Decimal(str(refunded))
+        - reversed_magnitude
+    )
     return remaining if remaining > 0 else Decimal("0")
 
 

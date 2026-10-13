@@ -416,8 +416,8 @@ class TestFinanceAuditLogging:
         assert len(logs) == 1
         log_entry = logs[0]
         assert log_entry.user_id == admin_user.id
-        assert log_entry.old_values["amount"] == 500000.0
-        assert log_entry.new_values["amount"] == 450000.0
+        assert log_entry.old_values["amount"] == "500000.00"
+        assert Decimal(log_entry.new_values["amount"]) == Decimal("450000")
         assert log_entry.old_values["description"] == "Tuition fee"
         assert log_entry.new_values["description"] == "Corrected tuition"
 
@@ -451,9 +451,9 @@ class TestFinanceAuditLogging:
         assert len(logs) == 1
         log_entry = logs[0]
         assert log_entry.user_id == admin_user.id
-        assert log_entry.old_values["amount"] == 500000.0
+        assert log_entry.old_values["amount"] == "500000.00"
         assert log_entry.new_values["transaction_type"] == "REVERSAL"
-        assert log_entry.new_values["amount"] > 0  # Reversal of CHARGE is positive
+        assert Decimal(log_entry.new_values["amount"]) > 0  # Reversal of CHARGE is positive
 
 
 # ---------------------------------------------------------------------------

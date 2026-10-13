@@ -29,8 +29,12 @@
         <p class="dashboard-value negative">{{ "{:,.0f}".format(summary.total_refunds) }} تومان</p>
     </div>
     <div class="dashboard-card">
-        <h3>باقی‌مانده</h3>
+        <h3>باقی‌مانده (خالص)</h3>
         <p class="dashboard-value negative">{{ "{:,.0f}".format(summary.total_outstanding) }} تومان</p>
+    </div>
+    <div class="dashboard-card">
+        <h3>مجموع بدهی بدهکاران (ناخالص)</h3>
+        <p class="dashboard-value negative">{{ "{:,.0f}".format(summary.total_debt_gross) }} تومان</p>
     </div>
 </div>
 

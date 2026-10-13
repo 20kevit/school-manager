@@ -11,7 +11,8 @@
     {{ stat_card("پرداخت‌های امروز", "{:,.0f}".format(summary.today_payments) ~ " تومان", icon="check", color="success") }}
     {{ stat_card("پرداخت‌های آنلاین امروز", summary.today_online_payments_count|string ~ " پرداخت | " ~ "{:,.0f}".format(summary.today_online_payments_amount) ~ " تومان", icon="money", color="info") }}
     {{ stat_card("پرداخت‌های این ماه", "{:,.0f}".format(summary.month_payments) ~ " تومان", icon="money", color="primary") }}
-    {{ stat_card("درآمد شهریه", "{:,.0f}".format(summary.tuition_revenue) ~ " تومان", icon="money", color="success") }}
+    {{ stat_card("شهریه صادرشده", "{:,.0f}".format(summary.billed_tuition) ~ " تومان", icon="money", color="info") }}
+    {{ stat_card("وصول خالص", "{:,.0f}".format(summary.collected_revenue) ~ " تومان", icon="money", color="success") }}
     {{ stat_card("تخفیف‌ها", "{:,.0f}".format(summary.total_discounts) ~ " تومان", icon="money", color="warning") }}
     {{ stat_card("بازپرداخت‌ها", "{:,.0f}".format(summary.total_refunds) ~ " تومان", icon="alert", color="danger") }}
 </div>

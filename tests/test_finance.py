@@ -679,6 +679,75 @@ class TestCorrections:
         balance = finance_service.get_student_balance(student.id)
         assert balance == Decimal("200000")
 
+    def test_correct_refund_row_rejected(self, db, student):
+        payment = finance_service.record_payment(
+            student_user_id=student.id,
+            amount=Decimal("2000000"),
+        )
+        refund = finance_service.record_refund(
+            student_user_id=student.id,
+            amount=Decimal("500000"),
+            related_transaction_id=payment.id,
+        )
+        with pytest.raises(finance_service.FinanceError, match="cannot be corrected"):
+            finance_service.correct_transaction(
+                refund.id,
+                new_amount=Decimal("100000"),
+                corrected_by=admin_user_id(db, student),
+            )
+
+    def test_correct_reversal_row_rejected(self, db, student):
+        tx = finance_service.record_payment(
+            student_user_id=student.id,
+            amount=Decimal("2000000"),
+        )
+        reversal = finance_service.reverse_transaction(tx.id)
+        with pytest.raises(finance_service.FinanceError, match="cannot be corrected"):
+            finance_service.correct_transaction(
+                reversal.id,
+                new_description="nope",
+                corrected_by=admin_user_id(db, student),
+            )
+
+    def test_correct_repoints_live_refund_to_copy(self, db, student):
+        payment = finance_service.record_payment(
+            student_user_id=student.id,
+            amount=Decimal("2000000"),
+        )
+        refund = finance_service.record_refund(
+            student_user_id=student.id,
+            amount=Decimal("500000"),
+            related_transaction_id=payment.id,
+        )
+        corrected = finance_service.correct_transaction(
+            payment.id,
+            new_amount=Decimal("2000000"),
+            corrected_by=admin_user_id(db, student),
+        )
+        # Child follows the lineage: cap accounting still sees it.
+        assert (
+            FinancialTransactionModel.query.get(refund.id).related_transaction_id
+            == corrected.id
+        )
+        assert finance_service.get_remaining_refundable(corrected.id) == Decimal(
+            "1500000"
+        )
+        assert finance_service.get_student_balance(student.id) == Decimal("1500000")
+
+    def test_reversed_payment_has_no_remaining_refundable(self, db, student):
+        payment = finance_service.record_payment(
+            student_user_id=student.id,
+            amount=Decimal("2000000"),
+        )
+        finance_service.reverse_transaction(payment.id)
+        assert finance_service.get_remaining_refundable(payment.id) == Decimal("0")
+        with pytest.raises(finance_service.FinanceError, match="remaining refundable"):
+            finance_service.record_refund(
+                student_user_id=student.id,
+                amount=Decimal("1000"),
+                related_transaction_id=payment.id,
+            )
+
 
 def admin_user_id(db, student):
     """Helper to get an admin user ID."""

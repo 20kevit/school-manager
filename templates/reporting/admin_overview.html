@@ -77,12 +77,12 @@
 <div class="detail-card">
     <div class="detail-header"><h3>مالی</h3></div>
     <div class="detail-row">
-        <span class="detail-row-label">درآمد کل (تومان)</span>
-        <span class="detail-row-value">{{ "{:,.0f}".format(overview.finance.total_revenue) }}</span>
+        <span class="detail-row-label">وصول ناخالص (تومان)</span>
+        <span class="detail-row-value">{{ "{:,.0f}".format(overview.finance.gross_collected) }}</span>
     </div>
     <div class="detail-row">
-        <span class="detail-row-label">بدهی کل (تومان)</span>
-        <span class="detail-row-value">{{ "{:,.0f}".format(overview.finance.total_debt) }}</span>
+        <span class="detail-row-label">صورت‌حساب ناخالص (تومان)</span>
+        <span class="detail-row-value">{{ "{:,.0f}".format(overview.finance.gross_billed) }}</span>
     </div>
 </div>
 
