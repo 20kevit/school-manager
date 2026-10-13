@@ -13,6 +13,7 @@ from app.infrastructure.database.models import (
     UserModel,
 )
 from app.interface.web.decorators import role_required
+from app.utils.flash import flash_safe_error
 
 finance_bp = Blueprint("finance", __name__, url_prefix="/finance")
 
@@ -161,6 +162,17 @@ def admin_create_transaction():
                     class_id=class_id,
                     created_by=current_user.id,
                 )
+            elif tx_type == "GOODWILL":
+                # Reasoned goodwill credit (auditable ADJUSTMENT, never a
+                # fabricated refund). Description carries the reason.
+                finance_service.record_goodwill_credit(
+                    student_user_id=student_user_id,
+                    amount=amount,
+                    reason=description,
+                    category=category or "OTHER",
+                    reference_number=reference_number,
+                    created_by=current_user.id,
+                )
             elif tx_type == "DISCOUNT":
                 finance_service.apply_discount(
                     student_user_id=student_user_id,
@@ -183,7 +195,7 @@ def admin_create_transaction():
             flash("تراکنش با موفقیت ثبت شد.", "success")
             return redirect(url_for("finance.admin_transactions"))
         except finance_service.FinanceError as e:
-            flash(str(e), "error")
+            flash_safe_error(e)
 
     students = (
         UserModel.query.filter(UserModel.roles.any(name="STUDENT"))
@@ -220,7 +232,7 @@ def admin_correct_transaction(transaction_id):
         )
         flash("تراکنش اصلاح شد.", "success")
     except finance_service.FinanceError as e:
-        flash(str(e), "error")
+        flash_safe_error(e)
 
     return redirect(
         url_for("finance.admin_transaction_detail", transaction_id=transaction_id)
@@ -241,7 +253,7 @@ def admin_reverse_transaction(transaction_id):
         )
         flash("تراکنش معکوس شد.", "success")
     except finance_service.FinanceError as e:
-        flash(str(e), "error")
+        flash_safe_error(e)
 
     return redirect(url_for("finance.admin_transactions"))
 
@@ -501,7 +513,7 @@ def receipt(transaction_id):
     elif transaction.payment_method == "CARD":
         payment_method_label = "کارت"
     elif transaction.payment_method == "BANK_TRANSFER":
-        payment_method_label = "转账 بانکی"
+        payment_method_label = "انتقال بانکی"
     else:
         payment_method_label = "سایر"
 
@@ -620,7 +632,7 @@ def student_pay_online():
         )
         return redirect(result["payment_url"])
     except payment_service.PaymentError as e:
-        flash(str(e), "error")
+        flash_safe_error(e)
         return redirect(url_for("finance.student_my_finance"))
 
 
@@ -677,7 +689,7 @@ def parent_pay_online(child_user_id):
         )
         return redirect(result["payment_url"])
     except payment_service.PaymentError as e:
-        flash(str(e), "error")
+        flash_safe_error(e)
         return redirect(
             url_for("finance.parent_child_statement", child_user_id=child_user_id)
         )

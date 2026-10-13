@@ -186,40 +186,6 @@ class PayrollSummary:
     unattributed_revenue: Decimal = Decimal("0")
 
 
-def _get_collected_tuition(class_id: int, start_date: date, end_date: date) -> Decimal:
-    """Sum collected tuition (PAYMENT transactions) for a class in a date range.
-
-    Collected tuition = sum of ACTIVE PAYMENT transactions for the given
-    class, filtered by transaction creation date. The category is
-    deliberately NOT filtered: tuition paid through ordinary (manual) and
-    online channels is recorded with category OTHER, while seeds use
-    TUITION — all of it is collected tuition for the class. Only ACTIVE
-    rows count, so pending/failed/corrected payments are excluded.
-
-    Refunds, reversals, and discounts are NOT subtracted here: this is
-    gross collected revenue. Net revenue accounting is left to the
-    payroll/finance policy layer if needed.
-    """
-    from datetime import datetime, timedelta
-
-    start_datetime = datetime(start_date.year, start_date.month, start_date.day)
-    end_datetime = datetime(end_date.year, end_date.month, end_date.day) + timedelta(
-        days=1
-    )
-
-    result = (
-        db.session.query(func.coalesce(func.sum(FinancialTransactionModel.amount), 0))
-        .filter(
-            FinancialTransactionModel.class_id == class_id,
-            FinancialTransactionModel.transaction_type == "PAYMENT",
-            FinancialTransactionModel.status == "ACTIVE",
-            FinancialTransactionModel.created_at >= start_datetime,
-            FinancialTransactionModel.created_at < end_datetime,
-        )
-        .scalar()
-    )
-    return Decimal(str(result))
-
 
 def _get_net_collected_tuition(
     class_id: int, start_date: date, end_date: date

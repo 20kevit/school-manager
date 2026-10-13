@@ -121,8 +121,16 @@ def admin_enroll_student(
 
         try:
             finance_service.on_enrollment_approved(enrollment)
-        except finance_service.FinanceError:
-            pass  # Tuition charge may fail if class has no tuition set
+        except finance_service.FinanceError as exc:
+            # Tuition charge may fail if class has no tuition set; log it
+            # so a silently missing charge is diagnosable, not invisible.
+            import logging
+
+            logging.getLogger(__name__).warning(
+                "Tuition charge skipped for enrollment %s: %s",
+                enrollment.id,
+                exc,
+            )
 
     return enrollment
 
@@ -162,8 +170,14 @@ def approve_enrollment(enrollment: EnrollmentModel) -> EnrollmentModel:
 
     try:
         finance_service.on_enrollment_approved(enrollment)
-    except finance_service.FinanceError:
-        pass  # Tuition charge may fail if class has no tuition set
+    except finance_service.FinanceError as exc:
+        import logging
+
+        logging.getLogger(__name__).warning(
+            "Tuition charge skipped for enrollment %s: %s",
+            enrollment.id,
+            exc,
+        )
 
     return enrollment
 
@@ -198,8 +212,14 @@ def cancel_enrollment(enrollment: EnrollmentModel) -> EnrollmentModel:
 
         try:
             finance_service.on_enrollment_cancelled(enrollment)
-        except finance_service.FinanceError:
-            pass  # Reversal may fail if no tuition charge exists
+        except finance_service.FinanceError as exc:
+            import logging
+
+            logging.getLogger(__name__).warning(
+                "Tuition reversal skipped for cancelled enrollment %s: %s",
+                enrollment.id,
+                exc,
+            )
 
     return enrollment
 

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import random
 from datetime import date, datetime, time, timedelta
+from decimal import Decimal
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
@@ -694,14 +695,12 @@ def seed_demo_data(db) -> dict:
         db.session.add(charge)
         stats["transactions"] += 1
 
-        # Random payments
+        # Random payments (exact Decimal math: binary floats would store
+        # artifacts like 135000.00000000001 in Numeric columns)
         if random.random() < 0.7:
-            paid = random.choice(
-                [
-                    float(cls.tuition),
-                    float(cls.tuition) * 0.5,
-                    float(cls.tuition) * 0.3,
-                ]
+            paid = int(
+                Decimal(str(cls.tuition))
+                * random.choice([Decimal("1.0"), Decimal("0.5"), Decimal("0.3")])
             )
             db.session.add(
                 FinancialTransactionModel(
@@ -718,9 +717,12 @@ def seed_demo_data(db) -> dict:
             )
             stats["transactions"] += 1
 
-        # Occasional discount
+        # Occasional discount (exact Decimal math, whole Toman)
         if random.random() < 0.15:
-            discount = float(cls.tuition) * random.uniform(0.05, 0.2)
+            discount = int(
+                Decimal(str(cls.tuition))
+                * Decimal(str(random.uniform(0.05, 0.2)))
+            )
             db.session.add(
                 FinancialTransactionModel(
                     student_user_id=enrollment.student_user_id,
