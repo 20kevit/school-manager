@@ -131,7 +131,18 @@ def _register_routes(app):
 
     @app.route("/health")
     def health():
-        return jsonify({"status": "ok"})
+        # Process liveness plus critical dependency (database) status.
+        # 200 = serving; 503 = process alive but database unreachable.
+        # No secrets, credentials, or record counts are exposed here.
+        from sqlalchemy import text as sa_text
+
+        from app.extensions import db
+
+        try:
+            db.session.execute(sa_text("SELECT 1"))
+        except Exception:
+            return jsonify({"status": "degraded", "database": "error"}), 503
+        return jsonify({"status": "ok", "database": "ok"})
 
     @app.errorhandler(400)
     def bad_request(e):

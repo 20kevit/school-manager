@@ -16,6 +16,27 @@ def test_health_endpoint(client):
     response = client.get("/health")
     assert response.status_code == 200
     assert response.get_json()["status"] == "ok"
+    assert response.get_json()["database"] == "ok"
+
+
+def test_health_endpoint_reports_database_outage(client):
+    """Health must return 503 (not 200/500) when the database is down."""
+    from unittest.mock import MagicMock, patch
+
+    from sqlalchemy.exc import OperationalError
+
+    from app.extensions import db
+
+    broken = MagicMock()
+    broken.execute.side_effect = OperationalError(
+        "SELECT 1", {}, Exception("connection refused")
+    )
+    with patch.object(db, "session", broken):
+        response = client.get("/health")
+    assert response.status_code == 503
+    payload = response.get_json()
+    assert payload["status"] == "degraded"
+    assert payload["database"] == "error"
 
 
 def test_index(client):
