@@ -167,6 +167,7 @@ class ClassBreakdown:
     session_count: int = 0
     collected_revenue: Decimal = Decimal("0")
     amount: Decimal = Decimal("0")
+    note: str = ""
 
 
 @dataclass
@@ -179,6 +180,10 @@ class PayrollSummary:
     total_sessions: int = 0
     gross_amount: Decimal = Decimal("0")
     breakdown_per_class: list[ClassBreakdown] = field(default_factory=list)
+    # ACTIVE PAYMENTs in the period with no class attribution. Excluded from
+    # every class breakdown by construction; surfaced here so unattributed
+    # money stays visible instead of silently vanishing from payroll.
+    unattributed_revenue: Decimal = Decimal("0")
 
 
 def _get_collected_tuition(class_id: int, start_date: date, end_date: date) -> Decimal:
@@ -366,17 +371,56 @@ def calculate_teacher_payroll(
         if contract.payment_type == "PER_SESSION":
             breakdown.amount = Decimal(str(len(sessions))) * contract.rate
         elif contract.payment_type == "PERCENTAGE_OF_REVENUE":
-            # Use net collected revenue (gross payments minus refunds/reversals)
-            # to avoid overpaying on refunded or reversed transactions.
+            # Net collected revenue (gross payments minus linked refunds /
+            # reversals). A non-positive net never produces a negative
+            # salary: the class amount floors at zero with an explicit note,
+            # while collected_revenue keeps the true (possibly negative)
+            # figure for auditability.
             collected = _get_net_collected_tuition(class_id, start_date, end_date)
             breakdown.collected_revenue = collected
-            breakdown.amount = (collected * contract.rate) / Decimal("100")
+            if collected <= 0:
+                breakdown.amount = Decimal("0")
+                breakdown.note = (
+                    "Net collected revenue is not positive; "
+                    "revenue share floored at zero."
+                )
+            else:
+                breakdown.amount = (collected * contract.rate) / Decimal("100")
 
         total_gross += breakdown.amount
         summary.breakdown_per_class.append(breakdown)
 
     summary.gross_amount = total_gross
+    summary.unattributed_revenue = _get_unattributed_payments(start_date, end_date)
     return summary
+
+
+def _get_unattributed_payments(start_date: date, end_date: date) -> Decimal:
+    """Sum ACTIVE PAYMENTs in the period with no class attribution.
+
+    These payments are preserved in financial reporting but excluded from
+    every class-based payroll calculation until they can be reliably
+    attributed to a class. Surfacing the total here keeps them visible.
+    """
+    from datetime import datetime, timedelta
+
+    start_datetime = datetime(start_date.year, start_date.month, start_date.day)
+    end_datetime = datetime(end_date.year, end_date.month, end_date.day) + timedelta(
+        days=1
+    )
+
+    result = (
+        db.session.query(func.coalesce(func.sum(FinancialTransactionModel.amount), 0))
+        .filter(
+            FinancialTransactionModel.class_id.is_(None),
+            FinancialTransactionModel.transaction_type == "PAYMENT",
+            FinancialTransactionModel.status == "ACTIVE",
+            FinancialTransactionModel.created_at >= start_datetime,
+            FinancialTransactionModel.created_at < end_datetime,
+        )
+        .scalar()
+    )
+    return Decimal(str(result))
 
 
 def _find_active_contract(
@@ -442,7 +486,19 @@ def finalize_payroll(
 
     Creates a TeacherPayment with status=PENDING.
     Raises PayrollError if no sessions found or payment already exists.
+
+    Deductions must stay within [0, gross], so net pay can never go
+    negative. Advances or debts need an explicit auditable workflow and
+    are rejected here.
     """
+    from app.application.finance._locks import pg_advisory_xact_lock
+
+    # Serialize concurrent finalizations for the same teacher+period on
+    # PostgreSQL; the unique constraint remains as the backstop.
+    pg_advisory_xact_lock(
+        db.session, f"payroll:{teacher_user_id}:{period_start}:{period_end}"
+    )
+
     # Check for existing payment in this period
     existing = TeacherPaymentModel.query.filter_by(
         teacher_user_id=teacher_user_id,

@@ -522,37 +522,40 @@ class TestRefunds:
     """Tests for refund recording."""
 
     def test_full_refund(self, db, student):
-        finance_service.record_payment(
+        payment = finance_service.record_payment(
             student_user_id=student.id,
             amount=Decimal("5000000"),
         )
         finance_service.record_refund(
             student_user_id=student.id,
             amount=Decimal("5000000"),
+            related_transaction_id=payment.id,
         )
         balance = finance_service.get_student_balance(student.id)
         assert balance == Decimal("0")
 
     def test_partial_refund(self, db, student):
-        finance_service.record_payment(
+        payment = finance_service.record_payment(
             student_user_id=student.id,
             amount=Decimal("5000000"),
         )
         finance_service.record_refund(
             student_user_id=student.id,
             amount=Decimal("2000000"),
+            related_transaction_id=payment.id,
         )
         balance = finance_service.get_student_balance(student.id)
         assert balance == Decimal("3000000")
 
     def test_original_payment_preserved(self, db, student):
-        finance_service.record_payment(
+        payment = finance_service.record_payment(
             student_user_id=student.id,
             amount=Decimal("5000000"),
         )
         finance_service.record_refund(
             student_user_id=student.id,
             amount=Decimal("2000000"),
+            related_transaction_id=payment.id,
         )
         payments = FinancialTransactionModel.query.filter_by(
             student_user_id=student.id,
@@ -567,6 +570,63 @@ class TestRefunds:
             finance_service.record_refund(
                 student_user_id=student.id,
                 amount=Decimal("-100"),
+            )
+
+    def test_unlinked_refund_rejected(self, db, student):
+        """Ordinary refunds must reference the original payment."""
+        with pytest.raises(finance_service.FinanceError, match="must reference"):
+            finance_service.record_refund(
+                student_user_id=student.id,
+                amount=Decimal("1000"),
+            )
+
+    def test_goodwill_credit_requires_reason(self, db, student):
+        with pytest.raises(finance_service.FinanceError, match="reason is required"):
+            finance_service.record_goodwill_credit(
+                student_user_id=student.id,
+                amount=Decimal("50000"),
+                reason="   ",
+            )
+
+    def test_goodwill_credit_is_auditable_adjustment(self, db, student):
+        tx = finance_service.record_goodwill_credit(
+            student_user_id=student.id,
+            amount=Decimal("50000"),
+            reason="Goodwill gesture for service disruption",
+            created_by=student.id,
+        )
+        assert tx.transaction_type == "ADJUSTMENT"
+        assert tx.amount == Decimal("50000")
+        assert "Goodwill" in tx.description
+        assert tx.created_by == student.id
+        assert finance_service.get_student_balance(student.id) == Decimal("50000")
+
+    def test_refund_class_mismatch_rejected(self, db, student):
+        payment = finance_service.record_payment(
+            student_user_id=student.id,
+            amount=Decimal("5000000"),
+            class_id=7,
+        )
+        with pytest.raises(finance_service.FinanceError, match="does not match"):
+            finance_service.record_refund(
+                student_user_id=student.id,
+                amount=Decimal("1000"),
+                related_transaction_id=payment.id,
+                class_id=8,
+            )
+
+    def test_refund_cannot_introduce_class(self, db, student):
+        payment = finance_service.record_payment(
+            student_user_id=student.id,
+            amount=Decimal("5000000"),
+        )
+        assert payment.class_id is None
+        with pytest.raises(finance_service.FinanceError, match="cannot introduce"):
+            finance_service.record_refund(
+                student_user_id=student.id,
+                amount=Decimal("1000"),
+                related_transaction_id=payment.id,
+                class_id=9,
             )
 
 
@@ -1281,12 +1341,19 @@ class TestRefundLinkage:
                 related_transaction_id=charge.id,
             )
 
-    def test_standalone_goodwill_refund_still_allowed(self, db, student):
-        # Unlinked refunds keep their historical behavior.
-        finance_service.record_refund(
-            student_user_id=student.id, amount=Decimal("50000")
+    def test_standalone_refund_rejected_use_goodwill_credit(self, db, student):
+        # Unlinked refunds are rejected; goodwill uses the explicit path.
+        with pytest.raises(finance_service.FinanceError, match="must reference"):
+            finance_service.record_refund(
+                student_user_id=student.id, amount=Decimal("50000")
+            )
+        tx = finance_service.record_goodwill_credit(
+            student_user_id=student.id,
+            amount=Decimal("50000"),
+            reason="Service recovery gesture",
         )
-        assert finance_service.get_student_balance(student.id) == Decimal("-50000")
+        assert tx.transaction_type == "ADJUSTMENT"
+        assert finance_service.get_student_balance(student.id) == Decimal("50000")
 
     def test_reverse_twice_rejected(self, db, student):
         tx = self._payment(db, student)

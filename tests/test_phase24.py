@@ -716,15 +716,46 @@ class TestPayrollCalculation:
 
         # Reversal of full payment (5M) with partial refund (2M) means
         # net = 5M (payment) - 2M (refund) - 5M (reversal) = -2M
-        # This is correct accounting: the original 5M payment is voided,
-        # but 2M was already refunded, so school owes 2M more.
+        # collected_revenue keeps the true figure, but the revenue share
+        # floors at zero instead of creating a negative salary payment.
         summary = calculate_teacher_payroll(
             teacher_user.id,
             date(2026, 3, 1),
             date(2026, 3, 31),
         )
         assert summary.breakdown_per_class[0].collected_revenue == Decimal("-2000000")
-        assert summary.gross_amount == Decimal("-400000")
+        assert summary.breakdown_per_class[0].amount == Decimal("0")
+        assert summary.breakdown_per_class[0].note != ""
+        assert summary.gross_amount == Decimal("0")
+
+    def test_unattributed_payments_visible_but_excluded(
+        self,
+        db,
+        teacher_user,
+        academy_class,
+        student,
+        percentage_contract,
+        completed_session,
+    ):
+        """class_id NULL payments are reported but never paid out to a class."""
+        from datetime import datetime
+
+        from app.application.finance import finance_service
+
+        tx = finance_service.record_payment(
+            student_user_id=student.id, amount=Decimal("9000000")
+        )
+        tx.created_at = datetime(2026, 3, 10, 12, 0)
+        db.session.commit()
+
+        summary = calculate_teacher_payroll(
+            teacher_user.id,
+            date(2026, 3, 1),
+            date(2026, 3, 31),
+        )
+        assert summary.breakdown_per_class[0].collected_revenue == Decimal("0")
+        assert summary.gross_amount == Decimal("0")
+        assert summary.unattributed_revenue == Decimal("9000000")
 
 
 # ---------------------------------------------------------------------------

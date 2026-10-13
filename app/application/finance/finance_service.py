@@ -153,29 +153,51 @@ def record_refund(
     class_id: int | None = None,
     created_by: int | None = None,
 ) -> FinancialTransactionModel:
-    """Record a refund to a student.
+    """Record a refund linked to a real eligible payment.
 
-    When related_transaction_id is given, the original payment is validated
-    (must exist, belong to the same student, be ACTIVE, and be a PAYMENT)
-    and the refund is capped at the remaining refundable amount, so the
-    same payment cannot be refunded twice. Without a link, a standalone
-    goodwill refund is recorded as before.
+    Policy: ordinary refunds MUST reference the original PAYMENT via
+    related_transaction_id. The original must exist, belong to the same
+    student, be ACTIVE, and be a PAYMENT; the refund is capped at the
+    remaining refundable amount so the same payment cannot be refunded
+    twice. For goodwill credit without an underlying payment, use
+    record_goodwill_credit() instead — it creates a separately authorized,
+    reasoned ADJUSTMENT rather than a fabricated refund.
 
-    If the refund is linked to a payment, the class_id is automatically
-    inherited from the original payment for revenue tracking purposes.
+    Attribution invariant: the refund carries exactly the original
+    payment's class_id. An explicitly supplied class_id that differs is
+    rejected, and an unattributed (class-less) payment cannot gain
+    attribution through its refund.
     """
+    from app.application.finance._locks import pg_advisory_xact_lock
+
     if amount <= 0:
         raise FinanceError("Refund amount must be positive.")
 
     _validate_student(student_user_id)
 
-    if related_transaction_id is not None:
-        _validate_refund_link(student_user_id, amount, related_transaction_id)
-        # Inherit class_id from the original payment if not explicitly provided
-        if class_id is None:
-            original = FinancialTransactionModel.query.get(related_transaction_id)
-            if original is not None:
-                class_id = original.class_id
+    if related_transaction_id is None:
+        raise FinanceError(
+            "Refund must reference the original payment "
+            "(related_transaction_id). Use record_goodwill_credit() for "
+            "goodwill credit without an underlying payment."
+        )
+
+    # Serialize validate-then-insert per payment on PostgreSQL so two
+    # concurrent refunds observe each other's committed rows.
+    pg_advisory_xact_lock(db.session, f"refund:{related_transaction_id}")
+    original = _validate_refund_link(student_user_id, amount, related_transaction_id)
+
+    if class_id is None:
+        class_id = original.class_id
+    elif original.class_id is None:
+        raise FinanceError(
+            "The original payment has no class attribution; the refund "
+            "cannot introduce one."
+        )
+    elif class_id != original.class_id:
+        raise FinanceError(
+            "Refund class does not match the original payment's class."
+        )
 
     transaction = FinancialTransactionModel(
         student_user_id=student_user_id,
@@ -185,8 +207,47 @@ def record_refund(
         description=description or "Refund issued",
         reference_number=reference_number,
         related_transaction_id=related_transaction_id,
-        enrollment_id=enrollment_id,
+        enrollment_id=enrollment_id if enrollment_id is not None else original.enrollment_id,
         class_id=class_id,
+        status="ACTIVE",
+        created_by=created_by,
+    )
+    db.session.add(transaction)
+    db.session.commit()
+    return transaction
+
+
+def record_goodwill_credit(
+    student_user_id: int,
+    amount: Decimal,
+    *,
+    reason: str,
+    category: str = "OTHER",
+    reference_number: str = "",
+    created_by: int | None = None,
+) -> FinancialTransactionModel:
+    """Record an auditable goodwill credit (positive ADJUSTMENT).
+
+    This is the explicit path for crediting a student WITHOUT an
+    underlying payment. It requires a non-empty reason, records who
+    created it, and never touches the refundable balance of any payment.
+    Goodwill credits are ADJUSTMENT rows (not PAYMENT), so they are
+    excluded from class revenue / payroll bases by construction.
+    """
+    if amount <= 0:
+        raise FinanceError("Goodwill credit amount must be positive.")
+    if not (reason or "").strip():
+        raise FinanceError("A reason is required for goodwill credit.")
+
+    _validate_student(student_user_id)
+
+    transaction = FinancialTransactionModel(
+        student_user_id=student_user_id,
+        amount=Decimal(str(amount)),
+        transaction_type="ADJUSTMENT",
+        category=category,
+        description=reason.strip(),
+        reference_number=reference_number,
         status="ACTIVE",
         created_by=created_by,
     )
@@ -376,6 +437,11 @@ def reverse_transaction(
     reversed at most once: a second reversal would double-count, so it is
     rejected while the original stays ACTIVE for history.
     """
+    from app.application.finance._locks import pg_advisory_xact_lock
+
+    # Serialize the check-then-insert unit per transaction on PostgreSQL.
+    pg_advisory_xact_lock(db.session, f"reversal:{transaction_id}")
+
     original = FinancialTransactionModel.query.get(transaction_id)
     if original is None:
         raise FinanceError("Transaction not found.")
@@ -1022,11 +1088,12 @@ def get_remaining_refundable(payment_id: int) -> Decimal:
 
 def _validate_refund_link(
     student_user_id: int, amount: Decimal, related_transaction_id: int
-) -> None:
+):
     """Validate a refund against its original payment.
 
     The original must exist, belong to the same student, be ACTIVE, and be
     a PAYMENT; the refund must not exceed the remaining refundable amount.
+    Returns the original transaction for attribution reuse.
     """
     original = FinancialTransactionModel.query.get(related_transaction_id)
     if original is None:
@@ -1042,6 +1109,7 @@ def _validate_refund_link(
         raise FinanceError(
             f"Refund exceeds the remaining refundable amount ({remaining})."
         )
+    return original
 
 
 def _get_all_student_balances() -> dict[int, Decimal]:

@@ -144,11 +144,15 @@ def admin_create_transaction():
                     created_by=current_user.id,
                 )
             elif tx_type == "REFUND":
+                related_transaction_id = request.form.get(
+                    "related_transaction_id", type=int
+                )
                 finance_service.record_refund(
                     student_user_id=student_user_id,
                     amount=amount,
                     description=description,
                     reference_number=reference_number,
+                    related_transaction_id=related_transaction_id,
                     class_id=class_id,
                     created_by=current_user.id,
                 )
