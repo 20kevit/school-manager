@@ -1536,36 +1536,26 @@ class TestConcurrency:
         ).all()
         assert len(refunds) == 1
 
-    def test_reverse_twice_rejected_at_database_level(self, db, student):
-        """The unique constraint (not just the pre-check) blocks duplicates."""
-        from sqlalchemy.exc import IntegrityError
+    def test_payroll_uniqueness_is_service_plus_migration(self, db, student):
+        """Liveness uniqueness must NOT be a model-level full UniqueConstraint.
 
+        SQLAlchemy cannot express partial indexes portably, so the model
+        deliberately carries no UniqueConstraint on teacher_payments: the
+        service pre-check guards every backend, and migration f9a0b1c2d3e4
+        adds the partial unique index on PostgreSQL. A model-level full
+        unique would forbid the audited void-and-refinalize correction
+        workflow, so this test pins the design. See TestConcurrencyPostgreSQL
+        (skipped here) for live PostgreSQL constraint evidence.
+        """
         from app.infrastructure.database.models import TeacherPaymentModel
+        from sqlalchemy import UniqueConstraint
 
-        payment = TeacherPaymentModel(
-            teacher_user_id=student.id,
-            period_start=date(2026, 3, 1),
-            period_end=date(2026, 3, 31),
-            gross_amount=Decimal("500000"),
-            deductions=Decimal("0"),
-            net_amount=Decimal("500000"),
-            status="PENDING",
-        )
-        db.session.add(payment)
-        db.session.commit()
-        db.session.add(
-            TeacherPaymentModel(
-                teacher_user_id=student.id,
-                period_start=date(2026, 3, 1),
-                period_end=date(2026, 3, 31),
-                gross_amount=Decimal("500000"),
-                deductions=Decimal("0"),
-                net_amount=Decimal("500000"),
-                status="PENDING",
-            )
-        )
-        with pytest.raises(IntegrityError):
-            db.session.commit()
+        uniques = [
+            c
+            for c in TeacherPaymentModel.__table__.constraints
+            if isinstance(c, UniqueConstraint)
+        ]
+        assert uniques == []
 
     def test_refund_link_enforces_same_student(self, db, student):
         """Refund must belong to the same student as the original payment."""
