@@ -1053,3 +1053,119 @@ class TestTransactionStatusExtended:
         )
         # The domain entity check
         assert tx.status != "ACTIVE"
+
+
+# ---------------------------------------------------------------------------
+# Live sandbox integration (no money moves without a real user payment)
+# ---------------------------------------------------------------------------
+
+
+class TestLiveSandboxConnectivity:
+    """Real HTTPS round-trips to the ZarinPal sandbox.
+
+    Verified 2026-10-13: the sandbox issues authorities for ANY merchant
+    id (no credentials needed for these paths) and rejects verification
+    of unpaid authorities. Positive (paid) flows need a human completing
+    payment in a browser — see docs/PAYMENT_SANDBOX.md. Skipped unless
+    RUN_LIVE_SANDBOX_TESTS=1 (external network dependency).
+    """
+
+    def test_sandbox_issues_authority_for_any_merchant(self, db, student):
+        import os
+
+        import pytest
+
+        if os.environ.get("RUN_LIVE_SANDBOX_TESTS") != "1":
+            pytest.skip("Live sandbox tests are opt-in (external network).")
+
+        from app.infrastructure.payment.zarinpal import ZarinPalGateway
+
+        gateway = ZarinPalGateway(merchant_id="00000000-0000-0000-0000-000000000000")
+        result = gateway.create_payment(
+            amount=Decimal("10000"),
+            description="connectivity probe — unpaid, no money moves",
+            callback_url="https://example.invalid/callback",
+        )
+        # Sandbox accepts the request and returns a real authority.
+        assert result.success is True
+        assert result.authority
+        assert "sandbox.zarinpal.com" in result.payment_url
+
+    def test_sandbox_verify_rejects_unpaid_authority(self, db, student):
+        import os
+
+        import pytest
+
+        if os.environ.get("RUN_LIVE_SANDBOX_TESTS") != "1":
+            pytest.skip("Live sandbox tests are opt-in (external network).")
+
+        from app.infrastructure.payment.zarinpal import ZarinPalGateway
+
+        gateway = ZarinPalGateway(merchant_id="00000000-0000-0000-0000-000000000000")
+        created = gateway.create_payment(
+            amount=Decimal("10000"),
+            description="unpaid probe",
+            callback_url="https://example.invalid/callback",
+        )
+        assert created.success is True
+        result = gateway.verify_payment(
+            authority=created.authority,
+            amount=Decimal("10000"),
+        )
+        # The sandbox request endpoint is open, but verify demands a real
+        # merchant (401 here). Either way: never success without payment.
+        assert result.success is False
+
+    def test_service_callback_with_real_gateway_fails_unpaid(self, db, student):
+        """End-to-end service path with the REAL gateway (no mocks): an
+        unverifiable callback fails safe — no credit, row recoverable."""
+        import os
+
+        import pytest
+
+        if os.environ.get("RUN_LIVE_SANDBOX_TESTS") != "1":
+            pytest.skip("Live sandbox tests are opt-in (external network).")
+
+        from unittest.mock import patch
+
+        from app.infrastructure.payment.zarinpal import ZarinPalGateway
+
+        real_gateway = ZarinPalGateway(
+            merchant_id="00000000-0000-0000-0000-000000000000"
+        )
+        created = real_gateway.create_payment(
+            amount=Decimal("10000"),
+            description="service-path probe",
+            callback_url="https://example.invalid/callback",
+        )
+        assert created.success is True
+
+        tx = FinancialTransactionModel(
+            student_user_id=student.id,
+            amount=Decimal("10000"),
+            transaction_type="PAYMENT",
+            category="OTHER",
+            description="Test",
+            reference_number=created.authority,
+            payment_method="ONLINE",
+            status="PENDING",
+        )
+        db.session.add(tx)
+        db.session.commit()
+
+        with patch(
+            "app.application.finance.payment_service._get_gateway",
+            return_value=real_gateway,
+        ):
+            result = payment_service.process_payment_callback(
+                authority=created.authority,
+                amount=Decimal("10000"),
+                callback_status="OK",
+            )
+        assert result["success"] is False
+        # Never credited without verification; row left recoverable.
+        updated = FinancialTransactionModel.query.get(tx.id)
+        assert updated.status in ("PENDING", "FAILED")
+        from app.application.finance import finance_service
+
+        assert finance_service.get_student_balance(student.id) == Decimal("0")
