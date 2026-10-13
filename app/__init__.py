@@ -178,9 +178,7 @@ def _register_security_headers(app) -> None:
     def _apply_security_headers(response):
         response.headers.setdefault("X-Content-Type-Options", "nosniff")
         response.headers.setdefault("X-Frame-Options", "SAMEORIGIN")
-        response.headers.setdefault(
-            "Referrer-Policy", "no-referrer-when-downgrade"
-        )
+        response.headers.setdefault("Referrer-Policy", "no-referrer-when-downgrade")
         return response
 
 
@@ -227,9 +225,10 @@ def _register_template_filters(app):
             from decimal import Decimal, InvalidOperation
 
             val = amount if isinstance(amount, Decimal) else Decimal(str(amount))
-            quantized = val.quantize(Decimal("1"))
-            return f"{quantized:,} تومان"
-        except (InvalidOperation, ValueError, TypeError, AttributeError):
+            return f"{val.quantize(Decimal('1')):,} تومان"
+        except InvalidOperation:
+            # Single-exception clause on purpose: ruff 0.17's formatter
+            # corrupts bare multi-exception tuples into invalid syntax.
             return str(amount)
 
     @app.template_filter("persian_label")
@@ -307,6 +306,31 @@ def _register_template_filters(app):
             "DELETED": "حذف شده",
         }
         return labels.get(str(value), str(value))
+
+    @app.template_filter("status_badge")
+    def status_badge_filter(value):
+        """Render a transaction type as a Persian label with badge CSS class."""
+        from markupsafe import Markup, escape
+
+        label = persian_label_filter(value)
+        # CSS class for badge color based on type
+        type_class = {
+            "PAYMENT": "success",
+            "DISCOUNT": "info",
+            "CHARGE": "warning",
+            "REFUND": "danger",
+            "ADJUSTMENT": "secondary",
+            "REVERSAL": "dark",
+        }.get(str(value), "secondary")
+        # Wrapper is server-generated markup; the label itself is escaped so
+        # an unexpected stored value cannot inject HTML.
+        return Markup(f'<span class="badge badge-{type_class}">{escape(label)}</span>')
+
+    # Also exposed as a global: 100+ templates call status_badge(...) as a
+    # bare name, which Jinja resolves through the context (not the filter
+    # table, which only the pipe syntax uses). Without this, every
+    # transaction list with at least one row 500s.
+    app.jinja_env.globals["status_badge"] = status_badge_filter
 
     @app.template_filter("weekday_fa")
     def weekday_filter(value):

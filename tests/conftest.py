@@ -3,6 +3,7 @@ import pytest
 from app import create_app
 from app.extensions import db as _db
 from app.infrastructure.database.models import (
+    LoginAttemptModel,  # noqa: F401 — import registers the model so create_all() creates login_attempts
     RoleModel,
     StudentProfileModel,
     UserModel,

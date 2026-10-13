@@ -120,8 +120,8 @@ def admin_create_transaction():
             student_user_id = request.form.get("student_user_id", type=int)
             try:
                 amount = Decimal(str(request.form.get("amount", "")))
-            except (InvalidOperation, TypeError):
-                raise finance_service.FinanceError("مبلغ وارد شده معتبر نیست.")
+            except (InvalidOperation, TypeError) as e:
+                raise finance_service.FinanceError("مبلغ وارد شده معتبر نیست.") from e
             tx_type = request.form.get("transaction_type", "")
             category = request.form.get("category", "")
             payment_method = request.form.get("payment_method", "")
@@ -221,8 +221,8 @@ def admin_correct_transaction(transaction_id):
 
         try:
             new_amount = Decimal(str(request.form.get("new_amount", "")))
-        except (InvalidOperation, TypeError):
-            raise finance_service.FinanceError("مبلغ وارد شده معتبر نیست.")
+        except (InvalidOperation, TypeError) as e:
+            raise finance_service.FinanceError("مبلغ وارد شده معتبر نیست.") from e
         new_description = request.form.get("new_description", "")
         finance_service.correct_transaction(
             transaction_id,

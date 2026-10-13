@@ -68,6 +68,12 @@ ruff check --fix .
 ruff format .
 ```
 
+> Known tool hazard (ruff 0.17.0): `ruff format` rewrites **bare**
+> multi-exception tuples (`except A, B:` without `as e`) into invalid
+> syntax. Always write `except (A, B) as e:` (or use
+> `contextlib.suppress`), run the test suite after formatting, and inspect
+> `ruff format --diff` before applying.
+
 ## Database
 
 ### Create database
