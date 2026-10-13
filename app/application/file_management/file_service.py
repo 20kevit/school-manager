@@ -264,6 +264,16 @@ def upload_file_bytes(
     visibility: str = "PRIVATE",
 ) -> StoredFileModel:
     """Upload raw bytes and create a metadata record."""
+    # Same validation as the FileStorage path: extension allowlist, size
+    # cap, and MIME allowlist (never trust client MIME alone — the
+    # allowlist gates it).
+    validate_upload(
+        filename,
+        len(data),
+        content_type,
+        allowed_extensions=None,
+        max_size=None,
+    )
     ext = os.path.splitext(filename)[1].lower().lstrip(".")
     if not ext:
         raise FileError("File must have an extension.")

@@ -63,14 +63,26 @@ class TestAuthentication:
             data={"login": "testuser", "password": "testpass123"},
         )
 
-        # Logout
-        response = client.get("/auth/logout", follow_redirects=False)
+        # Logout (POST only: GET must not mutate the session)
+        response = client.post("/auth/logout", follow_redirects=False)
         assert response.status_code == 302
 
         # Verify cannot access dashboard after logout
         response = client.get("/auth/dashboard", follow_redirects=False)
         assert response.status_code == 302
         assert "/auth/login" in response.headers["Location"]
+
+    def test_logout_get_does_not_log_out(self, client, sample_user):
+        """GET /auth/logout must not terminate the session (CSRF safety)."""
+        client.post(
+            "/auth/login",
+            data={"login": "testuser", "password": "testpass123"},
+        )
+        response = client.get("/auth/logout", follow_redirects=False)
+        assert response.status_code == 405
+        # Still authenticated afterwards.
+        response = client.get("/auth/dashboard", follow_redirects=False)
+        assert response.status_code == 200
 
     def test_protected_route(self, client):
         """Test that protected routes require authentication."""
@@ -351,7 +363,7 @@ class TestLoginThrottling:
             "/auth/login",
             data={"login": "testuser", "password": "testpass123"},
         )
-        client.get("/auth/logout")
+        client.post("/auth/logout")
         # Budget was reset by the success: 4 more failures still allowed.
         for _ in range(4):
             resp = client.post(

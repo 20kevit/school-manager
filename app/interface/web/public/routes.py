@@ -6,6 +6,7 @@ from flask import Blueprint, flash, render_template, request
 
 from app.infrastructure.database.models import AcademyClassModel
 from app.utils.date_utils import parse_jalali_date
+from app.utils.flash import flash_safe_error
 
 public_bp = Blueprint("public", __name__, url_prefix="/enrollment")
 
@@ -39,7 +40,7 @@ def public_apply():
         try:
             birth_date = parse_jalali_date(birth_date_str)
         except ValueError as e:
-            flash(str(e), "error")
+            flash_safe_error(e)
             return _render_form()
 
         try:
@@ -65,7 +66,7 @@ def public_apply():
 
             return render_template("enrollment/public_success.html")
         except Exception as e:
-            flash(str(e), "error")
+            flash_safe_error(e)
             return _render_form()
 
     return _render_form()

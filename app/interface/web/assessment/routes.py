@@ -23,6 +23,7 @@ from app.infrastructure.database.models import (
     UserModel,
 )
 from app.interface.web.decorators import role_required
+from app.utils.flash import flash_safe_error
 
 assessment_bp = Blueprint("assessment", __name__, url_prefix="/assessment")
 
@@ -98,7 +99,7 @@ def admin_create_assessment():
                 )
             )
         except assessment_service.AssessmentError as e:
-            flash(str(e), "error")
+            flash_safe_error(e)
 
     classes = AcademyClassModel.query.order_by(AcademyClassModel.title).all()
     return render_template("assessment/admin_create.html", classes=classes)
@@ -168,7 +169,7 @@ def admin_edit_assessment(assessment_id):
                 )
             )
         except assessment_service.AssessmentError as e:
-            flash(str(e), "error")
+            flash_safe_error(e)
 
     return render_template("assessment/admin_edit.html", assessment=assessment)
 
@@ -188,7 +189,7 @@ def admin_update_status(assessment_id):
         assessment_service.update_assessment_status(assessment, new_status)
         flash(f"Assessment status updated to {new_status}.", "success")
     except assessment_service.AssessmentError as e:
-        flash(str(e), "error")
+        flash_safe_error(e)
 
     return redirect(
         url_for("assessment.admin_assessment_detail", assessment_id=assessment.id)
@@ -209,7 +210,7 @@ def admin_cancel_assessment(assessment_id):
         assessment_service.cancel_assessment(assessment)
         flash("Assessment cancelled.", "success")
     except assessment_service.AssessmentError as e:
-        flash(str(e), "error")
+        flash_safe_error(e)
 
     return redirect(
         url_for("assessment.admin_assessment_detail", assessment_id=assessment.id)
@@ -236,7 +237,7 @@ def admin_grade_assessment(assessment_id):
             )
             flash("Grades saved successfully.", "success")
         except assessment_service.AssessmentError as e:
-            flash(str(e), "error")
+            flash_safe_error(e)
         return redirect(
             url_for("assessment.admin_grade_assessment", assessment_id=assessment.id)
         )
@@ -261,7 +262,7 @@ def admin_assessment_report(assessment_id):
     try:
         report = assessment_service.get_assessment_report(assessment_id)
     except assessment_service.AssessmentError as e:
-        flash(str(e), "error")
+        flash_safe_error(e)
         return redirect(url_for("assessment.admin_assessment_list"))
 
     return render_template("assessment/admin_report.html", report=report)
@@ -275,7 +276,7 @@ def admin_export_assessment_csv(assessment_id):
     try:
         rows = assessment_service.get_assessment_csv_data(assessment_id)
     except assessment_service.AssessmentError as e:
-        flash(str(e), "error")
+        flash_safe_error(e)
         return redirect(url_for("assessment.admin_assessment_list"))
 
     output = io.StringIO()
@@ -333,7 +334,7 @@ def admin_class_report(class_id):
     try:
         summary = assessment_service.get_class_academic_summary(class_id)
     except assessment_service.AssessmentError as e:
-        flash(str(e), "error")
+        flash_safe_error(e)
         return redirect(url_for("assessment.admin_assessment_list"))
 
     return render_template("assessment/admin_class_report.html", summary=summary)
@@ -347,7 +348,7 @@ def admin_export_class_csv(class_id):
     try:
         results = assessment_service.get_class_results(class_id)
     except assessment_service.AssessmentError as e:
-        flash(str(e), "error")
+        flash_safe_error(e)
         return redirect(url_for("assessment.admin_assessment_list"))
 
     output = io.StringIO()
@@ -483,7 +484,7 @@ def teacher_grade_assessment(assessment_id):
             )
             flash("Grades saved successfully.", "success")
         except assessment_service.AssessmentError as e:
-            flash(str(e), "error")
+            flash_safe_error(e)
         return redirect(
             url_for("assessment.teacher_grade_assessment", assessment_id=assessment.id)
         )
@@ -536,7 +537,7 @@ def teacher_edit_result(assessment_id, result_id):
             )
             flash("Result updated.", "success")
         except assessment_service.AssessmentError as e:
-            flash(str(e), "error")
+            flash_safe_error(e)
         return redirect(
             url_for("assessment.teacher_assessment_detail", assessment_id=assessment_id)
         )
@@ -879,7 +880,7 @@ def admin_grading_template(class_id: int):
             )
 
         except assessment_service.AssessmentError as e:
-            flash(str(e), "error")
+            flash_safe_error(e)
 
     return render_template(
         "assessment/admin_grading_template.html",
@@ -935,7 +936,7 @@ def student_transcript(enrollment_id: int):
     try:
         transcript_data = assessment_service.get_transcript_data(enrollment_id)
     except assessment_service.AssessmentError as e:
-        flash(str(e), "error")
+        flash_safe_error(e)
         return redirect(url_for("assessment.student_my_assessments"))
 
     return render_template(

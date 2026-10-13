@@ -1,6 +1,6 @@
 import os
 
-from flask import Flask, jsonify
+from flask import Flask, jsonify, render_template
 from flask_login import LoginManager
 
 from app.extensions import db as db  # noqa: F401
@@ -58,6 +58,7 @@ def create_app(config_name="development"):
     _register_blueprints(app)
     _register_routes(app)
     _register_cli(app)
+    _register_security_headers(app)
 
     if (
         config_name != "testing"
@@ -146,21 +147,41 @@ def _register_routes(app):
 
     @app.errorhandler(400)
     def bad_request(e):
-        return "errors/400.html", 400
+        return render_template("errors/400.html"), 400
 
     @app.errorhandler(403)
     def forbidden(e):
-        return "errors/403.html", 403
+        return render_template("errors/403.html"), 403
 
     @app.errorhandler(404)
     def not_found(e):
-        return "errors/404.html", 404
+        return render_template("errors/404.html"), 404
 
     @app.errorhandler(500)
     def internal_error(e):
-        return "errors/500.html", 500
+        db.session.rollback()
+        return render_template("errors/500.html"), 500
 
     _register_template_filters(app)
+
+
+def _register_security_headers(app) -> None:
+    """Baseline response hardening (defense in depth behind the proxy).
+
+    SAMEORIGIN framing (CSRF tokens already protect state-changing forms),
+    nosniff (blocks MIME-sniffing of user-uploaded content served inline),
+    and a conservative referrer policy. HSTS is deliberately NOT set here:
+    TLS is terminated upstream and HSTS is an infrastructure decision.
+    """
+
+    @app.after_request
+    def _apply_security_headers(response):
+        response.headers.setdefault("X-Content-Type-Options", "nosniff")
+        response.headers.setdefault("X-Frame-Options", "SAMEORIGIN")
+        response.headers.setdefault(
+            "Referrer-Policy", "no-referrer-when-downgrade"
+        )
+        return response
 
 
 def _register_template_filters(app):
@@ -199,13 +220,16 @@ def _register_template_filters(app):
 
     @app.template_filter("currency")
     def currency_filter(amount):
-        """Format a number as Toman currency."""
+        """Format a number as Toman currency (exact Decimal math)."""
         if amount is None:
             return "—"
         try:
-            val = float(amount)
-            return f"{val:,.0f} تومان"
-        except (ValueError, TypeError):  # fmt: skip
+            from decimal import Decimal, InvalidOperation
+
+            val = amount if isinstance(amount, Decimal) else Decimal(str(amount))
+            quantized = val.quantize(Decimal("1"))
+            return f"{quantized:,} تومان"
+        except (InvalidOperation, ValueError, TypeError, AttributeError):
             return str(amount)
 
     @app.template_filter("persian_label")

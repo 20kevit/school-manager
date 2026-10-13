@@ -17,6 +17,7 @@ from app.infrastructure.database.models import (
     UserModel,
 )
 from app.interface.web.decorators import role_required
+from app.utils.flash import flash_safe_error
 
 attendance_bp = Blueprint("attendance", __name__, url_prefix="/attendance")
 
@@ -109,7 +110,7 @@ def admin_save_session_attendance(session_id):
         )
         flash("Attendance saved successfully.", "success")
     except AttendanceError as e:
-        flash(str(e), "error")
+        flash_safe_error(e)
 
     return redirect(
         url_for("attendance.admin_session_attendance", session_id=session_id)
@@ -219,7 +220,7 @@ def teacher_save_session_attendance(session_id):
         )
         flash("Attendance saved successfully.", "success")
     except AttendanceError as e:
-        flash(str(e), "error")
+        flash_safe_error(e)
 
     return redirect(
         url_for("attendance.teacher_session_attendance", session_id=session_id)

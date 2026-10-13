@@ -23,6 +23,7 @@ from app.infrastructure.database.models import (
     UserModel,
 )
 from app.interface.web.decorators import role_required
+from app.utils.flash import flash_safe_error
 
 enrollment_bp = Blueprint("enrollment", __name__, url_prefix="/enrollment")
 
@@ -140,7 +141,7 @@ def admin_enroll():
                 )
             )
         except EnrollmentError as e:
-            flash(str(e), "error")
+            flash_safe_error(e)
 
     students = UserModel.query.filter(UserModel.roles.any(name="STUDENT")).all()
     classes = (
@@ -171,7 +172,7 @@ def admin_approve(enrollment_id):
         approve_enrollment(enrollment)
         flash("Enrollment approved.", "success")
     except EnrollmentError as e:
-        flash(str(e), "error")
+        flash_safe_error(e)
 
     return redirect(
         url_for("enrollment.admin_enrollment_detail", enrollment_id=enrollment_id)
@@ -196,7 +197,7 @@ def admin_approve_activate(enrollment_id):
         approve_and_activate_enrollment(enrollment)
         flash("Enrollment approved and account activated.", "success")
     except Exception as e:
-        flash(str(e), "error")
+        flash_safe_error(e)
 
     return redirect(
         url_for("enrollment.admin_enrollment_detail", enrollment_id=enrollment_id)
@@ -217,7 +218,7 @@ def admin_reject(enrollment_id):
         reject_enrollment(enrollment)
         flash("Enrollment rejected.", "success")
     except EnrollmentError as e:
-        flash(str(e), "error")
+        flash_safe_error(e)
 
     return redirect(
         url_for("enrollment.admin_enrollment_detail", enrollment_id=enrollment_id)
@@ -238,7 +239,7 @@ def admin_cancel(enrollment_id):
         cancel_enrollment(enrollment)
         flash("Enrollment cancelled.", "success")
     except EnrollmentError as e:
-        flash(str(e), "error")
+        flash_safe_error(e)
 
     return redirect(
         url_for("enrollment.admin_enrollment_detail", enrollment_id=enrollment_id)
@@ -282,10 +283,10 @@ def admin_import_students():
                 result=result,
             )
         except ExcelImportError as e:
-            flash(str(e), "error")
+            flash_safe_error(e)
         except Exception as e:
             db.session.rollback()
-            flash(f"خطا در پردازش فایل: {e}", "error")
+            flash_safe_error(e, "خطا در پردازش فایل.")
 
     return render_template("enrollment/admin_import.html")
 
@@ -364,7 +365,7 @@ def student_request_enrollment(class_id):
         )
         flash("Enrollment request submitted.", "success")
     except EnrollmentError as e:
-        flash(str(e), "error")
+        flash_safe_error(e)
 
     return redirect(url_for("enrollment.student_class_detail", class_id=class_id))
 
@@ -399,7 +400,7 @@ def student_cancel(enrollment_id):
         cancel_enrollment(enrollment)
         flash("Enrollment cancelled.", "success")
     except EnrollmentError as e:
-        flash(str(e), "error")
+        flash_safe_error(e)
 
     return redirect(url_for("enrollment.student_my_enrollments"))
 

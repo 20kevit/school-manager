@@ -33,6 +33,7 @@ from app.application.academy.course_service import (
     update_syllabus_item,
 )
 from app.interface.web.decorators import role_required
+from app.utils.flash import flash_safe_error
 
 academy_bp = Blueprint("academy", __name__, url_prefix="/academy")
 
@@ -67,7 +68,7 @@ def course_create():
             flash("Course created successfully.", "success")
             return redirect(url_for("academy.course_detail", course_id=course.id))
         except CourseError as e:
-            flash(str(e), "error")
+            flash_safe_error(e)
     return render_template("academy/course_form.html", course=None)
 
 
@@ -111,7 +112,7 @@ def course_edit(course_id):
             flash("Course updated successfully.", "success")
             return redirect(url_for("academy.course_detail", course_id=course.id))
         except CourseError as e:
-            flash(str(e), "error")
+            flash_safe_error(e)
     return render_template("academy/course_form.html", course=course)
 
 
@@ -152,7 +153,7 @@ def syllabus_add(course_id):
         )
         flash("Syllabus item added.", "success")
     except CourseError as e:
-        flash(str(e), "error")
+        flash_safe_error(e)
     return redirect(url_for("academy.course_detail", course_id=course_id))
 
 
@@ -177,7 +178,7 @@ def syllabus_edit(item_id):
         )
         flash("Syllabus item updated.", "success")
     except CourseError as e:
-        flash(str(e), "error")
+        flash_safe_error(e)
     return redirect(url_for("academy.course_detail", course_id=item.course_id))
 
 
@@ -252,7 +253,7 @@ def class_create():
             flash("کلاس با موفقیت ایجاد شد.", "success")
             return redirect(url_for("academy.class_detail", class_id=academy_class.id))
         except (ClassError, ValueError, KeyError) as e:
-            flash(str(e), "error")
+            flash_safe_error(e)
 
     return render_template(
         "academy/class_form.html",
@@ -311,7 +312,7 @@ def class_edit(class_id):
             flash("Class updated successfully.", "success")
             return redirect(url_for("academy.class_detail", class_id=class_id))
         except ClassError as e:
-            flash(str(e), "error")
+            flash_safe_error(e)
     return render_template(
         "academy/class_form.html",
         class_obj=academy_class,
@@ -338,7 +339,7 @@ def schedule_update(class_id):
         update_class_schedule(academy_class, schedule)
         flash("Schedule updated.", "success")
     except (ClassError, ValueError) as e:
-        flash(str(e), "error")
+        flash_safe_error(e)
     return redirect(url_for("academy.class_detail", class_id=class_id))
 
 
@@ -412,7 +413,7 @@ def session_edit(session_id):
             flash("Session updated successfully.", "success")
             return redirect(url_for("academy.session_detail", session_id=session_id))
         except (ClassError, ValueError) as e:
-            flash(str(e), "error")
+            flash_safe_error(e)
     return render_template(
         "academy/session_edit.html",
         session=session,
@@ -437,7 +438,7 @@ def session_reschedule(session_id):
         )
         flash("Session rescheduled.", "success")
     except (ClassError, ValueError) as e:
-        flash(str(e), "error")
+        flash_safe_error(e)
     return redirect(url_for("academy.session_detail", session_id=session_id))
 
 
@@ -481,7 +482,7 @@ def session_shift(class_id, session_number):
         shift_sessions_after_cancellation(academy_class, session_number)
         flash("Sessions shifted.", "success")
     except ClassError as e:
-        flash(str(e), "error")
+        flash_safe_error(e)
     return redirect(url_for("academy.session_list", class_id=class_id))
 
 

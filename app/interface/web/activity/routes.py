@@ -50,6 +50,7 @@ from app.infrastructure.database.models import (
     UserModel,
 )
 from app.interface.web.decorators import role_required
+from app.utils.flash import flash_safe_error
 
 activity_bp = Blueprint("activity", __name__, url_prefix="/activity")
 
@@ -105,7 +106,7 @@ def admin_create_activity():
                 url_for("activity.admin_activity_detail", activity_id=activity.id)
             )
         except ActivityError as e:
-            flash(str(e), "error")
+            flash_safe_error(e)
 
     classes = AcademyClassModel.query.order_by(AcademyClassModel.title).all()
     courses = CourseModel.query.order_by(CourseModel.title).all()
@@ -172,7 +173,7 @@ def admin_edit_activity(activity_id):
                 url_for("activity.admin_activity_detail", activity_id=activity.id)
             )
         except ActivityError as e:
-            flash(str(e), "error")
+            flash_safe_error(e)
 
     classes = AcademyClassModel.query.order_by(AcademyClassModel.title).all()
     courses = CourseModel.query.order_by(CourseModel.title).all()
@@ -243,7 +244,7 @@ def admin_grade_submission(submission_id):
         grade_submission(submission, score, feedback, graded_by=current_user.id)
         flash("ارسال نمره‌گذاری شد.", "success")
     except (ActivityError, ValueError) as e:
-        flash(str(e), "error")
+        flash_safe_error(e)
 
     return redirect(
         url_for("activity.admin_submission_detail", submission_id=submission_id)
@@ -336,7 +337,7 @@ def teacher_create_activity(class_id):
                 url_for("activity.teacher_class_activities", class_id=class_id)
             )
         except ActivityError as e:
-            flash(str(e), "error")
+            flash_safe_error(e)
 
     sessions = (
         SessionModel.query.filter_by(class_id=class_id)
@@ -438,7 +439,7 @@ def teacher_grade_submission(submission_id):
         grade_submission(submission, score, feedback, graded_by=current_user.id)
         flash("ارسال نمره‌گذاری شد.", "success")
     except (ActivityError, ValueError) as e:
-        flash(str(e), "error")
+        flash_safe_error(e)
 
     return redirect(
         url_for("activity.teacher_submission_detail", submission_id=submission_id)
@@ -598,7 +599,7 @@ def student_submit_activity(activity_id):
 
         flash("فعالیت با موفقیت ارسال شد.", "success")
     except (ActivityError, FileError) as e:
-        flash(str(e), "error")
+        flash_safe_error(e)
 
     return redirect(
         url_for("activity.student_activity_detail", activity_id=activity_id)
@@ -670,10 +671,14 @@ def download_file(file_id):
         record, stream = get_file_stream(file_id)
         from flask import send_file
 
+        # Attachment disposition: stored files are user-influenced content
+        # and must never render inline in the app origin (stored-XSS vector
+        # when combined with MIME sniffing).
         return send_file(
             stream,
             mimetype=record.mime_type,
             download_name=record.original_filename,
+            as_attachment=True,
         )
     except FileError:
         abort(404)

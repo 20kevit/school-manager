@@ -97,6 +97,32 @@
     border-top: 1px solid var(--color-sidebar-border);
 }
 
+/* Logout is a POST form (CSRF-safe): reset button to sidebar-link look. */
+.sidebar-form {
+    margin: 0;
+    padding: 0;
+}
+
+.sidebar-link-button {
+    background: none;
+    border: none;
+    width: 100%;
+    font: inherit;
+    cursor: pointer;
+    text-align: right;
+    color: var(--color-sidebar-text);
+}
+
+.inline-form {
+    display: inline;
+    margin: 0;
+    padding: 0;
+}
+
+.inline-form .btn {
+    font: inherit;
+}
+
 /* === Header === */
 .header {
     position: fixed;

@@ -38,6 +38,7 @@ from app.domain.notification import (
 from app.infrastructure.database.models import UserModel
 from app.infrastructure.notification.registry import get_provider_health
 from app.interface.web.decorators import role_required
+from app.utils.flash import flash_safe_error
 
 notification_bp = Blueprint("notification", __name__, url_prefix="/notification")
 
@@ -112,7 +113,7 @@ def admin_retry(notification_id):
         retry_notification(notification_id)
         flash("Notification retried.", "success")
     except NotificationError as e:
-        flash(str(e), "error")
+        flash_safe_error(e)
 
     return redirect(
         url_for("notification.admin_detail", notification_id=notification_id)
@@ -128,7 +129,7 @@ def admin_cancel(notification_id):
         cancel_notification(notification_id)
         flash("Notification cancelled.", "success")
     except NotificationError as e:
-        flash(str(e), "error")
+        flash_safe_error(e)
 
     return redirect(
         url_for("notification.admin_detail", notification_id=notification_id)
@@ -166,7 +167,7 @@ def admin_manual():
                 flash("Notification sent.", "success")
                 return redirect(url_for("notification.admin_dashboard"))
         except Exception as e:
-            flash(f"Error: {e}", "error")
+            flash_safe_error(e)
 
     users = UserModel.query.filter_by(is_active_user=True).all()
     return render_template("notification/admin_manual.html", users=users)
@@ -206,7 +207,7 @@ def admin_announcement():
                 flash("Announcement sent.", "success")
                 return redirect(url_for("notification.admin_dashboard"))
         except Exception as e:
-            flash(f"Error: {e}", "error")
+            flash_safe_error(e)
 
     users = UserModel.query.filter_by(is_active_user=True).all()
     return render_template("notification/admin_announcement.html", users=users)
@@ -243,7 +244,7 @@ def admin_template_create():
             flash("Template created.", "success")
             return redirect(url_for("notification.admin_templates"))
         except TemplateError as e:
-            flash(str(e), "error")
+            flash_safe_error(e)
 
     return render_template("notification/admin_template_form.html")
 
@@ -271,7 +272,7 @@ def admin_template_edit(template_id):
             flash("Template updated.", "success")
             return redirect(url_for("notification.admin_templates"))
         except TemplateError as e:
-            flash(str(e), "error")
+            flash_safe_error(e)
 
     return render_template("notification/admin_template_form.html", template=template)
 
@@ -285,7 +286,7 @@ def admin_template_delete(template_id):
         delete_template(template_id)
         flash("Template deleted.", "success")
     except TemplateError as e:
-        flash(str(e), "error")
+        flash_safe_error(e)
 
     return redirect(url_for("notification.admin_templates"))
 

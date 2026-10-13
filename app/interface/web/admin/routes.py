@@ -41,6 +41,7 @@ from app.extensions import db
 from app.infrastructure.database.models import StudentProfileModel
 from app.interface.web.decorators import role_required
 from app.utils.date_utils import parse_jalali_date
+from app.utils.flash import flash_safe_error
 
 admin_bp = Blueprint("admin", __name__, url_prefix="/admin")
 
@@ -148,7 +149,7 @@ def user_create():
                 try:
                     birth_date = parse_jalali_date(birth_date_str)
                 except ValueError as e:
-                    flash(str(e), "error")
+                    flash_safe_error(e)
                     return render_template("admin/user_form.html", role=role)
 
                 from app.application.auth.services import create_student_user
@@ -188,7 +189,7 @@ def user_create():
 
         except Exception as e:
             db.session.rollback()
-            flash(f"خطا در ایجاد کاربر: {e}", "error")
+            flash_safe_error(e, "خطا در ایجاد کاربر.")
 
     return render_template("admin/user_form.html")
 
@@ -236,7 +237,7 @@ def user_edit(user_id):
                         try:
                             kwargs["birth_date"] = parse_jalali_date(birth_date_str)
                         except ValueError as e:
-                            flash(str(e), "error")
+                            flash_safe_error(e)
                             return render_template(
                                 "admin/user_edit.html",
                                 user=user,
@@ -248,7 +249,7 @@ def user_edit(user_id):
                 flash("پروفایل با موفقیت به‌روزرسانی شد.", "success")
             except Exception as e:
                 db.session.rollback()
-                flash(f"خطا در به‌روزرسانی پروفایل: {e}", "error")
+                flash_safe_error(e, "خطا در به‌روزرسانی پروفایل.")
 
         elif action == "reset_password":
             new_password = request.form.get("new_password", "").strip()
@@ -274,7 +275,7 @@ def user_edit(user_id):
                     link_parent_student(user.id, student_user_id)
                     flash("دانش‌آموز با موفقیت لینک شد.", "success")
                 except ValueError as e:
-                    flash(str(e), "error")
+                    flash_safe_error(e)
 
         elif action == "unlink_student":
             student_user_id = request.form.get("student_user_id", type=int)
@@ -283,7 +284,7 @@ def user_edit(user_id):
                     unlink_parent_student(user.id, student_user_id)
                     flash("لینک دانش‌آموز حذف شد.", "success")
                 except ValueError as e:
-                    flash(str(e), "error")
+                    flash_safe_error(e)
 
         return redirect(url_for("admin.user_edit", user_id=user.id))
 
@@ -338,7 +339,7 @@ def year_create():
             start_date = parse_jalali_date(start_date_str)
             end_date = parse_jalali_date(end_date_str)
         except ValueError as e:
-            flash(str(e), "error")
+            flash_safe_error(e)
             return render_template("admin/year_form.html")
 
         try:
@@ -346,7 +347,7 @@ def year_create():
             flash("سال تحصیلی با موفقیت ایجاد شد.", "success")
             return redirect(url_for("admin.year_list"))
         except AcademicCalendarError as e:
-            flash(str(e), "error")
+            flash_safe_error(e)
 
     return render_template("admin/year_form.html")
 
@@ -383,7 +384,7 @@ def year_edit(year_id):
             flash("سال تحصیلی با موفقیت به‌روزرسانی شد.", "success")
             return redirect(url_for("admin.year_list"))
         except AcademicCalendarError as e:
-            flash(str(e), "error")
+            flash_safe_error(e)
 
     return render_template("admin/year_form.html", year=year)
 
@@ -443,7 +444,7 @@ def semester_create():
             start_date = parse_jalali_date(start_date_str)
             end_date = parse_jalali_date(end_date_str)
         except ValueError as e:
-            flash(str(e), "error")
+            flash_safe_error(e)
             return render_template("admin/semester_form.html", years=years)
 
         try:
@@ -451,7 +452,7 @@ def semester_create():
             flash("نیم‌سال با موفقیت ایجاد شد.", "success")
             return redirect(url_for("admin.semester_list"))
         except AcademicCalendarError as e:
-            flash(str(e), "error")
+            flash_safe_error(e)
 
     return render_template(
         "admin/semester_form.html", years=years, preselect_year_id=preselect_year_id
@@ -493,7 +494,7 @@ def semester_edit(semester_id):
             flash("نیم‌سال با موفقیت به‌روزرسانی شد.", "success")
             return redirect(url_for("admin.semester_list"))
         except AcademicCalendarError as e:
-            flash(str(e), "error")
+            flash_safe_error(e)
 
     return render_template("admin/semester_form.html", semester=semester, years=years)
 
@@ -543,7 +544,7 @@ def calendar_create():
             start_date = parse_jalali_date(start_date_str)
             end_date = parse_jalali_date(end_date_str) if end_date_str else None
         except ValueError as e:
-            flash(str(e), "error")
+            flash_safe_error(e)
             return render_template("admin/calendar_form.html")
 
         try:
@@ -553,7 +554,7 @@ def calendar_create():
             flash("رویداد تقویم با موفقیت ایجاد شد.", "success")
             return redirect(url_for("admin.calendar_list"))
         except AcademicCalendarError as e:
-            flash(str(e), "error")
+            flash_safe_error(e)
 
     return render_template("admin/calendar_form.html")
 
@@ -592,7 +593,7 @@ def calendar_edit(event_id):
             flash("رویداد تقویم با موفقیت به‌روزرسانی شد.", "success")
             return redirect(url_for("admin.calendar_list"))
         except AcademicCalendarError as e:
-            flash(str(e), "error")
+            flash_safe_error(e)
 
     return render_template("admin/calendar_form.html", event=event)
 
@@ -632,7 +633,7 @@ def class_regenerate_sessions(class_id):
         )
     except Exception as e:
         db.session.rollback()
-        flash(f"خطا در بازسازی جلسات: {e}", "error")
+        flash_safe_error(e, "خطا در بازسازی جلسات.")
 
     return redirect(url_for("academy.class_detail", class_id=class_id))
 
@@ -717,7 +718,7 @@ def contract_create():
             flash("قرارداد با موفقیت ایجاد شد.", "success")
             return redirect(url_for("admin.contract_list"))
         except PayrollError as e:
-            flash(str(e), "error")
+            flash_safe_error(e)
 
     return render_template(
         "admin/contract_form.html",
@@ -792,7 +793,7 @@ def contract_edit(contract_id):
             flash("قرارداد با موفقیت به‌روزرسانی شد.", "success")
             return redirect(url_for("admin.contract_list"))
         except PayrollError as e:
-            flash(str(e), "error")
+            flash_safe_error(e)
 
     return render_template(
         "admin/contract_form.html",
@@ -915,7 +916,7 @@ def payroll_finalize():
         period_end = parse_jalali_date(period_end_str)
         deductions_decimal = Decimal(deductions) if deductions else Decimal("0")
     except (ValueError, Exception) as e:
-        flash(f"خطا در تاریخ: {e}", "error")
+        flash_safe_error(e, "خطا در تاریخ.")
         return redirect(url_for("admin.payroll"))
 
     try:
@@ -927,7 +928,7 @@ def payroll_finalize():
         )
         flash("حقوق با موفقیت محاسبه و ثبت شد.", "success")
     except PayrollError as e:
-        flash(str(e), "error")
+        flash_safe_error(e)
 
     # Redirect back with same month params
     import jdatetime
@@ -956,7 +957,7 @@ def payroll_pay(payment_id):
         mark_payment_paid(payment)
         flash("پرداخت با موفقیت ثبت شد.", "success")
     except PayrollError as e:
-        flash(str(e), "error")
+        flash_safe_error(e)
 
     import jdatetime
 

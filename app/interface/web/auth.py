@@ -10,6 +10,7 @@ from app.application.auth.services import (
     logout_current_user,
     record_login_attempt,
 )
+from app.utils.flash import flash_safe_error
 
 auth_bp = Blueprint("auth", __name__, url_prefix="/auth")
 
@@ -80,10 +81,10 @@ def login():
     return render_template("auth/login.html")
 
 
-@auth_bp.route("/logout")
+@auth_bp.route("/logout", methods=["POST"])
 @login_required
 def logout():
-    """Log out the current user."""
+    """Log out the current user (POST only: GET would allow CSRF logout)."""
     logout_current_user()
     flash("شما با موفقیت خارج شدید.", "success")
     return redirect(url_for("auth.login"))
@@ -133,7 +134,7 @@ def change_password_view():
             flash("رمز عبور فعلی نادرست است.", "error")
             return render_template("auth/change_password.html"), 400
         except ValueError as e:
-            flash(str(e), "error")
+            flash_safe_error(e)
             return render_template("auth/change_password.html"), 400
 
     return render_template("auth/change_password.html")
@@ -213,7 +214,7 @@ def profile():
                             birth_date_str
                         )
                     except ValueError as e:
-                        flash(str(e), "error")
+                        flash_safe_error(e)
                         return render_template(
                             "auth/profile.html",
                             profile=profile_obj,
@@ -279,6 +280,7 @@ def _handle_profile_photo(profile_obj, profile_type, photo_file):
     ).first()
 
     storage = get_storage_backend()
+    from app.application.file_management.file_service import sanitize_filename
     from app.infrastructure.storage import generate_storage_key
 
     storage_key = generate_storage_key("profile_photos", ext)
@@ -291,7 +293,7 @@ def _handle_profile_photo(profile_obj, profile_type, photo_file):
     )
 
     new_photo = StoredFileModel(
-        original_filename=photo_file.filename,
+        original_filename=sanitize_filename(photo_file.filename),
         stored_filename=storage_key.split("/")[-1],
         extension=ext,
         mime_type=mime_type,

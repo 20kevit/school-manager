@@ -30,6 +30,26 @@ from app.application.file_management.file_service import (
 )
 from app.infrastructure.database.models import StoredFileModel
 from app.interface.web.decorators import role_required
+from app.utils.flash import flash_safe_error
+
+
+def _safe_back_redirect(fallback_endpoint: str = "auth.dashboard"):
+    """Redirect back to the originating page without an open-redirect hole.
+
+    Only same-origin relative paths are honored; anything else (absolute
+    URLs, protocol-relative URLs, other hosts) falls back internally.
+    """
+    from urllib.parse import urlparse
+
+    referrer = request.referrer or ""
+    if referrer:
+        try:
+            parsed = urlparse(referrer)
+            if not parsed.scheme and not parsed.netloc and parsed.path.startswith("/"):
+                return redirect(parsed.path)
+        except Exception:
+            pass
+    return redirect(url_for(fallback_endpoint))
 
 file_bp = Blueprint("file_management", __name__, url_prefix="/files")
 
@@ -46,6 +66,10 @@ def admin_file_list():
     """List all files with filters."""
     page = request.args.get("page", 1, type=int)
     per_page = request.args.get("per_page", 20, type=int)
+    # Clamp pagination: unbounded LIMIT is a DB/memory DoS vector, and
+    # non-positive values have surprising LIMIT semantics.
+    page = max(page or 1, 1)
+    per_page = min(max(per_page or 20, 1), 100)
     category = request.args.get("category", type=str)
     status = request.args.get("status", "ACTIVE", type=str)
     uploader = request.args.get("uploader", type=int)
@@ -131,7 +155,7 @@ def admin_delete_file(file_id):
         delete_file(file_id)
         flash("File deleted.", "success")
     except FileError as e:
-        flash(str(e), "error")
+        flash_safe_error(e)
 
     return redirect(url_for("file_management.admin_file_list"))
 
@@ -160,7 +184,7 @@ def upload():
     uploaded_files = request.files.getlist("files")
     if not uploaded_files:
         flash("No files selected.", "error")
-        return redirect(request.referrer or url_for("auth.dashboard"))
+        return _safe_back_redirect()
 
     category = request.form.get("category", "OTHER")
     entity_type = request.form.get("entity_type", "")
@@ -180,7 +204,7 @@ def upload():
                 errors.append(f"{f.filename}: {e}")
         for err in errors:
             flash(err, "error")
-        return redirect(request.referrer or url_for("auth.dashboard"))
+        return _safe_back_redirect()
 
     for f in uploaded_files:
         if not f.filename:
@@ -212,7 +236,7 @@ def upload():
             flash(err, "error")
 
     # Redirect back to originating page
-    return redirect(request.referrer or url_for("auth.dashboard"))
+    return _safe_back_redirect()
 
 
 # ---------------------------------------------------------------------------
