@@ -7,6 +7,15 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 ## Unreleased
 
 ### Security
+- Payment failure callbacks isolated behind provider verification (unsigned
+  `Status=NOK` can no longer fail pending payments); transport errors leave
+  payments PENDING for retry; whole-Toman initiation guard
+- Logout is POST-only (CSRF-safe); app-level X-Frame-Options/nosniff/
+  Referrer-Policy headers
+- 78 exception-leaking flashes converted to server-side logging + generic
+  user message; upload redirects restricted to same-origin; per_page clamped
+- Upload byte path validates size/MIME; profile photos sanitized; activity
+  downloads force attachment
 - Transcript route scoped to the teacher's own classes (IDOR fix)
 - Bootstrap national-ID passwords force rotation at first login; predictable
   new passwords rejected; admin resets force rotation
@@ -17,6 +26,15 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 - SMS provider reports unimplemented delivery as failure (no fake success)
 
 ### Financial integrity
+- Refund cap accounts linked reversals; corrections reject rewritten money
+  rows and re-point live children at the corrected copy; cancellation
+  reversals use the audited single-use path; audit amounts serialize exactly
+- One canonical net-collected definition shared by finance and reporting
+  surfaces; dashboard billed-vs-collected and overview gross figures renamed
+  honestly; class summary adds gross debtor exposure; operational debtor
+  count uses signed CASE (was raw SUM, missed debtors)
+- Admin amounts parsed as Decimal (was binary float); seeds store exact
+  Decimals; currency filter uses Decimal formatting
 - Adjustments stored signed; reversal math negates signed entries
 - Linked refunds validated against the original payment and capped at the
   remaining refundable amount; transactions reversible only once
@@ -31,7 +49,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
   audit/file tables added); PG migration check added to CI
 
 ### Tests
-- Full suite green: 974 passed, 0 failed (was 903/1); ruff check/format clean
+- Full suite green: 993 passed, 5 PG-gated skipped, 0 failed; ruff clean
 - Session-regeneration tests made date-relative (were wall-clock fragile)
 - Python policy pinned to 3.12 across docs and CI; demo credentials marked local-only
 

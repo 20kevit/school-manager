@@ -1,8 +1,9 @@
 # MVP Acceptance Checklist
 
-Evidence-based status of the MVP workflows as of 2026-10-12 (code at `main`,
-full suite **974 passed / 0 failed**, ruff clean, migrations verified to head
-on fresh PostgreSQL). Items marked *manual* still need human/browser, external
+Evidence-based status of the MVP workflows as of 2026-10-13 (code at `main`,
+full suite **993 passed / 5 skipped (PG-gated) / 0 failed**, ruff clean,
+migrations verified to head on fresh PostgreSQL, 5/5 threaded PG concurrency
+tests green). Items marked *manual* still need human/browser, external
 credentials, or production rollout verification.
 
 ## Automated (pytest, SQLite) — verified
@@ -35,7 +36,8 @@ credentials, or production rollout verification.
 | 15 | Mobile viewport usability | Requires browser testing; templates are responsive by design, unverified |
 | 16b | Production rollout of new migrations | Migrations verified on scratch PG only; owner applies via documented sequence |
 | 16c | Backup cron firing on schedule | Timer enabled 2026-10-12; unattended firing observed 2026-10-13 (dump verified) |
-| — | Concurrent-refund/payroll/callback races | Proven on PostgreSQL with threaded tests (see `tests/test_pg_concurrency.py`); load testing still pending |
+| — | Concurrent-refund/payroll/callback races | Proven on PostgreSQL with threaded tests (see `tests/test_pg_concurrency.py`); bounded load probe 400 req / 0 errors (p50 68ms) on disposable stack |
+| 15b | Real-browser verification | **Blocked**: Playwright installs but Chromium download stalls in this environment (~30% in 4 min); no browser tests added. Template-level RTL/status coverage via Flask client only. |
 
 ## Decided policies (binding unless explicitly revised)
 
