@@ -31,7 +31,7 @@ cp .env.example .env
 | Variable | Description | Default |
 |---|---|---|
 | `SECRET_KEY` | Flask secret key | `change-me` |
-| `DATABASE_URL` | PostgreSQL connection string | `postgresql://localhost:5432/school_manager_dev` |
+| `DATABASE_URL` | PostgreSQL connection string (explicit `postgresql+psycopg2://` scheme) | `postgresql+psycopg2://localhost:5432/school_manager_dev` |
 | `FLASK_ENV` | Environment name | `development` |
 | `FLASK_DEBUG` | Debug mode | `1` |
 

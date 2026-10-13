@@ -84,6 +84,15 @@ class ProductionConfig(Config):
     @staticmethod
     def init_app(app):
         db_url = app.config.get("SQLALCHEMY_DATABASE_URI") or ""
+        if db_url.startswith("postgresql://"):
+            # Bare scheme requires the psycopg (v3) driver, which is not
+            # installed. Fail fast with an actionable message instead of a
+            # cryptic ModuleNotFoundError deep in engine creation.
+            raise RuntimeError(
+                "DATABASE_URL uses the bare postgresql:// scheme, which needs "
+                "the 'psycopg' driver. Use postgresql+psycopg2:// instead "
+                "(psycopg2-binary is the supported driver)."
+            )
         if db_url.startswith("mysql"):
             app.config.setdefault("SQLALCHEMY_ENGINE_OPTIONS", {})
             app.config["SQLALCHEMY_ENGINE_OPTIONS"].update(

@@ -425,6 +425,36 @@ class TestProductionSecretValidation:
         app = create_app("production")
         assert app.config["SECRET_KEY"] == "x" * 64
 
+    def test_production_rejects_bare_postgres_scheme(self, monkeypatch):
+        from app import create_app
+        from config import ProductionConfig
+
+        monkeypatch.setattr(ProductionConfig, "SECRET_KEY", "x" * 64)
+        monkeypatch.setattr(
+            ProductionConfig,
+            "SQLALCHEMY_DATABASE_URI",
+            "postgresql://u:p@localhost/db",
+        )
+        monkeypatch.delenv("ENABLE_SCHEDULER", raising=False)
+        with pytest.raises(RuntimeError, match="postgresql\\+psycopg2"):
+            create_app("production")
+
+    def test_production_accepts_explicit_psycopg2_scheme(self, monkeypatch):
+        from app import create_app
+        from config import ProductionConfig
+
+        monkeypatch.setattr(ProductionConfig, "SECRET_KEY", "x" * 64)
+        monkeypatch.setattr(
+            ProductionConfig,
+            "SQLALCHEMY_DATABASE_URI",
+            "postgresql+psycopg2://u:p@localhost/db",
+        )
+        monkeypatch.delenv("ENABLE_SCHEDULER", raising=False)
+        app = create_app("production")
+        assert app.config["SQLALCHEMY_DATABASE_URI"].startswith(
+            "postgresql+psycopg2://"
+        )
+
     def test_development_keeps_convenient_fallback(self, monkeypatch):
         from app import create_app
         from config import DevelopmentConfig

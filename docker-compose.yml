@@ -25,7 +25,7 @@ services:
     environment:
       FLASK_APP: wsgi.py
       FLASK_ENV: production
-      DATABASE_URL: postgresql://${POSTGRES_USER:-school_user}:${POSTGRES_PASSWORD:-school_pass}@db:5432/${POSTGRES_DB:-school_manager}
+      DATABASE_URL: postgresql+psycopg2://${POSTGRES_USER:-school_user}:${POSTGRES_PASSWORD:-school_pass}@db:5432/${POSTGRES_DB:-school_manager}
       SECRET_KEY: ${SECRET_KEY:-change-me-in-production}
       SEED_MODE: ${SEED_MODE:-}
     volumes:
