@@ -65,6 +65,10 @@ def initiate_online_payment(
     """
     if amount <= 0:
         raise PaymentError("مبلغ پرداخت باید مثبت باشد.")
+    if Decimal(str(amount)) != int(Decimal(str(amount))):
+        # The provider settles whole Toman only (int cast); fractional
+        # amounts would silently mismatch the ledger. Reject upfront.
+        raise PaymentError("مبلغ پرداخت باید عدد صحیح (تومان) باشد.")
 
     student = UserModel.query.get(student_user_id)
     if student is None:
@@ -117,7 +121,18 @@ def process_payment_callback(
     """Process the ZarinPal payment callback.
 
     Called when ZarinPal redirects the user back after payment.
-    Verifies the payment with ZarinPal and updates the transaction status.
+
+    Security model: the callback arrives as an unsigned browser redirect,
+    so ``callback_status`` is untrusted input. It can only ever select
+    *which* authoritative check runs — it can never by itself mutate
+    financial state:
+
+    * ``Status != OK`` on a PENDING payment triggers a server-to-server
+      verification with the provider. Only a definitive provider failure
+      marks the payment FAILED; transport errors leave it PENDING so a
+      retry can still complete it. A forged or stale failure flag for an
+      unknown authority changes nothing.
+    * Success always requires provider verification (codes 100/101).
 
     The lookup authority (reference_number) is immutable: verification
     results are stored in gateway_ref_id and the authority is preserved,
@@ -131,12 +146,20 @@ def process_payment_callback(
     Returns:
         dict with 'success', 'transaction_id', 'ref_id', 'message'.
     """
+    from app.application.finance._locks import with_for_update_if_pg
+
     # Find the transaction by authority code (any status: PENDING for first
     # delivery, ACTIVE/FAILED for duplicate or retried deliveries).
-    transaction = FinancialTransactionModel.query.filter_by(
-        reference_number=authority,
-        payment_method="ONLINE",
-    ).first()
+    # Locked on PostgreSQL so concurrent callbacks serialize on the row.
+    transaction = (
+        with_for_update_if_pg(
+            FinancialTransactionModel.query.filter_by(
+                reference_number=authority,
+                payment_method="ONLINE",
+            )
+        )
+        .first()
+    )
 
     if transaction is None:
         logger.warning("Payment callback for unknown authority: %s", authority)
@@ -168,30 +191,54 @@ def process_payment_callback(
             "message": "پرداخت قبلاً ثبت شده است.",
         }
 
-    # If ZarinPal reported user cancellation
-    if callback_status != "OK":
-        transaction.status = "FAILED"
-        db.session.commit()
+    # Terminal failure already recorded: a repeated failure flag changes
+    # nothing and costs no provider call. Recovery, if legitimate, arrives
+    # as a fresh Status=OK delivery which re-verifies below.
+    if transaction.status == "FAILED" and callback_status != "OK":
+        return {
+            "success": False,
+            "transaction_id": transaction.id,
+            "ref_id": transaction.gateway_ref_id or "",
+            "message": "پرداخت ناموفق بوده است.",
+        }
+
+    # From here the transaction is PENDING. When the provider reports
+    # cancellation we still verify server-to-server: the flag alone never
+    # fails a payment, so forged or stale failure callbacks cannot destroy
+    # a legitimate pending payment.
+    verify_only = callback_status != "OK"
+    if verify_only:
         logger.info(
-            "Payment cancelled by user: transaction_id=%d, authority=%s",
+            "Payment callback reports cancellation, verifying with provider: "
+            "transaction_id=%d, authority=%s",
             transaction.id,
             authority,
+        )
+
+    # Verify with ZarinPal — the provider is the ground truth in all cases.
+    gateway = _get_gateway()
+    try:
+        result = gateway.verify_payment(
+            authority=authority,
+            amount=transaction.amount,
+        )
+    except Exception as exc:
+        # Transport failure: leave PENDING so a retry can complete.
+        # Never mark FAILED on an unconfirmed outcome.
+        db.session.rollback()
+        logger.warning(
+            "Payment verification transport error, leaving PENDING: "
+            "transaction_id=%d, authority=%s, error=%s",
+            transaction.id,
+            authority,
+            exc,
         )
         return {
             "success": False,
             "transaction_id": transaction.id,
             "ref_id": "",
-            "message": "پرداخت لغو شد.",
+            "message": "تأیید پرداخت ممکن نشد؛ لطفاً دوباره تلاش کنید.",
         }
-
-    # Verify with ZarinPal (also for previously FAILED rows: a transient
-    # failure must not permanently block a completed payment, and the
-    # provider remains the ground truth).
-    gateway = _get_gateway()
-    result = gateway.verify_payment(
-        authority=authority,
-        amount=transaction.amount,
-    )
 
     if result.success:
         transaction.status = "ACTIVE"
@@ -213,6 +260,23 @@ def process_payment_callback(
             "message": "پرداخت با موفقیت انجام شد.",
         }
     else:
+        if _is_transient_verify_error(result):
+            # Ambiguous outcome: keep PENDING for a later retry instead of
+            # recording a failure the provider never confirmed.
+            db.session.rollback()
+            logger.warning(
+                "Payment verification inconclusive, leaving PENDING: "
+                "transaction_id=%d, authority=%s, error=%s",
+                transaction.id,
+                authority,
+                result.error,
+            )
+            return {
+                "success": False,
+                "transaction_id": transaction.id,
+                "ref_id": "",
+                "message": "تأیید پرداخت ممکن نشد؛ لطفاً دوباره تلاش کنید.",
+            }
         transaction.status = "FAILED"
         db.session.commit()
         logger.warning(
@@ -227,6 +291,17 @@ def process_payment_callback(
             "ref_id": "",
             "message": f"پرداخت تأیید نشد: {result.error}",
         }
+
+
+def _is_transient_verify_error(result) -> bool:
+    """True when a failed verification says nothing definitive.
+
+    Transport-level failures (connection errors, invalid responses) carry
+    negative error codes in the ZarinPal adapter. Definitive provider
+    rejections (unknown authority, amount mismatch, already-consumed, …)
+    must still fail the payment.
+    """
+    return (result.error_code or 0) in (-1, -2)
 
 
 def _notify_payment_success(transaction: FinancialTransactionModel) -> None:

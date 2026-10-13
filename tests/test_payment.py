@@ -426,6 +426,15 @@ class TestPaymentService:
         db.session.add(tx)
         db.session.commit()
 
+        # Provider confirms the cancellation definitively.
+        mock_gateway = MagicMock()
+        mock_gateway.verify_payment.return_value = PaymentVerificationResult(
+            success=False,
+            error="Payment cancelled.",
+            error_code=-22,
+        )
+        mock_get_gateway.return_value = mock_gateway
+
         result = payment_service.process_payment_callback(
             authority="S00000000000000000000000000009999999",
             amount=Decimal("100000"),
@@ -433,11 +442,223 @@ class TestPaymentService:
         )
 
         assert result["success"] is False
-        assert "لغو" in result["message"]
 
-        # Verify transaction is now FAILED
+        # Verify transaction is now FAILED (provider-confirmed)
         tx_updated = FinancialTransactionModel.query.get(tx.id)
         assert tx_updated.status == "FAILED"
+
+    @patch("app.application.finance.payment_service._get_gateway")
+    def test_forged_nok_callback_cannot_fail_pending_payment(
+        self, mock_get_gateway, db, student
+    ):
+        """A forged Status=NOK for a payment the user never cancelled must not
+        fail it: the failure flag alone never mutates state. Here the provider
+        reports the payment actually succeeded, so it becomes ACTIVE."""
+        tx = FinancialTransactionModel(
+            student_user_id=student.id,
+            amount=Decimal("100000"),
+            transaction_type="PAYMENT",
+            category="OTHER",
+            description="Test",
+            reference_number="S0000000000000000000000000000FRG001",
+            payment_method="ONLINE",
+            status="PENDING",
+        )
+        db.session.add(tx)
+        db.session.commit()
+
+        mock_gateway = MagicMock()
+        mock_gateway.verify_payment.return_value = PaymentVerificationResult(
+            success=True,
+            ref_id="REFFRG001",
+        )
+        mock_get_gateway.return_value = mock_gateway
+
+        result = payment_service.process_payment_callback(
+            authority="S0000000000000000000000000000FRG001",
+            amount=Decimal("100000"),
+            callback_status="NOK",
+        )
+
+        assert result["success"] is True
+        tx_updated = FinancialTransactionModel.query.get(tx.id)
+        assert tx_updated.status == "ACTIVE"
+        assert tx_updated.gateway_ref_id == "REFFRG001"
+
+    @patch("app.application.finance.payment_service._get_gateway")
+    def test_stale_nok_callback_leaves_pending_on_transport_error(
+        self, mock_get_gateway, db, student
+    ):
+        """A stale NOK arriving while verification is unreachable must leave
+        the payment PENDING (recoverable), never mark it FAILED."""
+        tx = FinancialTransactionModel(
+            student_user_id=student.id,
+            amount=Decimal("100000"),
+            transaction_type="PAYMENT",
+            category="OTHER",
+            description="Test",
+            reference_number="S0000000000000000000000000000STL001",
+            payment_method="ONLINE",
+            status="PENDING",
+        )
+        db.session.add(tx)
+        db.session.commit()
+
+        mock_gateway = MagicMock()
+        mock_gateway.verify_payment.return_value = PaymentVerificationResult(
+            success=False,
+            error="Connection error: timeout",
+            error_code=-1,
+        )
+        mock_get_gateway.return_value = mock_gateway
+
+        result = payment_service.process_payment_callback(
+            authority="S0000000000000000000000000000STL001",
+            amount=Decimal("100000"),
+            callback_status="NOK",
+        )
+
+        assert result["success"] is False
+        tx_updated = FinancialTransactionModel.query.get(tx.id)
+        assert tx_updated.status == "PENDING"
+
+    @patch("app.application.finance.payment_service._get_gateway")
+    def test_nok_callback_for_other_payment_untouched(
+        self, mock_get_gateway, db, student
+    ):
+        """A failure callback for payment A must not affect payment B."""
+        for ref in (
+            "S0000000000000000000000000000PAYAAA",
+            "S0000000000000000000000000000PAYBBB",
+        ):
+            db.session.add(
+                FinancialTransactionModel(
+                    student_user_id=student.id,
+                    amount=Decimal("100000"),
+                    transaction_type="PAYMENT",
+                    category="OTHER",
+                    description="Test",
+                    reference_number=ref,
+                    payment_method="ONLINE",
+                    status="PENDING",
+                )
+            )
+        db.session.commit()
+
+        mock_gateway = MagicMock()
+        mock_gateway.verify_payment.return_value = PaymentVerificationResult(
+            success=False,
+            error="Payment cancelled.",
+            error_code=-22,
+        )
+        mock_get_gateway.return_value = mock_gateway
+
+        result = payment_service.process_payment_callback(
+            authority="S0000000000000000000000000000PAYAAA",
+            amount=Decimal("100000"),
+            callback_status="NOK",
+        )
+        assert result["success"] is False
+
+        aaa = FinancialTransactionModel.query.filter_by(
+            reference_number="S0000000000000000000000000000PAYAAA"
+        ).first()
+        bbb = FinancialTransactionModel.query.filter_by(
+            reference_number="S0000000000000000000000000000PAYBBB"
+        ).first()
+        assert aaa.status == "FAILED"
+        assert bbb.status == "PENDING"
+
+    @patch("app.application.finance.payment_service._get_gateway")
+    def test_verify_exception_leaves_pending_then_recovers(
+        self, mock_get_gateway, db, student
+    ):
+        """A gateway transport exception must not fail the payment; a later
+        retry completes it. Covers rollback-and-retry after partial failure."""
+        tx = FinancialTransactionModel(
+            student_user_id=student.id,
+            amount=Decimal("100000"),
+            transaction_type="PAYMENT",
+            category="OTHER",
+            description="Test",
+            reference_number="S0000000000000000000000000000EXC001",
+            payment_method="ONLINE",
+            status="PENDING",
+        )
+        db.session.add(tx)
+        db.session.commit()
+
+        mock_gateway = MagicMock()
+        mock_gateway.verify_payment.side_effect = ConnectionError("dns down")
+        mock_get_gateway.return_value = mock_gateway
+
+        result = payment_service.process_payment_callback(
+            authority="S0000000000000000000000000000EXC001",
+            amount=Decimal("100000"),
+            callback_status="OK",
+        )
+        assert result["success"] is False
+        assert FinancialTransactionModel.query.get(tx.id).status == "PENDING"
+
+        mock_gateway.verify_payment.side_effect = None
+        mock_gateway.verify_payment.return_value = PaymentVerificationResult(
+            success=True,
+            ref_id="REFEXC001",
+        )
+        retry = payment_service.process_payment_callback(
+            authority="S0000000000000000000000000000EXC001",
+            amount=Decimal("100000"),
+            callback_status="OK",
+        )
+        assert retry["success"] is True
+        tx_updated = FinancialTransactionModel.query.get(tx.id)
+        assert tx_updated.status == "ACTIVE"
+        assert tx_updated.gateway_ref_id == "REFEXC001"
+
+    @patch("app.application.finance.payment_service._get_gateway")
+    def test_failed_payment_ignores_repeated_nok_without_provider_call(
+        self, mock_get_gateway, db, student
+    ):
+        """A stale NOK for an already-FAILED payment changes nothing and
+        costs no provider round-trip."""
+        tx = FinancialTransactionModel(
+            student_user_id=student.id,
+            amount=Decimal("100000"),
+            transaction_type="PAYMENT",
+            category="OTHER",
+            description="Test",
+            reference_number="S0000000000000000000000000000FDNOK1",
+            payment_method="ONLINE",
+            status="FAILED",
+        )
+        db.session.add(tx)
+        db.session.commit()
+
+        mock_gateway = MagicMock()
+        mock_get_gateway.return_value = mock_gateway
+
+        result = payment_service.process_payment_callback(
+            authority="S0000000000000000000000000000FDNOK1",
+            amount=Decimal("100000"),
+            callback_status="NOK",
+        )
+        assert result["success"] is False
+        mock_gateway.verify_payment.assert_not_called()
+        assert FinancialTransactionModel.query.get(tx.id).status == "FAILED"
+
+    @patch("app.application.finance.payment_service._get_gateway")
+    def test_fractional_toman_initiation_rejected(self, mock_get_gateway, db, student):
+        """Sub-Toman amounts would be silently truncated by the provider."""
+        from app.application.finance.payment_service import initiate_online_payment
+
+        with pytest.raises(Exception, match="صحیح"):
+            initiate_online_payment(
+                student_user_id=student.id,
+                amount=Decimal("100000.5"),
+                description="fractional",
+                callback_url="https://example.invalid/cb",
+            )
+        mock_get_gateway.assert_not_called()
 
     @patch("app.application.finance.payment_service._get_gateway")
     def test_process_callback_unknown_authority(self, mock_get_gateway, db):
