@@ -11,13 +11,18 @@ from __future__ import annotations
 from sqlalchemy import text as sa_text
 
 
+def _bind_dialect_name(session) -> str | None:
+    """Resolve the session bind dialect (None when unavailable)."""
+    try:
+        bind = session.get_bind()
+        return bind.dialect.name if bind is not None else None
+    except Exception:
+        return None
+
+
 def is_postgresql(session) -> bool:
     """True only when the session is bound to a PostgreSQL database."""
-    try:
-        bind = session.bind
-        return bind is not None and bind.dialect.name == "postgresql"
-    except Exception:
-        return False
+    return _bind_dialect_name(session) == "postgresql"
 
 
 def pg_advisory_xact_lock(session, key: str) -> None:
@@ -38,8 +43,7 @@ def pg_advisory_xact_lock(session, key: str) -> None:
 def with_for_update_if_pg(query):
     """Add SELECT ... FOR UPDATE on PostgreSQL; return query unchanged elsewhere."""
     try:
-        bind = query.session.bind
-        if bind is not None and bind.dialect.name == "postgresql":
+        if _bind_dialect_name(query.session) == "postgresql":
             return query.with_for_update()
     except Exception:
         pass
