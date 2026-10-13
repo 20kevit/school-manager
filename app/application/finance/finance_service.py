@@ -195,9 +195,7 @@ def record_refund(
             "cannot introduce one."
         )
     elif class_id != original.class_id:
-        raise FinanceError(
-            "Refund class does not match the original payment's class."
-        )
+        raise FinanceError("Refund class does not match the original payment's class.")
 
     transaction = FinancialTransactionModel(
         student_user_id=student_user_id,
@@ -207,7 +205,9 @@ def record_refund(
         description=description or "Refund issued",
         reference_number=reference_number,
         related_transaction_id=related_transaction_id,
-        enrollment_id=enrollment_id if enrollment_id is not None else original.enrollment_id,
+        enrollment_id=enrollment_id
+        if enrollment_id is not None
+        else original.enrollment_id,
         class_id=class_id,
         status="ACTIVE",
         created_by=created_by,

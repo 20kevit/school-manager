@@ -35,9 +35,7 @@ def pg_advisory_xact_lock(session, key: str) -> None:
     """
     if not is_postgresql(session):
         return
-    session.execute(
-        sa_text("SELECT pg_advisory_xact_lock(hashtext(:k))"), {"k": key}
-    )
+    session.execute(sa_text("SELECT pg_advisory_xact_lock(hashtext(:k))"), {"k": key})
 
 
 def with_for_update_if_pg(query):

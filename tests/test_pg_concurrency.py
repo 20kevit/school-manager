@@ -22,7 +22,7 @@ from __future__ import annotations
 
 import os
 import threading
-from datetime import date, datetime, time, timedelta
+from datetime import date, time
 from decimal import Decimal
 from unittest.mock import MagicMock, patch
 
@@ -80,7 +80,11 @@ def _run_pair(fn):
 
 
 def _make_student(db, login="conc_student", national_id="1111111111"):
-    from app.infrastructure.database.models import RoleModel, StudentProfileModel, UserModel
+    from app.infrastructure.database.models import (
+        RoleModel,
+        StudentProfileModel,
+        UserModel,
+    )
 
     user = UserModel(login=login)
     user.set_password("pass123")
@@ -111,11 +115,11 @@ def _make_teacher_setup(db, login="conc_teacher"):
     from app.infrastructure.database.models import (
         AcademyClassModel,
         CourseModel,
+        RoleModel,
         SessionModel,
         TeacherContractModel,
         TeacherProfileModel,
         UserModel,
-        RoleModel,
     )
 
     teacher = UserModel(login=login)
@@ -271,7 +275,7 @@ class TestConcurrentCallbacksPG:
         from app.infrastructure.payment.gateway import PaymentVerificationResult
 
         student = _make_student(pg_db)
-        tx_id = self._pending_tx(pg_db, student.id, "S0000000000000000000000000000CCOK01")
+        self._pending_tx(pg_db, student.id, "S0000000000000000000000000000CCOK01")
         student_id = student.id
 
         gateway = MagicMock()

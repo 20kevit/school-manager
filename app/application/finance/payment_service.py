@@ -151,15 +151,12 @@ def process_payment_callback(
     # Find the transaction by authority code (any status: PENDING for first
     # delivery, ACTIVE/FAILED for duplicate or retried deliveries).
     # Locked on PostgreSQL so concurrent callbacks serialize on the row.
-    transaction = (
-        with_for_update_if_pg(
-            FinancialTransactionModel.query.filter_by(
-                reference_number=authority,
-                payment_method="ONLINE",
-            )
+    transaction = with_for_update_if_pg(
+        FinancialTransactionModel.query.filter_by(
+            reference_number=authority,
+            payment_method="ONLINE",
         )
-        .first()
-    )
+    ).first()
 
     if transaction is None:
         logger.warning("Payment callback for unknown authority: %s", authority)
