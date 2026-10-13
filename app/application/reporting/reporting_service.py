@@ -321,9 +321,7 @@ class ReportingService:
         # ADJUSTMENT/REVERSAL rows, which the per-type buckets above omit.
         from app.application.finance import finance_service as _finance_service
 
-        finance_stats["balance"] = _finance_service.get_student_balance(
-            student_user_id
-        )
+        finance_stats["balance"] = _finance_service.get_student_balance(student_user_id)
 
         return {
             "student": student,
@@ -829,9 +827,7 @@ class ReportingService:
         # not folded into cash collected. Matches the finance-service
         # revenue report definition.
         stats["net_revenue"] = (
-            stats["total_payments"]
-            - stats["total_refunds"]
-            + _signed_reversals()
+            stats["total_payments"] - stats["total_refunds"] + _signed_reversals()
         )
 
         # Debt by student (using signed amounts: PAYMENT/DISCOUNT positive, CHARGE/REFUND negative)

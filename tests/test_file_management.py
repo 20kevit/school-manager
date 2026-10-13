@@ -1218,3 +1218,45 @@ class TestUploadAuthorization:
         )
         assert resp.status_code == 302
         assert StoredFileModel.query.count() == before + 1
+
+    def test_upload_redirect_rejects_external_referrer(
+        self, client, app, db, student_user
+    ):
+        """An attacker-supplied Referer must not become a redirect target."""
+        self._login_session(client, student_user)
+        resp = client.post(
+            "/files/upload",
+            data={
+                "files": (io.BytesIO(b"x"), "x.pdf"),
+                "category": "OTHER",
+            },
+            content_type="multipart/form-data",
+            headers={"Referer": "https://evil.example/phish"},
+        )
+        assert resp.status_code == 302
+        location = resp.headers["Location"]
+        assert "evil.example" not in location
+        assert location.endswith("/auth/dashboard")
+
+    def test_upload_redirect_allows_same_origin_referrer(
+        self, client, app, db, student_user
+    ):
+        self._login_session(client, student_user)
+        resp = client.post(
+            "/files/upload",
+            data={
+                "files": (io.BytesIO(b"x"), "x.pdf"),
+                "category": "OTHER",
+            },
+            content_type="multipart/form-data",
+            headers={"Referer": "http://localhost/files/admin"},
+        )
+        assert resp.status_code == 302
+        assert resp.headers["Location"] == "/files/admin"
+
+    def test_admin_list_clamps_per_page(self, client, app, db, admin_user):
+        """Absurd per_page values must not error or reach the query raw."""
+        self._login_session(client, admin_user)
+        for raw in ("1000000", "-5", "0", "abc"):
+            resp = client.get(f"/files/admin?per_page={raw}")
+            assert resp.status_code == 200

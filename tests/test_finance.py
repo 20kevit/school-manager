@@ -1187,6 +1187,61 @@ class TestFinanceRoutes:
         response = client.get("/finance/admin/transaction/create")
         assert response.status_code == 200
 
+    def test_admin_create_goodwill_credit_via_form(
+        self, client, db, admin_user, student
+    ):
+        """GOODWILL type creates a reasoned ADJUSTMENT, never a refund."""
+        client.post(
+            "/auth/login",
+            data={"login": "fin_admin", "password": "pass123"},
+            follow_redirects=True,
+        )
+        response = client.post(
+            "/finance/admin/transaction/create",
+            data={
+                "student_user_id": str(student.id),
+                "amount": "75000",
+                "transaction_type": "GOODWILL",
+                "category": "OTHER",
+                "description": "Service recovery gesture",
+            },
+            follow_redirects=True,
+        )
+        assert response.status_code == 200
+        tx = FinancialTransactionModel.query.filter_by(
+            student_user_id=student.id,
+            transaction_type="ADJUSTMENT",
+        ).first()
+        assert tx is not None
+        assert tx.amount == Decimal("75000")
+        assert "recovery" in tx.description
+        # The redirect target (transaction list with rows) must render,
+        # including the status_badge helper (latent 500 when rows exist).
+        assert "badge" in response.get_data(as_text=True)
+
+    def test_admin_create_refund_without_link_rejected(
+        self, client, db, admin_user, student
+    ):
+        """Unlinked admin refunds are rejected with a clean error page."""
+        client.post(
+            "/auth/login",
+            data={"login": "fin_admin", "password": "pass123"},
+            follow_redirects=True,
+        )
+        before = FinancialTransactionModel.query.count()
+        response = client.post(
+            "/finance/admin/transaction/create",
+            data={
+                "student_user_id": str(student.id),
+                "amount": "1000",
+                "transaction_type": "REFUND",
+                "description": "no link",
+            },
+            follow_redirects=True,
+        )
+        assert response.status_code == 200
+        assert FinancialTransactionModel.query.count() == before
+
     def test_parent_overview_route(self, client, parent_user_with_child):
         client.post(
             "/auth/login",

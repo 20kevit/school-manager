@@ -186,7 +186,6 @@ class PayrollSummary:
     unattributed_revenue: Decimal = Decimal("0")
 
 
-
 def _get_net_collected_tuition(
     class_id: int, start_date: date, end_date: date
 ) -> Decimal:

@@ -325,7 +325,14 @@ def student_available_classes():
 @login_required
 @role_required("STUDENT")
 def student_class_detail(class_id):
-    """View class details and request enrollment."""
+    """View class details and request enrollment.
+
+    NOTE (audited): no enrollment-membership gate here by design — this
+    page exists so non-enrolled students can inspect a class and request
+    enrollment. It exposes only catalogue-level data (course, teacher
+    assignment, capacity), never student PII or grades; sibling routes
+    that expose personal data (activities, results) do require enrollment.
+    """
     academy_class = AcademyClassModel.query.get(class_id)
     if academy_class is None:
         flash("Class not found.", "error")

@@ -414,9 +414,7 @@ def correct_transaction(
         FinancialTransactionModel.related_transaction_id == original.id,
         FinancialTransactionModel.transaction_type.in_(["REFUND", "REVERSAL"]),
         FinancialTransactionModel.status == "ACTIVE",
-    ).update(
-        {"related_transaction_id": corrected.id}, synchronize_session=False
-    )
+    ).update({"related_transaction_id": corrected.id}, synchronize_session=False)
     db.session.commit()
 
     # Audit log
@@ -715,8 +713,7 @@ def on_enrollment_cancelled(
         return reverse_transaction(
             tuition_charge.id,
             description=(
-                "Tuition reversal for cancelled enrollment in class: "
-                f"{class_title}"
+                f"Tuition reversal for cancelled enrollment in class: {class_title}"
             ),
         )
     except FinanceError as exc:
@@ -1145,20 +1142,16 @@ def get_remaining_refundable(payment_id: int) -> Decimal:
         )
         .scalar()
     )
-    reversed_rows = (
-        FinancialTransactionModel.query.filter_by(
-            related_transaction_id=payment_id,
-            transaction_type="REVERSAL",
-            status="ACTIVE",
-        ).all()
-    )
+    reversed_rows = FinancialTransactionModel.query.filter_by(
+        related_transaction_id=payment_id,
+        transaction_type="REVERSAL",
+        status="ACTIVE",
+    ).all()
     reversed_magnitude = sum(
         (abs(Decimal(str(r.amount))) for r in reversed_rows), Decimal("0")
     )
     remaining = (
-        Decimal(str(original.amount))
-        - Decimal(str(refunded))
-        - reversed_magnitude
+        Decimal(str(original.amount)) - Decimal(str(refunded)) - reversed_magnitude
     )
     return remaining if remaining > 0 else Decimal("0")
 

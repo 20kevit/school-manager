@@ -36,7 +36,7 @@ from app.utils.flash import flash_safe_error
 def _safe_back_redirect(fallback_endpoint: str = "auth.dashboard"):
     """Redirect back to the originating page without an open-redirect hole.
 
-    Only same-origin relative paths are honored; anything else (absolute
+    Same-origin relative paths are honored; anything else (absolute
     URLs, protocol-relative URLs, other hosts) falls back internally.
     """
     from urllib.parse import urlparse
@@ -45,11 +45,16 @@ def _safe_back_redirect(fallback_endpoint: str = "auth.dashboard"):
     if referrer:
         try:
             parsed = urlparse(referrer)
+            # Same-origin absolute URLs: no scheme change, same netloc as host.
+            if parsed.scheme in ("http", "https") and parsed.netloc == request.host:
+                return redirect(parsed.path or "/")
+            # Relative paths (no scheme, no netloc).
             if not parsed.scheme and not parsed.netloc and parsed.path.startswith("/"):
                 return redirect(parsed.path)
         except Exception:
             pass
     return redirect(url_for(fallback_endpoint))
+
 
 file_bp = Blueprint("file_management", __name__, url_prefix="/files")
 

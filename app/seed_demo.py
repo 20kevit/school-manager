@@ -720,8 +720,7 @@ def seed_demo_data(db) -> dict:
         # Occasional discount (exact Decimal math, whole Toman)
         if random.random() < 0.15:
             discount = int(
-                Decimal(str(cls.tuition))
-                * Decimal(str(random.uniform(0.05, 0.2)))
+                Decimal(str(cls.tuition)) * Decimal(str(random.uniform(0.05, 0.2)))
             )
             db.session.add(
                 FinancialTransactionModel(
