@@ -19,6 +19,10 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 - Fixed mobile horizontal overflow globally via flex-item `min-width: 0` on
   `.main-content` (also fixed the class list page) and wrapped bar-chart
   labels/values
+- Verification fixes: today sessions without approved enrollments are
+  neutral (never flagged, excluded from completion rate); enrollment admin
+  list accepts all valid status filters so KPI cards link to exact
+  populations; students KPI links to the role-filtered user list
 
 ### Security
 - Payment failure callbacks isolated behind provider verification (unsigned

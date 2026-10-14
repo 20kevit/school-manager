@@ -71,6 +71,13 @@ which logs and returns `None`; the template renders an explicit error state.
 
 ## Known limitations / deferred
 
+- Server runs on UTC while the academy follows Asia/Tehran: "today" and
+  month boundaries use the server-local date project-wide (same convention
+  as finance/enrollment services). Metrics are exact except inside the
+  00:00–03:30 Tehran window around midnight/month-turn.
+- Class list has no status filter, so the active-classes card links to the
+  unfiltered (but correct-module) class list; enrollment list supports all
+  status filters and student/teacher cards link to role-filtered user lists.
 - Favicon 404 (`/favicon.ico` has never existed) — pre-existing, untouched.
 - No configurable widgets, no global search, no AI insights (per scope).
 - Attendance trend chart omitted: no trustworthy historical denominator is
