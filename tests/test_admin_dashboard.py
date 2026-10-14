@@ -351,6 +351,27 @@ class TestFinanceMetrics:
         data = portal_service.get_admin_dashboard()
         assert Decimal(str(data["finance_summary"]["month_payments"])) == Decimal("0")
 
+    def test_non_active_transactions_excluded_from_collections(self, db, admin):
+        from app.infrastructure.database.models import FinancialTransactionModel
+
+        student = make_user("fs4", "STUDENT")
+        # A PENDING online payment attempt must not count as collected cash.
+        _db.session.add(
+            FinancialTransactionModel(
+                student_user_id=student.id,
+                amount=Decimal("5000"),
+                transaction_type="PAYMENT",
+                category="OTHER",
+                payment_method="ONLINE",
+                status="PENDING",
+            )
+        )
+        _db.session.commit()
+
+        data = portal_service.get_admin_dashboard()
+        assert Decimal(str(data["finance_summary"]["month_payments"])) == Decimal("0")
+        assert Decimal(str(data["finance_month"]["current_net"])) == Decimal("0")
+
 
 class TestTodayOverview:
     def test_recorded_only_when_all_eligible_have_rows(self, db, admin):
@@ -388,6 +409,24 @@ class TestTodayOverview:
         assert data["today_overview"]["total"] == 0
         assert data["today_overview"]["completion_rate"] is None
 
+    def test_session_without_enrollments_is_neutral(self, db, admin):
+        course = make_course()
+        cls = make_class(course, start_date=date.today())
+        make_session(cls, date.today())
+
+        data = portal_service.get_admin_dashboard()
+        overview = data["today_overview"]
+        assert overview["total"] == 1
+        assert overview["recordable"] == 0
+        assert overview["sessions"][0]["needs_attention"] is False
+        assert overview["completion_rate"] is None
+        # Neutral sessions must not raise an attendance attention item.
+        assert not [
+            i
+            for i in data["attention_items"]
+            if i["endpoint"] == "attendance.admin_attendance_list"
+        ]
+
 
 # ---------------------------------------------------------------------------
 # C. Links and authorization
@@ -422,12 +461,16 @@ class TestDashboardAccess:
         login_as(client, "dash_admin")
         urls = [
             "/admin/users",
+            "/admin/users?role=STUDENT",
+            "/admin/users?role=TEACHER",
             "/admin/users/create",
             "/academy/courses",
             "/academy/courses/create",
             "/academy/classes",
             "/academy/classes/create",
             "/enrollment/admin/all",
+            "/enrollment/admin/all?status=APPROVED",
+            "/enrollment/admin/all?status=PENDING",
             "/enrollment/admin/pending",
             "/enrollment/admin/enroll",
             "/attendance/admin/all",
@@ -442,6 +485,25 @@ class TestDashboardAccess:
         for url in urls:
             response = client.get(url)
             assert response.status_code == 200, f"dashboard link broken: {url}"
+
+    def test_enrollment_list_status_filter_matches_kpi(self, client, db):
+        make_user("flt_admin", "ADMIN")
+        course = make_course()
+        cls = make_class(course)
+        student = make_user("flt_s", "STUDENT")
+        make_enrollment(student, cls, "APPROVED")
+        make_enrollment(make_user("flt_s2", "STUDENT"), cls, "PENDING")
+
+        login_as(client, "flt_admin")
+        approved = client.get("/enrollment/admin/all?status=APPROVED")
+        assert approved.status_code == 200
+        approved_body = approved.get_data(as_text=True)
+        assert "Student-flt_s" in approved_body
+        assert "Student-flt_s2" not in approved_body
+        pending = client.get("/enrollment/admin/all?status=PENDING")
+        assert pending.status_code == 200
+        pending_body = pending.get_data(as_text=True)
+        assert "Student-flt_s2" in pending_body
 
     def test_attention_links_resolve(self, client, db):
         make_user("att_admin", "ADMIN")

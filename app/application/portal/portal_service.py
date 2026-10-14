@@ -397,6 +397,8 @@ def _get_today_overview(today: date_type) -> dict[str, Any]:
 
     A session counts as recorded only when attendance rows exist for every
     approved enrollment — absence of records is never treated as presence.
+    Sessions with no approved enrollments are neutral: never flagged as
+    needing attention and excluded from the completion denominator.
     """
     sessions = (
         SessionModel.query.options(joinedload(SessionModel.academy_class))
@@ -435,6 +437,10 @@ def _get_today_overview(today: date_type) -> dict[str, Any]:
             or 0
         )
         is_recorded = eligible > 0 and recorded >= eligible
+        # Sessions with no approved enrollments cannot have attendance
+        # recorded; they are neutral (never flagged as needing attention and
+        # never counted in the completion denominator).
+        needs_attention = eligible > 0 and not is_recorded
         if is_recorded:
             recorded_count += 1
         teacher_name = "—"
@@ -459,17 +465,20 @@ def _get_today_overview(today: date_type) -> dict[str, Any]:
                 "eligible_count": eligible,
                 "recorded_count": recorded,
                 "is_recorded": is_recorded,
+                "needs_attention": needs_attention,
             }
         )
     total = len(items)
+    recordable = sum(1 for i in items if i["eligible_count"] > 0)
     return {
         "date": today,
         "sessions": items,
         "total": total,
+        "recordable": recordable,
         "recorded": recorded_count,
         # None when there is no denominator — the template shows an
         # explicit "no classes today" state instead of 0%.
-        "completion_rate": (recorded_count / total) if total else None,
+        "completion_rate": (recorded_count / recordable) if recordable else None,
     }
 
 
@@ -520,7 +529,7 @@ def _build_attention_items(
             }
         )
     if today_overview is not None:
-        unrecorded = sum(1 for s in today_overview["sessions"] if not s["is_recorded"])
+        unrecorded = sum(1 for s in today_overview["sessions"] if s["needs_attention"])
         if today_overview["total"] > 0 and unrecorded > 0:
             items.append(
                 {

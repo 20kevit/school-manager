@@ -55,7 +55,7 @@
             </div>
             <div class="stat-card-value">{{ data.active_students }}</div>
             <div class="stat-card-sub">{{ data.new_students }} نفر جدید در ۳۰ روز اخیر</div>
-            <div class="stat-card-footer"><a href="{{ url_for('enrollment.admin_enrollment_list') }}">مشاهده ثبت‌نام‌ها</a></div>
+            <div class="stat-card-footer"><a href="{{ url_for('admin.user_list', role='STUDENT') }}">مشاهده دانش‌آموزان</a></div>
         </div>
         <div class="stat-card">
             <div class="stat-card-header">
@@ -88,7 +88,7 @@
             </div>
             <div class="stat-card-value">{{ data.approved_enrollments }}</div>
             <div class="stat-card-sub">{{ data.approved_students }} دانش‌آموز یکتا &middot; {{ data.pending_enrollments }} درخواست در انتظار</div>
-            <div class="stat-card-footer"><a href="{{ url_for('enrollment.admin_pending_list') }}">بررسی درخواست‌ها</a></div>
+            <div class="stat-card-footer"><a href="{{ url_for('enrollment.admin_enrollment_list', status='APPROVED') }}">مشاهده ثبت‌نام‌های تأییدشده</a></div>
         </div>
     </div>
     <div class="dashboard-grid dashboard-grid-4">
@@ -138,8 +138,11 @@
             {% elif data.today_overview.total == 0 %}
             <div class="stat-card-value text-muted">—</div>
             <div class="stat-card-sub">امروز جلسه‌ای برنامه‌ریزی نشده است</div>
+            {% elif data.today_overview.recordable == 0 %}
+            <div class="stat-card-value text-muted">—</div>
+            <div class="stat-card-sub">جلسات امروز ثبت‌نام تأییدشده ندارند</div>
             {% else %}
-            <div class="stat-card-value">{{ data.today_overview.recorded }} از {{ data.today_overview.total }}</div>
+            <div class="stat-card-value">{{ data.today_overview.recorded }} از {{ data.today_overview.recordable }}</div>
             <div class="stat-card-sub">جلسه با حضور و غیاب کامل</div>
             {% endif %}
             <div class="stat-card-footer"><a href="{{ url_for('attendance.admin_attendance_list') }}">حضور و غیاب</a></div>
@@ -202,7 +205,9 @@
                         <td>{{ s.teacher_name }}</td>
                         <td>{{ status_badge(s.status) }}</td>
                         <td>
-                            {% if s.is_recorded %}
+                            {% if s.eligible_count == 0 %}
+                            {{ status_badge('OTHER', 'بدون ثبت‌نام تأییدشده') }}
+                            {% elif s.is_recorded %}
                             {{ status_badge('PRESENT', 'ثبت‌شده (' ~ s.recorded_count ~ ' از ' ~ s.eligible_count ~ ')') }}
                             {% else %}
                             {{ status_badge('PENDING', 'ثبت‌نشده (' ~ s.recorded_count ~ ' از ' ~ s.eligible_count ~ ')') }}

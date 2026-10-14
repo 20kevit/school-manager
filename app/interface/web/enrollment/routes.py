@@ -43,8 +43,14 @@ def admin_enrollment_list():
 
     if class_id:
         enrollments = list_enrollments_by_class(class_id)
-    elif status_filter == "PENDING":
-        enrollments = list_all_pending_enrollments()
+    elif status_filter in ("PENDING", "APPROVED", "REJECTED", "CANCELLED"):
+        from app.infrastructure.database.models import EnrollmentModel
+
+        enrollments = (
+            EnrollmentModel.query.filter_by(status=status_filter)
+            .order_by(EnrollmentModel.created_at.desc())
+            .all()
+        )
     else:
         from app.infrastructure.database.models import EnrollmentModel
 
