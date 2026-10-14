@@ -349,3 +349,14 @@
 - [x] pool_pre_ping for PostgreSQL connection reliability
 - [x] docs/DEPLOYMENT.md
 - [x] 905 tests passing, Ruff check/format clean
+
+## Demo — Isolated End-to-End Demo Environment
+
+- [x] Demo database/role, checkout, venv, env file, systemd service (port 8101)
+- [x] Nginx vhost + Let's Encrypt TLS for `demofca.20kevit.ir`
+- [x] Deterministic/idempotent/guarded synthetic-academy generator
+- [x] Scenario coverage across all modules, 12-month history
+- [x] Demo credentials (shared `12345678`, hashed) and credential guide
+- [x] Guard/reset/reconcile tests, full suite green, Ruff clean
+- [x] Real-browser validation at 1440/768/390/320 with screenshots
+- [x] Backup/recovery docs, production isolation verified

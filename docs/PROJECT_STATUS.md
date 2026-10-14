@@ -1,7 +1,9 @@
 # Project Status
 
-**Current Phase:** Admin Dashboard Redesign — Completed
-**Current Objective:** Production-quality administrator landing page with verified metrics.
+**Current Phase:** Demo Environment — Completed (branch `demo/full-environment`)
+**Current Objective:** Keep production stable; demo evolves independently.
+
+**Previous Phase:** Admin Dashboard Redesign — Completed
 
 **Previous Phase:** P27 — Deployment Readiness — Completed
 

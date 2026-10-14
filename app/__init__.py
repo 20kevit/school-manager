@@ -789,6 +789,74 @@ def _register_cli(app):
         print("  student1 / student123")
         print("  parent1 / parent123")
 
+    @app.cli.command("demo-seed")
+    def demo_seed_command():
+        """Seed the full synthetic demo academy (demo environment only).
+
+        Guarded by app.demo_seed_full.assert_demo_environment(): requires
+        DEMO_MODE=true, a DATABASE_URL identifying the demo database, and
+        a live connection to the demo database. Refuses anywhere else,
+        including production. Idempotent and deterministic.
+        """
+        from app.demo_seed_full import (
+            DEMO_PASSWORD,
+            NotDemoEnvironmentError,
+            seed_demo_full,
+        )
+        from app.extensions import db
+
+        try:
+            stats = seed_demo_full(db)
+        except NotDemoEnvironmentError as exc:
+            raise click.ClickException(str(exc)) from exc
+
+        print("\nDemo academy seed complete.")
+        for key, value in stats.items():
+            print(f"  {key}: {value}")
+        print("\nDemo credentials (demo only, password shared):")
+        print(f"  admin / {DEMO_PASSWORD}")
+        print(f"  staff1..staff3 / {DEMO_PASSWORD}")
+        print(f"  teacher1..teacher12 / {DEMO_PASSWORD}")
+        print(f"  student1..student100 / {DEMO_PASSWORD}")
+        print(f"  parent1..parent8 / {DEMO_PASSWORD}")
+
+    @app.cli.command("demo-reset")
+    @click.option(
+        "--yes",
+        is_flag=True,
+        default=False,
+        help="Explicit confirmation (required; prevents accidents).",
+    )
+    def demo_reset_command(yes):
+        """Reset the demo database to the baseline dataset (demo only).
+
+        Requires --yes plus the same demo-environment guards as demo-seed.
+        Truncates demo tables (never alembic_version) then re-seeds.
+        """
+        if not yes:
+            raise click.ClickException(
+                "Refusing to reset without explicit confirmation. "
+                "Re-run with --yes against the demo environment."
+            )
+        from app.demo_seed_full import (
+            NotDemoEnvironmentError,
+            reset_demo_data,
+            seed_demo_full,
+        )
+        from app.extensions import db
+
+        try:
+            cleared = reset_demo_data(db)
+            stats = seed_demo_full(db)
+        except NotDemoEnvironmentError as exc:
+            raise click.ClickException(str(exc)) from exc
+
+        print(
+            f"\nDemo reset complete (truncated {cleared['truncated_tables']} tables)."
+        )
+        for key, value in stats.items():
+            print(f"  {key}: {value}")
+
     @app.cli.command("create-admin")
     @click.option(
         "--login", default="admin", show_default=True, help="Admin login name."

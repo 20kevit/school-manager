@@ -7,6 +7,20 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 ## Unreleased
 
 ### Added
+- Isolated demo environment (`demofca.20kevit.ir`): separate checkout,
+  venv, systemd service (`school-manager-demo`, port 8101), PostgreSQL
+  database/role (`school_manager_demo`), env file, uploads, Nginx vhost
+  with Let's Encrypt TLS; see `docs/DEMO.md`
+- Deterministic, idempotent, guarded synthetic-academy generator
+  (`app/demo_seed_full.py`, `flask demo-seed` / `flask demo-reset --yes`):
+  125 users, 10 courses, 40 classes, 229 enrollments, 624 sessions, 1320
+  attendances, 40 assessments, ~252 finance transactions via real
+  services, payroll, activities, calendar, notifications; shared demo
+  password `12345678` (hashed, demo-only)
+- 12 demo tests (`tests/test_demo_seed.py`): guard refusals, determinism,
+  idempotency, relationship integrity, finance reconciliation, hashing
+
+### Added
 - Administrator dashboard redesign (production-quality): role-specific
   student/teacher counts, operational class statuses, distinct course counts,
   enrollment request vs approved vs unique-student metrics, OPEN/CLOSED
