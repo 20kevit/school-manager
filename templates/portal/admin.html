@@ -4,13 +4,14 @@
 
 {% block content %}
 {% from "macros/utils.html" import empty_state, status_badge %}
+{% from "macros/charts.html" import collections_svg, enrollments_svg, attendance_svg %}
 
-{# ---- A. Page header and global context ---- #}
+{# ---- A. Compact header and context ---- #}
 <div class="page-header">
     <div class="page-header-content">
-        <h1>سلام، مدیر</h1>
+        <h1>داشبورد مدیر</h1>
         <p>
-            خلاصه وضعیت آکادمی
+            نمای زنده عملیات آکادمی
             &middot; امروز {{ today|jalali }}
             {% if data.academic_context.year_title %}
             &middot; سال تحصیلی: {{ data.academic_context.year_title }}
@@ -28,7 +29,7 @@
     </div>
 </div>
 
-{# ---- B. Primary quick actions ---- #}
+{# ---- B. Quick actions ---- #}
 <nav class="dashboard-section" aria-label="اقدامات سریع">
     <h2 class="dashboard-section-title">اقدامات سریع</h2>
     <div class="quick-actions">
@@ -42,115 +43,101 @@
     </div>
 </nav>
 
-{# ---- C. KPI cards — core academy health ---- #}
+{# ---- C. Executive KPI summary (whole-card links) ---- #}
 <section class="dashboard-section" aria-labelledby="kpi-heading">
-    <h2 class="dashboard-section-title" id="kpi-heading">شاخص‌های سلامت آکادمی</h2>
-    <div class="dashboard-grid dashboard-grid-4">
-        <div class="stat-card">
-            <div class="stat-card-header">
+    <h2 class="dashboard-section-title" id="kpi-heading">شاخص‌های کلیدی</h2>
+    <div class="dashboard-grid dashboard-grid-4 kpi-grid">
+        <a class="stat-card stat-card-link" href="{{ url_for('admin.user_list', role='STUDENT') }}" aria-label="دانش‌آموزان فعال: {{ data.active_students }} نفر. مشاهده فهرست دانش‌آموزان">
+            <span class="stat-card-header">
                 <span class="stat-card-label">دانش‌آموزان فعال</span>
-                <div class="stat-card-icon primary" aria-hidden="true">
+                <span class="stat-card-icon primary" aria-hidden="true">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-                </div>
-            </div>
-            <div class="stat-card-value">{{ data.active_students }}</div>
-            <div class="stat-card-sub">{{ data.new_students }} نفر جدید در ۳۰ روز اخیر</div>
-            <div class="stat-card-footer"><a href="{{ url_for('admin.user_list', role='STUDENT') }}">مشاهده دانش‌آموزان</a></div>
-        </div>
-        <div class="stat-card">
-            <div class="stat-card-header">
+                </span>
+            </span>
+            <span class="stat-card-value">{{ data.active_students }}</span>
+            <span class="stat-card-sub">{{ data.new_students }} نفر جدید در ۳۰ روز اخیر</span>
+        </a>
+        <a class="stat-card stat-card-link" href="{{ url_for('admin.user_list', role='TEACHER') }}" aria-label="معلمان فعال: {{ data.active_teachers }} نفر. مشاهده فهرست معلمان">
+            <span class="stat-card-header">
                 <span class="stat-card-label">معلمان فعال</span>
-                <div class="stat-card-icon success" aria-hidden="true">
+                <span class="stat-card-icon success" aria-hidden="true">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c3 3 9 3 12 0v-5"/></svg>
-                </div>
-            </div>
-            <div class="stat-card-value">{{ data.active_teachers }}</div>
-            <div class="stat-card-sub">دارای نقش معلم و حساب فعال</div>
-            <div class="stat-card-footer"><a href="{{ url_for('admin.user_list', role='TEACHER') }}">مدیریت معلمان</a></div>
-        </div>
-        <div class="stat-card">
-            <div class="stat-card-header">
-                <span class="stat-card-label">کلاس‌های فعال</span>
-                <div class="stat-card-icon info" aria-hidden="true">
+                </span>
+            </span>
+            <span class="stat-card-value">{{ data.active_teachers }}</span>
+            <span class="stat-card-sub">دارای نقش معلم و حساب فعال</span>
+        </a>
+        <a class="stat-card stat-card-link" href="{{ url_for('academy.class_list', status='ACTIVE') }}" aria-label="کلاس‌های در حال برگزاری: {{ data.running_classes }} کلاس. مشاهده فهرست کلاس‌های فعال">
+            <span class="stat-card-header">
+                <span class="stat-card-label">کلاس‌های در حال برگزاری</span>
+                <span class="stat-card-icon info" aria-hidden="true">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-                </div>
-            </div>
-            <div class="stat-card-value">{{ data.active_classes }}</div>
-            <div class="stat-card-sub">{{ data.upcoming_classes }} کلاس آینده &middot; {{ data.distinct_courses }} دوره متمایز</div>
-            <div class="stat-card-footer"><a href="{{ url_for('academy.class_list') }}">مشاهده کلاس‌ها</a></div>
-        </div>
-        <div class="stat-card">
-            <div class="stat-card-header">
+                </span>
+            </span>
+            <span class="stat-card-value">{{ data.running_classes }}</span>
+            <span class="stat-card-sub">{{ data.planned_classes }} برنامه‌ریزی‌شده &middot; {{ data.upcoming_classes }} آغازنشده</span>
+        </a>
+        <a class="stat-card stat-card-link" href="{{ url_for('academy.course_list') }}" aria-label="دوره‌های آموزشی: {{ data.distinct_courses }} دوره. مشاهده فهرست دوره‌ها">
+            <span class="stat-card-header">
+                <span class="stat-card-label">دوره‌های آموزشی</span>
+                <span class="stat-card-icon warning" aria-hidden="true">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+                </span>
+            </span>
+            <span class="stat-card-value">{{ data.distinct_courses }}</span>
+            <span class="stat-card-sub">پایه {{ data.running_classes + data.planned_classes }} کلاس عملیاتی</span>
+        </a>
+        <a class="stat-card stat-card-link" href="{{ url_for('enrollment.admin_enrollment_list', status='APPROVED') }}" aria-label="ثبت‌نام‌های تأییدشده: {{ data.approved_enrollments }} ثبت‌نام. مشاهده فهرست">
+            <span class="stat-card-header">
                 <span class="stat-card-label">ثبت‌نام‌های تأییدشده</span>
-                <div class="stat-card-icon warning" aria-hidden="true">
+                <span class="stat-card-icon primary" aria-hidden="true">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-                </div>
-            </div>
-            <div class="stat-card-value">{{ data.approved_enrollments }}</div>
-            <div class="stat-card-sub">{{ data.approved_students }} دانش‌آموز یکتا &middot; {{ data.pending_enrollments }} درخواست در انتظار</div>
-            <div class="stat-card-footer"><a href="{{ url_for('enrollment.admin_enrollment_list', status='APPROVED') }}">مشاهده ثبت‌نام‌های تأییدشده</a></div>
-        </div>
-    </div>
-    <div class="dashboard-grid dashboard-grid-4">
-        <div class="stat-card">
-            <div class="stat-card-header">
-                <span class="stat-card-label">وصول این ماه (ناخالص)</span>
-                <div class="stat-card-icon success" aria-hidden="true">
+                </span>
+            </span>
+            <span class="stat-card-value">{{ data.approved_enrollments }}</span>
+            <span class="stat-card-sub">{{ data.approved_students }} دانش‌آموز یکتا</span>
+        </a>
+        <a class="stat-card stat-card-link" href="{{ url_for('enrollment.admin_pending_list') }}" aria-label="درخواست‌های در انتظار: {{ data.pending_enrollments }} درخواست. بررسی درخواست‌ها">
+            <span class="stat-card-header">
+                <span class="stat-card-label">درخواست‌های در انتظار</span>
+                <span class="stat-card-icon warning" aria-hidden="true">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                </span>
+            </span>
+            <span class="stat-card-value">{{ data.pending_enrollments }}</span>
+            <span class="stat-card-sub">در انتظار تأیید مدیر</span>
+        </a>
+        <a class="stat-card stat-card-link" href="{{ url_for('finance.admin_dashboard') }}" aria-label="وصول خالص این ماه: {{ '{:,.0f}'.format(data.finance_month.current_net|int) }} تومان. مشاهده داشبورد مالی">
+            <span class="stat-card-header">
+                <span class="stat-card-label">وصول خالص این ماه</span>
+                <span class="stat-card-icon success" aria-hidden="true">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
-                </div>
-            </div>
-            <div class="stat-card-value">{{ "{:,.0f}".format(data.finance_summary.month_payments|int) }} <span class="text-sm font-medium text-muted">تومان</span></div>
-            <div class="stat-card-sub">خالص وصول: {{ "{:,.0f}".format(data.finance_month.current_net|int) }} تومان</div>
-            <div class="stat-card-footer"><a href="{{ url_for('finance.admin_dashboard') }}">داشبورد مالی</a></div>
-        </div>
-        <div class="stat-card">
-            <div class="stat-card-header">
+                </span>
+            </span>
+            <span class="stat-card-value">{{ "{:,.0f}".format(data.finance_month.current_net|int) }} <span class="text-sm font-medium text-muted">تومان</span></span>
+            <span class="stat-card-sub">
+                {% if data.finance_month.previous_net != 0 %}
+                {% set _delta = ((data.finance_month.current_net - data.finance_month.previous_net) / data.finance_month.previous_net * 100)|round|int %}
+                {{ _delta|abs }}٪ {{ 'بیشتر' if _delta >= 0 else 'کمتر' }} از ماه قبل
+                {% else %}
+                ماه قبل داده‌ای ندارد
+                {% endif %}
+            </span>
+        </a>
+        <a class="stat-card stat-card-link" href="{{ url_for('finance.admin_debt_report') }}" aria-label="بدهی تسویه‌نشده: {{ '{:,.0f}'.format(data.finance_summary.total_debt|int) }} تومان از {{ data.finance_summary.debtors_count }} دانش‌آموز. مشاهده گزارش بدهکاران">
+            <span class="stat-card-header">
                 <span class="stat-card-label">بدهی تسویه‌نشده</span>
-                <div class="stat-card-icon danger" aria-hidden="true">
+                <span class="stat-card-icon danger" aria-hidden="true">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
-                </div>
-            </div>
-            <div class="stat-card-value text-danger">{{ "{:,.0f}".format(data.finance_summary.total_debt|int) }} <span class="text-sm font-medium text-muted">تومان</span></div>
-            <div class="stat-card-sub">{{ data.finance_summary.debtors_count }} دانش‌آموز بدهکار</div>
-            <div class="stat-card-footer"><a href="{{ url_for('finance.admin_debt_report') }}">گزارش بدهکاران</a></div>
-        </div>
-        <div class="stat-card">
-            <div class="stat-card-header">
-                <span class="stat-card-label">آزمون‌های نیازمند پیگیری</span>
-                <div class="stat-card-icon primary" aria-hidden="true">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
-                </div>
-            </div>
-            <div class="stat-card-value">{{ data.assessments_attention }}</div>
-            <div class="stat-card-sub">از مجموع {{ data.assessments_total }} آزمون فعال (باز یا بسته‌شده)</div>
-            <div class="stat-card-footer"><a href="{{ url_for('assessment.admin_assessment_list') }}">مشاهده آزمون‌ها</a></div>
-        </div>
-        <div class="stat-card">
-            <div class="stat-card-header">
-                <span class="stat-card-label">تکمیل حضور و غیاب امروز</span>
-                <div class="stat-card-icon info" aria-hidden="true">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
-                </div>
-            </div>
-            {% if data.today_overview is none %}
-            <div class="stat-card-value text-muted">—</div>
-            <div class="stat-card-sub">خطا در دریافت برنامه امروز</div>
-            {% elif data.today_overview.total == 0 %}
-            <div class="stat-card-value text-muted">—</div>
-            <div class="stat-card-sub">امروز جلسه‌ای برنامه‌ریزی نشده است</div>
-            {% elif data.today_overview.recordable == 0 %}
-            <div class="stat-card-value text-muted">—</div>
-            <div class="stat-card-sub">جلسات امروز ثبت‌نام تأییدشده ندارند</div>
-            {% else %}
-            <div class="stat-card-value">{{ data.today_overview.recorded }} از {{ data.today_overview.recordable }}</div>
-            <div class="stat-card-sub">جلسه با حضور و غیاب کامل</div>
-            {% endif %}
-            <div class="stat-card-footer"><a href="{{ url_for('attendance.admin_attendance_list') }}">حضور و غیاب</a></div>
-        </div>
+                </span>
+            </span>
+            <span class="stat-card-value text-danger">{{ "{:,.0f}".format(data.finance_summary.total_debt|int) }} <span class="text-sm font-medium text-muted">تومان</span></span>
+            <span class="stat-card-sub">{{ data.finance_summary.debtors_count }} دانش‌آموز بدهکار</span>
+        </a>
     </div>
 </section>
 
-{# ---- D. Requires attention ---- #}
+{# ---- E. Needs attention ---- #}
 <section class="dashboard-section" aria-labelledby="attention-heading">
     <h2 class="dashboard-section-title" id="attention-heading">نیازمند توجه</h2>
     {% if data.attention_items %}
@@ -158,7 +145,11 @@
         {% for item in data.attention_items %}
         <li class="alert alert-{{ item.severity }} attention-item">
             <span>{{ item.message }}</span>
+            {% if item.endpoint_args is defined and item.endpoint_args %}
+            <a href="{{ url_for(item.endpoint, **item.endpoint_args) }}" class="btn btn-sm btn-outline">{{ item.action_label }}</a>
+            {% else %}
             <a href="{{ url_for(item.endpoint) }}" class="btn btn-sm btn-outline">{{ item.action_label }}</a>
+            {% endif %}
         </li>
         {% endfor %}
     </ul>
@@ -167,7 +158,89 @@
     {% endif %}
 </section>
 
-{# ---- E. Today's schedule ---- #}
+{# ---- D. Analytical charts ---- #}
+<section class="dashboard-section" aria-labelledby="trends-heading">
+    <h2 class="dashboard-section-title" id="trends-heading">تحلیل روندها</h2>
+    <div class="detail-card">
+        <h3 class="subsection-title">روند وصول ماهانه
+            <span class="chart-sub">خالص (میله) و ناخالص (خط) به تومان &middot; ۱۲ ماه اخیر &middot; <a href="{{ url_for('finance.admin_revenue_report') }}" class="section-link">گزارش درآمد</a></span>
+        </h3>
+        {% if data.collections_chart is none %}
+        <div class="alert alert-danger" role="alert">دریافت روند وصول با خطا مواجه شد.</div>
+        {% else %}
+        <div class="chart-legend" aria-hidden="true">
+            <span class="legend-item"><span class="legend-swatch primary"></span>وصول خالص (پرداخت منهای بازپرداخت)</span>
+            <span class="legend-item"><span class="legend-swatch secondary-line"></span>وصول ناخالص (پرداخت‌ها)</span>
+        </div>
+        <div class="chart-scroll" tabindex="0" role="group" aria-label="نمودار وصول ماهانه — برای مشاهده کامل در صفحه‌های کوچک پیمایش افقی کنید">
+        {{ collections_svg(data.collections_chart) }}
+        </div>
+        <details class="chart-data">
+            <summary>مشاهده جدول داده‌ها</summary>
+            <table class="data-table">
+                <thead><tr><th scope="col">ماه</th><th scope="col">خالص (تومان)</th><th scope="col">ناخالص (تومان)</th></tr></thead>
+                <tbody>
+                    {% for p in data.collections_chart.points %}
+                    <tr><td>{{ p.label }}</td><td>{{ "{:,.0f}".format(p.net|int) }}</td><td>{{ "{:,.0f}".format(p.gross|int) }}</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </details>
+        {% endif %}
+    </div>
+    <div class="dashboard-grid dashboard-grid-2">
+        <div class="detail-card">
+            <h3 class="subsection-title">روند ثبت‌نام ماهانه
+                <span class="chart-sub">درخواست‌ها و تأییدها &middot; ۱۲ ماه اخیر &middot; <a href="{{ url_for('enrollment.admin_enrollment_list') }}" class="section-link">فهرست ثبت‌نام‌ها</a></span>
+            </h3>
+            {% if data.enrollments_chart is none %}
+            <div class="alert alert-danger" role="alert">دریافت روند ثبت‌نام با خطا مواجه شد.</div>
+            {% else %}
+            <div class="chart-legend" aria-hidden="true">
+                <span class="legend-item"><span class="legend-swatch info"></span>درخواست‌ها</span>
+                <span class="legend-item"><span class="legend-swatch primary"></span>تأییدها</span>
+            </div>
+            <div class="chart-scroll" tabindex="0" role="group" aria-label="نمودار ثبت‌نام ماهانه — برای مشاهده کامل در صفحه‌های کوچک پیمایش افقی کنید">
+            {{ enrollments_svg(data.enrollments_chart) }}
+            </div>
+            <details class="chart-data">
+                <summary>مشاهده جدول داده‌ها</summary>
+                <table class="data-table">
+                    <thead><tr><th scope="col">ماه</th><th scope="col">درخواست‌ها</th><th scope="col">تأییدها</th></tr></thead>
+                    <tbody>
+                        {% for p in data.enrollments_chart.points %}
+                        <tr><td>{{ p.label }}</td><td>{{ p.requested }}</td><td>{{ p.approved }}</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </details>
+            {% endif %}
+        </div>
+        <div class="detail-card">
+            <h3 class="subsection-title">تکمیل حضور و غیاب
+                <span class="chart-sub">درصد جلسات با ثبت کامل &middot; ۷ روز اخیر &middot; <a href="{{ url_for('attendance.admin_attendance_list') }}" class="section-link">حضور و غیاب</a></span>
+            </h3>
+            {% if data.attendance_chart is none %}
+            <div class="alert alert-danger" role="alert">دریافت روند حضور با خطا مواجه شد.</div>
+            {% else %}
+            {{ attendance_svg(data.attendance_chart) }}
+            <details class="chart-data">
+                <summary>مشاهده جدول داده‌ها</summary>
+                <table class="data-table">
+                    <thead><tr><th scope="col">روز</th><th scope="col">جلسات ثبت‌شده</th><th scope="col">جلسات قابل ثبت</th></tr></thead>
+                    <tbody>
+                        {% for p in data.attendance_chart.points %}
+                        <tr><td>{{ p.label }}</td><td>{{ p.recorded if p.rate is not none else '—' }}</td><td>{{ p.recordable if p.rate is not none else '—' }}</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </details>
+            {% endif %}
+        </div>
+    </div>
+</section>
+
+{# ---- F. Today's operations ---- #}
 <section class="dashboard-section" aria-labelledby="today-heading">
     <h2 class="dashboard-section-title" id="today-heading">
         کلاس‌های امروز
@@ -189,7 +262,7 @@
                         <th scope="col">ساعت</th>
                         <th scope="col">کلاس</th>
                         <th scope="col">معلم</th>
-                        <th scope="col">وضعیت جلسه</th>
+                        <th scope="col">ظرفیت</th>
                         <th scope="col">حضور و غیاب</th>
                         <th scope="col">عملیات</th>
                     </tr>
@@ -203,7 +276,12 @@
                             {% if s.session_title %}<span class="text-muted"> — جلسه {{ s.session_number }}: {{ s.session_title }}</span>{% endif %}
                         </td>
                         <td>{{ s.teacher_name }}</td>
-                        <td>{{ status_badge(s.status) }}</td>
+                        <td>
+                            <span class="capacity-meter" role="img" aria-label="ظرفیت کلاس: {{ s.approved_count }} از {{ s.capacity }} نفر">
+                                <span class="capacity-fill" style="width: {{ s.fill_percent }}%"></span>
+                            </span>
+                            <span class="text-muted text-sm">{{ s.approved_count }}/{{ s.capacity }}</span>
+                        </td>
                         <td>
                             {% if s.eligible_count == 0 %}
                             {{ status_badge('OTHER', 'بدون ثبت‌نام تأییدشده') }}
@@ -272,18 +350,13 @@
     {% endif %}
 </section>
 
-{# ---- G. Focused financial overview ---- #}
+{# ---- G. Financial snapshot and debt follow-up ---- #}
 <section class="dashboard-section" aria-labelledby="finance-heading">
     <h2 class="dashboard-section-title" id="finance-heading">
         نبض مالی
         <a href="{{ url_for('finance.admin_dashboard') }}" class="section-link">داشبورد مالی</a>
     </h2>
     <div class="dashboard-grid dashboard-grid-3">
-        <div class="stat-card">
-            <div class="stat-card-header"><span class="stat-card-label">وصول ناخالص این ماه</span></div>
-            <div class="stat-card-value">{{ "{:,.0f}".format(data.finance_summary.month_payments|int) }} <span class="text-sm font-medium text-muted">تومان</span></div>
-            <div class="stat-card-sub">مجموع پرداخت‌های فعال (بدون کسر بازپرداخت)</div>
-        </div>
         <div class="stat-card">
             <div class="stat-card-header"><span class="stat-card-label">وصول خالص این ماه</span></div>
             <div class="stat-card-value">{{ "{:,.0f}".format(data.finance_month.current_net|int) }} <span class="text-sm font-medium text-muted">تومان</span></div>
@@ -297,7 +370,12 @@
             </div>
         </div>
         <div class="stat-card">
-            <div class="stat-card-header"><span class="stat-card-label">شهریه صادرشده در برابر وصول</span></div>
+            <div class="stat-card-header"><span class="stat-card-label">وصول ناخالص این ماه</span></div>
+            <div class="stat-card-value">{{ "{:,.0f}".format(data.finance_summary.month_payments|int) }} <span class="text-sm font-medium text-muted">تومان</span></div>
+            <div class="stat-card-sub">مجموع پرداخت‌های فعال (بدون کسر بازپرداخت)</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-card-header"><span class="stat-card-label">شهریه صادرشده در برابر وصول تجمیعی</span></div>
             <div class="stat-card-value">{{ "{:,.0f}".format(data.finance_summary.billed_tuition|int) }} <span class="text-sm font-medium text-muted">تومان</span></div>
             <div class="stat-card-sub">صادرشده (طلب) در برابر وصول خالص تجمیعی: {{ "{:,.0f}".format(data.finance_summary.collected_revenue|int) }} تومان</div>
         </div>
@@ -336,76 +414,7 @@
     {% endif %}
 </section>
 
-{# ---- H. Compact trends ---- #}
-<section class="dashboard-section" aria-labelledby="trends-heading">
-    <h2 class="dashboard-section-title" id="trends-heading">روندها (۶ ماه اخیر)</h2>
-    <div class="dashboard-grid dashboard-grid-2">
-        <div class="detail-card">
-            <h3 class="subsection-title">روند وصول ماهانه (تومان)
-                <a href="{{ url_for('finance.admin_revenue_report') }}" class="section-link">گزارش درآمد</a>
-            </h3>
-            {% if data.collection_trend is none %}
-            <div class="alert alert-danger" role="alert">دریافت روند وصول با خطا مواجه شد.</div>
-            {% else %}
-            {% set max_collection = namespace(value=1) %}
-            {% for point in data.collection_trend %}{% if point.total > max_collection.value %}{% set max_collection.value = point.total %}{% endif %}{% endfor %}
-            <div class="bar-chart" role="img" aria-label="نمودار میله‌ای وصول ماهانه شش ماه اخیر">
-                {% for point in data.collection_trend %}
-                <div class="bar-chart-item">
-                    <div class="bar-chart-bar" style="height: {{ ((point.total / max_collection.value * 100) if max_collection.value else 0)|round(1) }}%" title="{{ '{:,.0f}'.format(point.total|int) }} تومان"></div>
-                    <div class="bar-chart-label">{{ point.label }}</div>
-                    <div class="bar-chart-value">{{ "{:,.0f}".format(point.total|int) }}</div>
-                </div>
-                {% endfor %}
-            </div>
-            <details class="chart-data">
-                <summary>مشاهده جدول داده‌ها</summary>
-                <table class="data-table">
-                    <thead><tr><th scope="col">ماه</th><th scope="col">وصول (تومان)</th></tr></thead>
-                    <tbody>
-                        {% for point in data.collection_trend %}
-                        <tr><td>{{ point.label }}</td><td>{{ "{:,.0f}".format(point.total|int) }}</td></tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </details>
-            {% endif %}
-        </div>
-        <div class="detail-card">
-            <h3 class="subsection-title">روند پذیرش ماهانه (ثبت‌نام تأییدشده)
-                <a href="{{ url_for('enrollment.admin_enrollment_list') }}" class="section-link">فهرست ثبت‌نام‌ها</a>
-            </h3>
-            {% if data.enrollment_trend is none %}
-            <div class="alert alert-danger" role="alert">دریافت روند پذیرش با خطا مواجه شد.</div>
-            {% else %}
-            {% set max_enrollment = namespace(value=1) %}
-            {% for point in data.enrollment_trend %}{% if point.total > max_enrollment.value %}{% set max_enrollment.value = point.total %}{% endif %}{% endfor %}
-            <div class="bar-chart" role="img" aria-label="نمودار میله‌ای پذیرش ماهانه شش ماه اخیر">
-                {% for point in data.enrollment_trend %}
-                <div class="bar-chart-item">
-                    <div class="bar-chart-bar secondary" style="height: {{ ((point.total / max_enrollment.value * 100) if max_enrollment.value else 0)|round(1) }}%" title="{{ point.total }} ثبت‌نام"></div>
-                    <div class="bar-chart-label">{{ point.label }}</div>
-                    <div class="bar-chart-value">{{ point.total }}</div>
-                </div>
-                {% endfor %}
-            </div>
-            <details class="chart-data">
-                <summary>مشاهده جدول داده‌ها</summary>
-                <table class="data-table">
-                    <thead><tr><th scope="col">ماه</th><th scope="col">ثبت‌نام تأییدشده</th></tr></thead>
-                    <tbody>
-                        {% for point in data.enrollment_trend %}
-                        <tr><td>{{ point.label }}</td><td>{{ point.total }}</td></tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </details>
-            {% endif %}
-        </div>
-    </div>
-</section>
-
-{# ---- I. Navigation to specialist modules ---- #}
+{# ---- H. Module navigation ---- #}
 <nav class="dashboard-section" aria-label="دسترسی به ماژول‌ها">
     <h2 class="dashboard-section-title">ماژول‌های تخصصی</h2>
     <div class="action-links">

@@ -295,7 +295,61 @@
     border-top: 1px solid var(--color-border-light);
 }
 
-/* === Quick Actions === */
+/* === KPI Card Links (whole card is one anchor) === */
+a.stat-card-link {
+    text-decoration: none;
+    color: inherit;
+    cursor: pointer;
+}
+
+a.stat-card-link:hover {
+    box-shadow: var(--shadow-md);
+    border-color: var(--color-primary-light);
+    transform: translateY(-2px);
+}
+
+a.stat-card-link:active {
+    transform: translateY(0);
+}
+
+a.stat-card-link:focus-visible {
+    outline: 3px solid var(--color-primary);
+    outline-offset: 2px;
+}
+
+a.stat-card-link .stat-card-header,
+a.stat-card-link .stat-card-value,
+a.stat-card-link .stat-card-sub {
+    color: inherit;
+}
+
+a.stat-card-link .stat-card-label {
+    color: var(--color-muted);
+}
+
+@media (prefers-reduced-motion: reduce) {
+    a.stat-card-link:hover {
+        transform: none;
+    }
+
+    .stat-card {
+        transition: none;
+    }
+}
+
+/* Grid items default to min-width:auto, letting wide content (scrollable
+   chart wrappers, tables) force tracks wider than the viewport. Constrain
+   them; inner scroll containers then handle overflow locally. */
+.dashboard-grid > * {
+    min-width: 0;
+}
+
+/* KPI grid uses minmax(0, 1fr) tracks so long unbreakable values
+   (large monetary figures) wrap inside cards instead of forcing the
+   tracks wider than narrow viewports. */
+.dashboard-grid-4.kpi-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+}
 .quick-actions {
     display: flex;
     gap: var(--space-2);
@@ -354,56 +408,141 @@
     margin-bottom: 0;
 }
 
-/* === Bar Chart (CSS-only, no JS dependency) === */
-.bar-chart {
+/* === SVG Charts === */
+.chart-legend {
     display: flex;
-    align-items: flex-end;
-    gap: var(--space-3);
-    min-height: 180px;
-    padding: var(--space-4) var(--space-2) var(--space-2);
-    border-bottom: 2px solid var(--color-border);
-}
-
-.bar-chart-item {
-    flex: 1 1 0;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: var(--space-1);
-    min-width: 0;
-    height: 100%;
-    justify-content: flex-end;
-    overflow: hidden;
-}
-
-.bar-chart-bar {
-    width: 100%;
-    max-width: 48px;
-    min-height: 4px;
-    background: var(--color-primary);
-    border-radius: var(--radius-sm) var(--radius-sm) 0 0;
-}
-
-.bar-chart-bar.secondary {
-    background: var(--color-info);
-}
-
-.bar-chart-label {
+    gap: var(--space-4);
+    flex-wrap: wrap;
+    margin-bottom: var(--space-2);
     font-size: var(--font-size-xs);
     color: var(--color-muted);
-    text-align: center;
-    overflow-wrap: anywhere;
 }
 
-.bar-chart-value {
-    font-size: var(--font-size-xs);
+.legend-item {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-1);
+}
+
+.legend-swatch {
+    width: 14px;
+    height: 14px;
+    border-radius: var(--radius-sm);
+    display: inline-block;
+}
+
+.legend-swatch.primary { background: var(--color-primary); }
+.legend-swatch.info { background: var(--color-info); }
+
+.legend-swatch.secondary-line {
+    width: 22px;
+    height: 0;
+    border-top: 3px solid var(--color-success);
+    border-radius: 0;
+}
+
+.chart-svg {
+    width: 100%;
+    height: auto;
+    display: block;
+    font-family: inherit;
+}
+
+/* Wide 12-month charts scroll horizontally on narrow screens instead of
+   shrinking labels into illegibility. The wrapper is keyboard-focusable
+   with a visible focus indicator. */
+.chart-scroll {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    border-radius: var(--radius-sm);
+}
+
+.chart-scroll:focus-visible {
+    outline: 3px solid var(--color-primary);
+    outline-offset: 2px;
+}
+
+@media (max-width: 640px) {
+    .chart-scroll .chart-svg {
+        min-width: 560px;
+    }
+}
+
+.chart-gridline {
+    stroke: var(--color-border-light);
+    stroke-width: 1;
+}
+
+.chart-tick {
+    font-size: 12px;
+    fill: var(--color-muted);
+}
+
+.chart-label {
+    font-size: 12px;
+    fill: var(--color-text-secondary);
+}
+
+.chart-label-year {
+    font-size: 10px;
+    fill: var(--color-muted);
+}
+
+.chart-value {
+    font-size: 12px;
     font-weight: var(--font-weight-semibold);
-    color: var(--color-text);
-    text-align: center;
-    overflow-wrap: anywhere;
-    min-width: 0;
+    fill: var(--color-text);
 }
 
+.chart-bar-primary { fill: var(--color-primary); }
+.chart-bar-info { fill: var(--color-info); }
+
+.chart-line-secondary {
+    fill: none;
+    stroke: var(--color-success);
+    stroke-width: 2.5;
+}
+
+.chart-dot-secondary { fill: var(--color-success); }
+
+.chart-bar-empty {
+    fill: transparent;
+    stroke: var(--color-border);
+    stroke-dasharray: 5 4;
+    stroke-width: 1.5;
+}
+
+.chart-empty-mark {
+    font-size: 16px;
+    fill: var(--color-muted);
+}
+
+.chart-sub {
+    font-size: var(--font-size-xs);
+    font-weight: var(--font-weight-normal);
+    color: var(--color-muted);
+}
+
+/* === Capacity Meter === */
+.capacity-meter {
+    display: inline-block;
+    width: 72px;
+    height: 8px;
+    border-radius: var(--radius-sm);
+    background: var(--color-border-light);
+    overflow: hidden;
+    vertical-align: middle;
+    margin-inline-end: var(--space-1);
+}
+
+.capacity-fill {
+    display: block;
+    height: 100%;
+    background: var(--color-primary);
+    border-radius: var(--radius-sm);
+}
+
+/* === Chart Data Table Toggle === */
 .chart-data {
     margin-top: var(--space-3);
     font-size: var(--font-size-sm);
@@ -444,6 +583,16 @@
         grid-template-columns: 1fr;
     }
 
+    /* KPI cards stay two-up on phones: compact values remain readable and
+       tap targets stay large; other grids collapse to one column. */
+    .dashboard-grid-4.kpi-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .chart-svg .tick-alt {
+        display: none;
+    }
+
     .detail-row {
         flex-direction: column;
         gap: var(--space-1);
@@ -474,5 +623,16 @@
 
     .quick-actions .btn {
         flex: 1 1 auto;
+    }
+}
+
+@media (max-width: 420px) {
+    .kpi-grid .stat-card-value {
+        font-size: var(--font-size-lg);
+        overflow-wrap: anywhere;
+    }
+
+    .kpi-grid .stat-card {
+        padding: var(--space-4);
     }
 }

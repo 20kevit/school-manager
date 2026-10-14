@@ -833,6 +833,135 @@ def get_revenue_report(
     }
 
 
+def get_monthly_revenue(first_month: date, months: int) -> list[dict]:
+    """Get per-month revenue buckets with the canonical net definition.
+
+    Each bucket covers a half-open Gregorian month [start, next_start), so
+    buckets never overlap and never leave gaps. Only ACTIVE rows count;
+    PENDING/CORRECTED rows are excluded exactly like get_revenue_report().
+
+    A single conditional-aggregation query serves all buckets (portable
+    across SQLite/PostgreSQL — no date_trunc/strftime dialect functions).
+
+    Attribution follows creation time: a refund/reversal counts in the month
+    it was recorded, not the month of the original payment — identical to
+    calling get_revenue_report() once per month.
+
+    Args:
+        first_month: Gregorian date inside the first bucket month
+            (day is ignored; the bucket starts on the 1st).
+        months: number of consecutive calendar months (must be >= 1).
+
+    Returns:
+        List of dicts ordered oldest-first:
+        {"key", "start", "gross", "refunds", "reversals", "net"} where net =
+        gross − refunds + reversals (signed, same as net_revenue).
+    """
+    if months < 1:
+        raise FinanceError("Month count must be at least 1.")
+
+    starts: list[date] = []
+    year, month = first_month.year, first_month.month
+    for _ in range(months):
+        starts.append(date(year, month, 1))
+        if month == 12:
+            year, month = year + 1, 1
+        else:
+            month += 1
+
+    select_terms = []
+    for i, start in enumerate(starts):
+        end = starts[i + 1] if i + 1 < len(starts) else _next_month(start)
+        in_bucket = db.and_(
+            FinancialTransactionModel.created_at
+            >= datetime.combine(start, datetime.min.time()),
+            FinancialTransactionModel.created_at
+            < datetime.combine(end, datetime.min.time()),
+        )
+        select_terms.append(
+            func.coalesce(
+                func.sum(
+                    db.case(
+                        (
+                            db.and_(
+                                FinancialTransactionModel.transaction_type == "PAYMENT",
+                                in_bucket,
+                            ),
+                            FinancialTransactionModel.amount,
+                        ),
+                        else_=0,
+                    )
+                ),
+                0,
+            ).label(f"gross_{i}")
+        )
+        select_terms.append(
+            func.coalesce(
+                func.sum(
+                    db.case(
+                        (
+                            db.and_(
+                                FinancialTransactionModel.transaction_type == "REFUND",
+                                in_bucket,
+                            ),
+                            FinancialTransactionModel.amount,
+                        ),
+                        else_=0,
+                    )
+                ),
+                0,
+            ).label(f"refunds_{i}")
+        )
+        select_terms.append(
+            func.coalesce(
+                func.sum(
+                    db.case(
+                        (
+                            db.and_(
+                                FinancialTransactionModel.transaction_type
+                                == "REVERSAL",
+                                in_bucket,
+                            ),
+                            FinancialTransactionModel.amount,
+                        ),
+                        else_=0,
+                    )
+                ),
+                0,
+            ).label(f"reversals_{i}")
+        )
+
+    row = (
+        db.session.query(*select_terms)
+        .filter(FinancialTransactionModel.status == "ACTIVE")
+        .one()
+    )
+
+    buckets = []
+    for i, start in enumerate(starts):
+        gross = Decimal(str(row[i * 3]))
+        refunds = Decimal(str(row[i * 3 + 1]))
+        reversals = Decimal(str(row[i * 3 + 2]))
+        buckets.append(
+            {
+                "key": f"{start.year}-{start.month:02d}",
+                "start": start,
+                "gross": gross,
+                "refunds": refunds,
+                "reversals": reversals,
+                "net": gross - refunds + reversals,
+            }
+        )
+    return buckets
+
+
+def _next_month(start: date) -> date:
+    """Return the first day of the month after the given first-of-month."""
+    if start.month == 12:
+        return date(start.year + 1, 1, 1)
+    return date(start.year, start.month + 1, 1)
+
+
 def get_class_financial_summary(class_id: int) -> dict:
     """Get financial summary for a class."""
     from app.infrastructure.database.models import EnrollmentModel

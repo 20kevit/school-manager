@@ -1,0 +1,90 @@
+{# Server-rendered SVG charts for the admin dashboard (no JS dependency).
+   Buckets run right-to-left: index 0 (oldest) at the right, newest at left.
+   Geometry shared by all charts: W=720 H=300, plot x in [64, 712]. #}
+
+{% macro _grid(chart, height=300, bottom=52) %}
+    {% set plot_l = 64 %}{% set plot_r = 712 %}{% set plot_t = 14 %}{% set plot_b = height - bottom %}
+    {% for tick in chart.ticks %}
+    {% set y = plot_b - (tick / chart.y_max * (plot_b - plot_t) if chart.y_max else 0) %}
+    <line x1="{{ plot_l }}" y1="{{ y|round(1) }}" x2="{{ plot_r }}" y2="{{ y|round(1) }}" class="chart-gridline" />
+    <text x="{{ plot_l - 8 }}" y="{{ (y + 4)|round(1) }}" text-anchor="end" class="chart-tick">{{ tick|compact_number }}</text>
+    {% endfor %}
+{% endmacro %}
+
+{% macro _month_labels(label, cx) %}
+    {# Two-line month/year labels fit 12 buckets without overlap. #}
+    {% set parts = label.split(' ') %}
+    <tspan x="{{ cx|round(1) }}" dy="0">{{ parts[0] }}</tspan>
+    <tspan x="{{ cx|round(1) }}" dy="13" class="chart-label-year">{{ parts[1] if parts|length > 1 else '' }}</tspan>
+{% endmacro %}
+
+{% macro collections_svg(chart) %}
+{% set W = 720 %}{% set H = 320 %}{% set plot_l = 64 %}{% set plot_r = 712 %}{% set plot_t = 14 %}{% set plot_b = H - 66 %}
+{% set n = chart.points|length %}{% set slot = (plot_r - plot_l) / n %}
+<svg viewBox="0 0 {{ W }} {{ H }}" class="chart-svg" role="img" aria-label="نمودار روند وصول ماهانه: میله خالص و خط ناخالص">
+    <title>وصول ماهانه به تومان — خالص (میله) و ناخالص (خط) برای {{ n }} ماه</title>
+    {{ _grid(chart, height=H, bottom=66) }}
+    {% set ns = namespace(line="") %}
+    {% for p in chart.points %}
+    {% set cx = plot_r - (loop.index0 + 0.5) * slot %}
+    {% set net_h = (p.net / chart.y_max * (plot_b - plot_t) if chart.y_max else 0) %}
+    {% set gross_y = plot_b - (p.gross / chart.y_max * (plot_b - plot_t) if chart.y_max else 0) %}
+    <rect x="{{ (cx - slot * 0.26)|round(1) }}" y="{{ (plot_b - net_h)|round(1) }}" width="{{ (slot * 0.52)|round(1) }}" height="{{ [net_h, 2]|max|round(1) if p.net else 2 }}" class="chart-bar-primary">
+        <title>{{ p.label }} — خالص: {{ "{:,.0f}".format(p.net|int) }} تومان، ناخالص: {{ "{:,.0f}".format(p.gross|int) }} تومان</title>
+    </rect>
+    <circle cx="{{ cx|round(1) }}" cy="{{ gross_y|round(1) }}" r="3.5" class="chart-dot-secondary">
+        <title>{{ p.label }} — ناخالص: {{ "{:,.0f}".format(p.gross|int) }} تومان</title>
+    </circle>
+    {% set ns.line = ns.line ~ ("L" if not loop.first else "M") ~ (cx|round(1)) ~ " " ~ (gross_y|round(1)) ~ " " %}
+    <text x="{{ cx|round(1) }}" y="{{ plot_b + 20 }}" text-anchor="middle" class="chart-label{% if loop.index0 is odd %} tick-alt{% endif %}">{{ _month_labels(p.label, cx) }}</text>
+    {% endfor %}
+    <path d="{{ ns.line }}" class="chart-line-secondary" />
+</svg>
+{% endmacro %}
+
+{% macro enrollments_svg(chart) %}
+{% set W = 720 %}{% set H = 320 %}{% set plot_l = 64 %}{% set plot_r = 712 %}{% set plot_t = 14 %}{% set plot_b = H - 66 %}
+{% set n = chart.points|length %}{% set slot = (plot_r - plot_l) / n %}
+<svg viewBox="0 0 {{ W }} {{ H }}" class="chart-svg" role="img" aria-label="نمودار روند ثبت‌نام ماهانه: درخواست‌ها و تأییدها">
+    <title>درخواست‌ها و تأییدهای ثبت‌نام در هر ماه برای {{ n }} ماه</title>
+    {{ _grid(chart, height=H, bottom=66) }}
+    {% for p in chart.points %}
+    {% set cx = plot_r - (loop.index0 + 0.5) * slot %}
+    {% set bw = slot * 0.3 %}
+    {% set req_h = (p.requested / chart.y_max * (plot_b - plot_t) if chart.y_max else 0) %}
+    {% set app_h = (p.approved / chart.y_max * (plot_b - plot_t) if chart.y_max else 0) %}
+    <rect x="{{ (cx - bw - 2)|round(1) }}" y="{{ (plot_b - req_h)|round(1) }}" width="{{ bw|round(1) }}" height="{{ [req_h, 2]|max|round(1) if p.requested else 2 }}" class="chart-bar-info">
+        <title>{{ p.label }} — درخواست‌ها: {{ p.requested }}</title>
+    </rect>
+    <rect x="{{ (cx + 2)|round(1) }}" y="{{ (plot_b - app_h)|round(1) }}" width="{{ bw|round(1) }}" height="{{ [app_h, 2]|max|round(1) if p.approved else 2 }}" class="chart-bar-primary">
+        <title>{{ p.label }} — تأییدها: {{ p.approved }}</title>
+    </rect>
+    <text x="{{ cx|round(1) }}" y="{{ plot_b + 20 }}" text-anchor="middle" class="chart-label{% if loop.index0 is odd %} tick-alt{% endif %}">{{ _month_labels(p.label, cx) }}</text>
+    {% endfor %}
+</svg>
+{% endmacro %}
+
+{% macro attendance_svg(chart) %}
+{% set W = 720 %}{% set H = 260 %}{% set plot_l = 64 %}{% set plot_r = 712 %}{% set plot_t = 14 %}{% set plot_b = H - 52 %}
+{% set n = chart.points|length %}{% set slot = (plot_r - plot_l) / n %}
+<svg viewBox="0 0 {{ W }} {{ H }}" class="chart-svg" role="img" aria-label="نمودار درصد تکمیل حضور و غیاب در هفت روز اخیر">
+    <title>درصد جلسات دارای حضور و غیاب کامل در هر روز از هفت روز اخیر</title>
+    {{ _grid(chart, height=H) }}
+    {% for p in chart.points %}
+    {% set cx = plot_r - (loop.index0 + 0.5) * slot %}
+    {% if p.rate is none %}
+    <rect x="{{ (cx - slot * 0.26)|round(1) }}" y="{{ plot_t }}" width="{{ (slot * 0.52)|round(1) }}" height="{{ plot_b - plot_t }}" class="chart-bar-empty">
+        <title>{{ p.label }} — جلسه قابل ثبت وجود نداشت</title>
+    </rect>
+    <text x="{{ cx|round(1) }}" y="{{ ((plot_t + plot_b) / 2)|round(1) }}" text-anchor="middle" class="chart-empty-mark">—</text>
+    {% else %}
+    {% set h = p.rate * (plot_b - plot_t) %}
+    <rect x="{{ (cx - slot * 0.26)|round(1) }}" y="{{ (plot_b - h)|round(1) }}" width="{{ (slot * 0.52)|round(1) }}" height="{{ [h, 2]|max|round(1) if p.rate else 2 }}" class="chart-bar-primary">
+        <title>{{ p.label }} — {{ p.recorded }} از {{ p.recordable }} جلسه ({{ (p.rate * 100)|round|int }}%)</title>
+    </rect>
+    <text x="{{ cx|round(1) }}" y="{{ (plot_b - h - 6)|round(1) }}" text-anchor="middle" class="chart-value">{{ (p.rate * 100)|round|int }}%</text>
+    {% endif %}
+    <text x="{{ cx|round(1) }}" y="{{ plot_b + 20 }}" text-anchor="middle" class="chart-label">{{ p.label }}</text>
+    {% endfor %}
+</svg>
+{% endmacro %}

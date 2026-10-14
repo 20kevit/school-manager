@@ -1,7 +1,8 @@
 """Tests for the administrator dashboard (portal admin).
 
-Covers metric correctness (role/status/distinct-course semantics), date and
-financial boundaries, links/authorization, and empty/error states.
+Covers metric correctness (role/status/distinct-entity semantics), monthly
+trend definitions, attendance rules, links/filters, empty/error states,
+whole-card anchor DOM, and query-count regression.
 """
 
 from __future__ import annotations
@@ -96,12 +97,13 @@ def make_class(
     status: str = "ACTIVE",
     start_date: date | None = None,
     tuition: Decimal = Decimal("1000000"),
+    capacity: int = 30,
 ) -> AcademyClassModel:
     cls = AcademyClassModel(
         course_id=course.id,
         title=title,
         start_date=start_date or date.today(),
-        capacity=30,
+        capacity=capacity,
         tuition=tuition,
         num_sessions=8,
         status=status,
@@ -196,7 +198,7 @@ class TestRoleCounts:
 
 
 class TestClassAndCourseCounts:
-    def test_active_classes_exclude_completed_and_cancelled(self, db, admin):
+    def test_running_vs_planned_classes(self, db, admin):
         course = make_course()
         make_class(course, "Running", status="ACTIVE")
         make_class(course, "Planned", status="PLANNED")
@@ -204,7 +206,8 @@ class TestClassAndCourseCounts:
         make_class(course, "Dropped", status="CANCELLED")
 
         data = portal_service.get_admin_dashboard()
-        assert data["active_classes"] == 2
+        assert data["running_classes"] == 1
+        assert data["planned_classes"] == 1
 
     def test_upcoming_classes_are_future_operational(self, db, admin):
         course = make_course()
@@ -235,6 +238,19 @@ class TestClassAndCourseCounts:
         data = portal_service.get_admin_dashboard()
         assert data["distinct_courses"] == 2
 
+    def test_class_list_status_filter(self, client, db):
+        make_user("cl_admin", "ADMIN")
+        course = make_course()
+        make_class(course, "R1", status="ACTIVE")
+        make_class(course, "P1", status="PLANNED")
+
+        login_as(client, "cl_admin")
+        response = client.get("/academy/classes?status=ACTIVE")
+        assert response.status_code == 200
+        body = response.get_data(as_text=True)
+        assert "R1" in body
+        assert "P1" not in body
+
 
 class TestEnrollmentMetrics:
     def test_enrollment_statuses_and_unique_students(self, db, admin):
@@ -260,7 +276,7 @@ class TestEnrollmentMetrics:
 
 
 class TestAssessmentMetrics:
-    def test_assessment_attention_counts_open_and_closed(self, db, admin):
+    def test_open_and_closed_counted_separately(self, db, admin):
         course = make_course()
         cls = make_class(course)
         for i, status in enumerate(
@@ -278,7 +294,15 @@ class TestAssessmentMetrics:
 
         data = portal_service.get_admin_dashboard()
         assert data["assessments_total"] == 5  # CANCELLED excluded
-        assert data["assessments_attention"] == 2  # OPEN + CLOSED
+        assert data["open_assessments"] == 1
+        assert data["closed_assessments"] == 1
+        endpoints = [
+            (i["endpoint"], i.get("endpoint_args"))
+            for i in data["attention_items"]
+            if i["endpoint"] == "assessment.admin_assessment_list"
+        ]
+        assert ("assessment.admin_assessment_list", {"status": "OPEN"}) in endpoints
+        assert ("assessment.admin_assessment_list", {"status": "CLOSED"}) in endpoints
 
 
 class TestFinanceMetrics:
@@ -290,13 +314,11 @@ class TestFinanceMetrics:
         finance_service.record_payment(
             student.id, Decimal("500"), payment_method="CASH"
         )
-        # A corrected payment counts once, at its corrected amount: the
-        # original becomes CORRECTED (excluded) and the copy is ACTIVE.
+        # A corrected payment counts once, at its corrected amount.
         tx = finance_service.record_payment(
             student.id, Decimal("9999"), payment_method="CASH"
         )
         finance_service.correct_transaction(tx.id, new_amount=Decimal("100"))
-        # A charge is billed tuition, not collected cash.
         finance_service.create_charge(student.id, Decimal("3000"), category="TUITION")
 
         data = portal_service.get_admin_dashboard()
@@ -307,55 +329,56 @@ class TestFinanceMetrics:
             "3000"
         )
 
-    def test_month_net_subtracts_refunds(self, db, admin):
-        student = make_user("fs2", "STUDENT")
+    def test_monthly_buckets_match_per_month_reports(self, db, admin):
+        """Canonical grouped buckets equal month-by-month get_revenue_report()."""
+        student = make_user("fsb", "STUDENT")
         payment = finance_service.record_payment(
             student.id, Decimal("2000"), payment_method="CASH"
         )
         finance_service.record_refund(
-            student.id,
-            Decimal("500"),
-            related_transaction_id=payment.id,
+            student.id, Decimal("500"), related_transaction_id=payment.id
         )
 
-        data = portal_service.get_admin_dashboard()
-        assert Decimal(str(data["finance_month"]["current_net"])) == Decimal("1500")
-        assert Decimal(str(data["finance_month"]["current_gross"])) == Decimal("2000")
+        today = date.today()
+        first = today.replace(day=1)
+        expected = finance_service.get_revenue_report(start_date=first)
+        buckets = finance_service.get_monthly_revenue(first, 1)
+        assert len(buckets) == 1
+        assert buckets[0]["gross"] == expected["payments"]
+        assert buckets[0]["refunds"] == expected["refunds"]
+        assert buckets[0]["net"] == expected["net_revenue"]
 
-    def test_debt_and_debtors(self, db, admin):
-        debtor = make_user("debtor1", "STUDENT")
-        finance_service.create_charge(debtor.id, Decimal("1000"), category="TUITION")
-        creditor = make_user("creditor1", "STUDENT")
-        finance_service.record_payment(
-            creditor.id, Decimal("700"), payment_method="CASH"
+    def test_monthly_revenue_reversal_attribution(self, db, admin):
+        student = make_user("fsr", "STUDENT")
+        payment = finance_service.record_payment(
+            student.id, Decimal("3000"), payment_method="CASH"
         )
+        finance_service.reverse_transaction(payment.id, description="oops")
 
-        data = portal_service.get_admin_dashboard()
-        assert data["finance_summary"]["debtors_count"] == 1
-        assert Decimal(str(data["finance_summary"]["total_debt"])) == Decimal("1000")
-        assert data["top_debtors"] is not None
-        assert len(data["top_debtors"]) == 1
-        assert data["top_debtors"][0]["student_user_id"] == debtor.id
+        today = date.today()
+        buckets = finance_service.get_monthly_revenue(today.replace(day=1), 1)
+        # Reversals carry signed amounts: reversing a +3000 payment yields -3000.
+        assert buckets[0]["gross"] == Decimal("3000")
+        assert buckets[0]["net"] == Decimal("0")
 
-    def test_old_month_payment_excluded_from_month_kpi(self, db, admin):
-        student = make_user("fs3", "STUDENT")
+    def test_monthly_revenue_old_month_bucket(self, db, admin):
+        student = make_user("fso", "STUDENT")
         tx = finance_service.record_payment(
             student.id, Decimal("4000"), payment_method="CASH"
         )
         first_of_month = date.today().replace(day=1)
-        tx.created_at = datetime.combine(
-            first_of_month - timedelta(days=1), datetime.min.time()
-        )
+        prev = (first_of_month - timedelta(days=1)).replace(day=1)
+        tx.created_at = datetime.combine(prev + timedelta(days=10), datetime.min.time())
         _db.session.commit()
 
-        data = portal_service.get_admin_dashboard()
-        assert Decimal(str(data["finance_summary"]["month_payments"])) == Decimal("0")
+        buckets = finance_service.get_monthly_revenue(prev, 2)
+        assert buckets[0]["gross"] == Decimal("4000")  # previous month
+        assert buckets[1]["gross"] == Decimal("0")  # current month
 
     def test_non_active_transactions_excluded_from_collections(self, db, admin):
         from app.infrastructure.database.models import FinancialTransactionModel
 
         student = make_user("fs4", "STUDENT")
-        # A PENDING online payment attempt must not count as collected cash.
         _db.session.add(
             FinancialTransactionModel(
                 student_user_id=student.id,
@@ -371,6 +394,21 @@ class TestFinanceMetrics:
         data = portal_service.get_admin_dashboard()
         assert Decimal(str(data["finance_summary"]["month_payments"])) == Decimal("0")
         assert Decimal(str(data["finance_month"]["current_net"])) == Decimal("0")
+
+    def test_debt_and_debtors(self, db, admin):
+        debtor = make_user("debtor1", "STUDENT")
+        finance_service.create_charge(debtor.id, Decimal("1000"), category="TUITION")
+        creditor = make_user("creditor1", "STUDENT")
+        finance_service.record_payment(
+            creditor.id, Decimal("700"), payment_method="CASH"
+        )
+
+        data = portal_service.get_admin_dashboard()
+        assert data["finance_summary"]["debtors_count"] == 1
+        assert Decimal(str(data["finance_summary"]["total_debt"])) == Decimal("1000")
+        assert data["top_debtors"] is not None
+        assert len(data["top_debtors"]) == 1
+        assert data["top_debtors"][0]["student_user_id"] == debtor.id
 
 
 class TestTodayOverview:
@@ -394,9 +432,11 @@ class TestTodayOverview:
         assert overview is not None
         assert overview["total"] == 1
         assert overview["sessions"][0]["is_recorded"] is False
+        assert overview["sessions"][0]["needs_attention"] is True
         assert overview["sessions"][0]["eligible_count"] == 2
         assert overview["sessions"][0]["recorded_count"] == 1
         assert overview["completion_rate"] == 0
+        assert overview["sessions"][0]["fill_percent"] > 0
 
     def test_cancelled_sessions_excluded(self, db, admin):
         course = make_course()
@@ -420,16 +460,130 @@ class TestTodayOverview:
         assert overview["recordable"] == 0
         assert overview["sessions"][0]["needs_attention"] is False
         assert overview["completion_rate"] is None
-        # Neutral sessions must not raise an attendance attention item.
         assert not [
             i
             for i in data["attention_items"]
             if i["endpoint"] == "attendance.admin_attendance_list"
         ]
 
+    def test_capacity_watch_flags_near_full_classes(self, db, admin):
+        course = make_course()
+        full = make_class(course, "Almost Full", status="ACTIVE", capacity=10)
+        for i in range(9):
+            make_enrollment(make_user(f"cap{i}", "STUDENT"), full, "APPROVED")
+        roomy = make_class(course, "Roomy", status="ACTIVE", capacity=10)
+        make_enrollment(make_user("capx", "STUDENT"), roomy, "APPROVED")
+
+        data = portal_service.get_admin_dashboard()
+        assert data["capacity_watch"] is not None
+        assert len(data["capacity_watch"]) == 1
+        assert data["capacity_watch"][0]["title"] == "Almost Full"
+        assert data["capacity_watch"][0]["fill_percent"] == 90
+        assert any(
+            i["endpoint"] == "academy.class_detail" for i in data["attention_items"]
+        )
+
+
+class TestAttendanceWeek:
+    def test_weekly_rates_and_neutral_days(self, db, admin):
+        course = make_course()
+        cls = make_class(course, start_date=date.today() - timedelta(days=6))
+        s1 = make_user("ws1", "STUDENT")
+        e1 = make_enrollment(s1, cls)
+        recorded_day = date.today() - timedelta(days=1)
+        make_session(cls, recorded_day, number=1)
+        sess = SessionModel.query.filter_by(
+            class_id=cls.id, scheduled_date=recorded_day
+        ).first()
+        _db.session.add(
+            AttendanceModel(enrollment_id=e1.id, session_id=sess.id, status="PRESENT")
+        )
+        make_session(cls, date.today() - timedelta(days=3), number=2)
+        _db.session.commit()
+
+        data = portal_service.get_admin_dashboard()
+        week = data["attendance_chart"]["points"]
+        assert week is not None
+        assert len(week) == 7
+        by_key = {d["key"]: d for d in week}
+        assert by_key[recorded_day.isoformat()]["rate"] == 1.0
+        missing = by_key[(date.today() - timedelta(days=3)).isoformat()]
+        assert missing["rate"] == 0
+        empty = by_key[(date.today() - timedelta(days=5)).isoformat()]
+        assert empty["rate"] is None
+        assert data["attendance_chart"]["y_max"] == 100.0
+
+
+class TestChartModels:
+    def test_collections_chart_nice_scale_and_labels(self, db, admin):
+        student = make_user("ch1", "STUDENT")
+        finance_service.record_payment(
+            student.id, Decimal("4500000"), payment_method="CASH"
+        )
+
+        data = portal_service.get_admin_dashboard()
+        chart = data["collections_chart"]
+        assert chart is not None
+        assert len(chart["points"]) == 12
+        assert chart["points"][-1]["gross"] == Decimal("4500000")
+        assert chart["points"][-1]["label"]
+        assert chart["y_max"] >= 4500000
+        assert len(chart["ticks"]) == 5
+        assert chart["ticks"][0] == 0
+
+    def test_enrollments_chart_requests_and_approvals(self, db, admin):
+        course = make_course()
+        cls = make_class(course)
+        s1 = make_user("ce1", "STUDENT")
+        s2 = make_user("ce2", "STUDENT")
+        make_enrollment(s1, cls, "APPROVED")
+        make_enrollment(s2, cls, "PENDING")
+
+        data = portal_service.get_admin_dashboard()
+        chart = data["enrollments_chart"]
+        assert chart is not None
+        assert len(chart["points"]) == 12
+        current = chart["points"][-1]
+        assert current["requested"] == 2
+        assert current["approved"] == 1
+
 
 # ---------------------------------------------------------------------------
-# C. Links and authorization
+# Query-count regression
+# ---------------------------------------------------------------------------
+
+
+class TestQueryBudget:
+    def test_dashboard_query_count_is_bounded(self, db, admin):
+        from sqlalchemy import event
+
+        from app.extensions import db as _db_ext
+
+        course = make_course()
+        for i in range(3):
+            cls = make_class(course, f"QC{i}")
+            for n in range(4):
+                make_enrollment(make_user(f"qc{i}_{n}", "STUDENT"), cls, "APPROVED")
+            make_session(cls, date.today(), number=1)
+
+        count = [0]
+
+        @event.listens_for(_db_ext.engine, "before_cursor_execute")
+        def _count(conn, cursor, statement, params, context, executemany):
+            count[0] += 1
+
+        try:
+            portal_service.get_admin_dashboard()
+        finally:
+            event.remove(_db_ext.engine, "before_cursor_execute", _count)
+
+        # Grouped aggregates keep the service well under the historical 66–77
+        # range even with several classes, sessions, and enrollments.
+        assert count[0] < 60, f"dashboard issued {count[0]} queries"
+
+
+# ---------------------------------------------------------------------------
+# Links, authorization, and card anchors
 # ---------------------------------------------------------------------------
 
 
@@ -467,6 +621,7 @@ class TestDashboardAccess:
             "/academy/courses",
             "/academy/courses/create",
             "/academy/classes",
+            "/academy/classes?status=ACTIVE",
             "/academy/classes/create",
             "/enrollment/admin/all",
             "/enrollment/admin/all?status=APPROVED",
@@ -479,12 +634,40 @@ class TestDashboardAccess:
             "/finance/admin/transaction/create",
             "/finance/admin/reports/debt",
             "/assessment/admin/all",
+            "/assessment/admin/all?status=OPEN",
+            "/assessment/admin/all?status=CLOSED",
             "/reporting/admin/overview",
             "/admin/audit-logs",
         ]
         for url in urls:
             response = client.get(url)
             assert response.status_code == 200, f"dashboard link broken: {url}"
+
+    def test_kpi_cards_are_single_anchors_with_exact_destinations(self, client, admin):
+        """Each KPI card is one <a> (no nested links) pointing at its module."""
+        from bs4 import BeautifulSoup
+
+        login_as(client, "dash_admin")
+        response = client.get("/portal/admin")
+        assert response.status_code == 200
+        soup = BeautifulSoup(response.get_data(as_text=True), "html.parser")
+        cards = soup.select("a.stat-card-link")
+        assert len(cards) == 8
+        hrefs = {card["href"] for card in cards}
+        assert "/admin/users?role=STUDENT" in hrefs
+        assert "/admin/users?role=TEACHER" in hrefs
+        assert "/academy/classes?status=ACTIVE" in hrefs
+        assert "/academy/courses" in hrefs
+        assert "/enrollment/admin/all?status=APPROVED" in hrefs
+        assert "/enrollment/admin/pending" in hrefs
+        assert "/finance/admin/dashboard" in hrefs
+        assert "/finance/admin/reports/debt" in hrefs
+        for card in cards:
+            # No nested interactive elements inside the card link.
+            assert not card.select("a"), "nested link inside KPI card"
+            assert not card.select("button"), "button inside KPI card"
+            assert card.get("aria-label"), "KPI card missing accessible name"
+            assert card.select_one(".stat-card-value") is not None
 
     def test_enrollment_list_status_filter_matches_kpi(self, client, db):
         make_user("flt_admin", "ADMIN")
@@ -523,7 +706,7 @@ class TestDashboardAccess:
 
 
 # ---------------------------------------------------------------------------
-# D. Empty and error states
+# Empty and error states
 # ---------------------------------------------------------------------------
 
 
@@ -533,7 +716,6 @@ class TestEmptyAcademy:
         response = client.get("/portal/admin")
         assert response.status_code == 200
         body = response.get_data(as_text=True)
-        # No broken cards: zeros render, onboarding guidance present.
         assert "هنوز دانش‌آموز یا کلاس فعالی ثبت نشده است" in body
         assert "درخواست در انتظاری وجود ندارد" in body
         assert "امروز جلسه‌ای برنامه‌ریزی نشده است" in body
@@ -541,24 +723,25 @@ class TestEmptyAcademy:
         data = portal_service.get_admin_dashboard()
         assert data["active_students"] == 0
         assert data["active_teachers"] == 0
-        assert data["active_classes"] == 0
+        assert data["running_classes"] == 0
         assert data["distinct_courses"] == 0
         assert data["top_debtors"] == []
         assert data["today_overview"]["completion_rate"] is None
+        assert len(data["collections_chart"]["points"]) == 12
+        assert len(data["attendance_chart"]["points"]) == 7
 
     def test_optional_section_failure_renders_error_state(
         self, client, admin, monkeypatch
     ):
         import app.application.portal.portal_service as service
 
-        real_trend = service._get_collection_trend
-
         def boom():
             raise RuntimeError("trend DB outage")
 
-        monkeypatch.setattr(service, "_get_collection_trend", boom)
+        monkeypatch.setattr(service, "_get_monthly_revenue", boom)
         login_as(client, "dash_admin")
         response = client.get("/portal/admin")
         assert response.status_code == 200
         assert "روند وصول با خطا مواجه شد" in response.get_data(as_text=True)
-        monkeypatch.setattr(service, "_get_collection_trend", real_trend)
+        # The month KPI falls back to direct canonical calls (never blank).
+        assert "وصول خالص این ماه" in response.get_data(as_text=True)

@@ -24,6 +24,16 @@
                 {% endfor %}
             </select>
         </div>
+        <div class="form-group">
+            <label class="form-label" for="status">وضعیت</label>
+            <select id="status" name="status" class="form-select" onchange="this.form.submit()">
+                <option value="">همه وضعیت‌ها</option>
+                <option value="PLANNED" {{ 'selected' if selected_status == 'PLANNED' }}>برنامه‌ریزی شده</option>
+                <option value="ACTIVE" {{ 'selected' if selected_status == 'ACTIVE' }}>فعال</option>
+                <option value="COMPLETED" {{ 'selected' if selected_status == 'COMPLETED' }}>تکمیل شده</option>
+                <option value="CANCELLED" {{ 'selected' if selected_status == 'CANCELLED' }}>لغو شده</option>
+            </select>
+        </div>
     </form>
 </div>
 

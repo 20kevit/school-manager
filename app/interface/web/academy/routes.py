@@ -209,7 +209,14 @@ def syllabus_delete(item_id):
 def class_list():
     course_id = request.args.get("course_id", type=int)
     semester_id = request.args.get("semester_id", type=int)
-    classes = list_classes(course_id=course_id, semester_id=semester_id)
+    status = request.args.get("status", "").strip().upper()
+    if status not in ("PLANNED", "ACTIVE", "COMPLETED", "CANCELLED"):
+        status = ""
+    classes = list_classes(
+        course_id=course_id,
+        semester_id=semester_id,
+        status=status or None,
+    )
     courses = list_courses()
     semesters = list_semesters()
     return render_template(
@@ -219,6 +226,7 @@ def class_list():
         semesters=semesters,
         selected_course_id=course_id,
         selected_semester_id=semester_id,
+        selected_status=status,
     )
 
 

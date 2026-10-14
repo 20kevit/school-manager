@@ -23,6 +23,13 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
   neutral (never flagged, excluded from completion rate); enrollment admin
   list accepts all valid status filters so KPI cards link to exact
   populations; students KPI links to the role-filtered user list
+- Dashboard redesign iteration 2: whole-card clickable KPI anchors;
+  server-rendered SVG charts (12-month net/gross collections, monthly
+  requests vs approvals, 7-day attendance completion) with tabular
+  alternatives; canonical `finance_service.get_monthly_revenue()` grouped
+  query; grouped enrollment/attendance/capacity aggregates (~40% fewer
+  dashboard queries); class-list status filter; capacity attention items;
+  `compact_number` template filter; `beautifulsoup4` test dependency
 
 ### Security
 - Payment failure callbacks isolated behind provider verification (unsigned

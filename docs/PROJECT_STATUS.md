@@ -9,12 +9,13 @@
 
 ## Status
 
-Admin dashboard redesign is complete: role/status-accurate KPIs, prioritized
-attention list, today's sessions with attendance-recording status, financial
-pulse reusing canonical finance definitions, two CSS-only trend charts, empty
-and error states, responsive RTL layout verified in Chrome (1440/768/390, zero
-horizontal overflow), 22 new dashboard tests, full suite 1035 passed + 9
-skipped, Ruff clean. See `docs/ADMIN_DASHBOARD.md` for metric definitions.
+Admin dashboard redesign (second iteration) is complete: whole-card clickable
+KPIs with exact filtered destinations, server-rendered SVG charts (12-month
+net/gross collections, requests vs approvals, 7-day attendance) with
+data-table alternatives, grouped queries cutting dashboard queries ~40%
+(76→46 on PostgreSQL), capacity attention, class status filter, 33+ dashboard
+tests, full suite 1046 passed, Ruff clean, browser-validated at
+1440/768/390/320 with zero overflow. See `docs/ADMIN_DASHBOARD.md`.
 
 P27 is complete. The application is containerized with Docker, using Gunicorn as the production WSGI server, PostgreSQL 15 as the database, and Nginx as a reverse proxy. Entrypoint script handles migration and conditional seeding. All 905 tests pass.
 

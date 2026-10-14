@@ -279,14 +279,18 @@ def get_class(class_id: int) -> AcademyClassModel | None:
 
 
 def list_classes(
-    course_id: int | None = None, semester_id: int | None = None
+    course_id: int | None = None,
+    semester_id: int | None = None,
+    status: str | None = None,
 ) -> list[AcademyClassModel]:
-    """List classes, optionally filtered by course and/or semester."""
+    """List classes, optionally filtered by course, semester, and/or status."""
     query = AcademyClassModel.query
     if course_id is not None:
         query = query.filter_by(course_id=course_id)
     if semester_id is not None:
         query = query.filter_by(semester_id=semester_id)
+    if status:
+        query = query.filter_by(status=status)
     return query.order_by(AcademyClassModel.start_date.desc()).all()
 
 

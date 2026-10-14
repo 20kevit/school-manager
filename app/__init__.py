@@ -232,6 +232,27 @@ def _register_template_filters(app):
             # corrupts bare multi-exception tuples into invalid syntax.
             return str(amount)
 
+    @app.template_filter("compact_number")
+    def compact_number_filter(value):
+        """Format an axis value compactly (millions as X.X م, else grouped)."""
+        if value is None:
+            return "—"
+        try:
+            num = float(value)
+        except TypeError:  # fmt: skip
+            return str(value)
+        except ValueError:  # fmt: skip
+            # Separate clauses on purpose: ruff 0.17's formatter corrupts
+            # multi-exception tuples into invalid syntax (see above).
+            return str(value)
+        if num >= 1_000_000:
+            rounded = round(num / 1_000_000, 1)
+            text = str(int(rounded)) if rounded == int(rounded) else str(rounded)
+            return f"{text} م"
+        if num == int(num):
+            return f"{int(num):,}"
+        return f"{round(num, 1):,}"
+
     @app.template_filter("persian_label")
     def persian_label_filter(value):
         """Translate enum/status values to Persian labels."""
