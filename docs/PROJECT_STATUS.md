@@ -1,11 +1,20 @@
 # Project Status
 
-**Current Phase:** P27 — Deployment Readiness — Completed
-**Current Objective:** Docker containerization, production server configuration, and deployment documentation.
+**Current Phase:** Admin Dashboard Redesign — Completed
+**Current Objective:** Production-quality administrator landing page with verified metrics.
+
+**Previous Phase:** P27 — Deployment Readiness — Completed
 
 **Previous Phase:** P26 — Automated Tasks & Audit Logging
 
 ## Status
+
+Admin dashboard redesign is complete: role/status-accurate KPIs, prioritized
+attention list, today's sessions with attendance-recording status, financial
+pulse reusing canonical finance definitions, two CSS-only trend charts, empty
+and error states, responsive RTL layout verified in Chrome (1440/768/390, zero
+horizontal overflow), 22 new dashboard tests, full suite 1035 passed + 9
+skipped, Ruff clean. See `docs/ADMIN_DASHBOARD.md` for metric definitions.
 
 P27 is complete. The application is containerized with Docker, using Gunicorn as the production WSGI server, PostgreSQL 15 as the database, and Nginx as a reverse proxy. Entrypoint script handles migration and conditional seeding. All 905 tests pass.
 

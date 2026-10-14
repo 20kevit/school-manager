@@ -71,7 +71,7 @@ def admin_dashboard():
     from app.application.portal.portal_service import get_admin_dashboard
 
     data = get_admin_dashboard()
-    return render_template("portal/admin.html", data=data)
+    return render_template("portal/admin.html", data=data, today=date.today())
 
 
 # ---------------------------------------------------------------------------

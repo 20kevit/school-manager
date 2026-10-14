@@ -6,6 +6,20 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 
 ## Unreleased
 
+### Added
+- Administrator dashboard redesign (production-quality): role-specific
+  student/teacher counts, operational class statuses, distinct course counts,
+  enrollment request vs approved vs unique-student metrics, OPEN/CLOSED
+  assessment follow-ups, prioritized attention list, today's sessions with
+  attendance-recording status, financial pulse on canonical finance
+  definitions (gross/net month collections, billed vs collected, top
+  debtors), two CSS-only trend charts with data-table alternatives, empty and
+  error states, responsive RTL layout; `docs/ADMIN_DASHBOARD.md` documents
+  every metric; 22 new tests in `tests/test_admin_dashboard.py`
+- Fixed mobile horizontal overflow globally via flex-item `min-width: 0` on
+  `.main-content` (also fixed the class list page) and wrapped bar-chart
+  labels/values
+
 ### Security
 - Payment failure callbacks isolated behind provider verification (unsigned
   `Status=NOK` can no longer fail pending payments); transport errors leave

@@ -108,7 +108,7 @@
 - [x] Student dashboard
 - [x] Parent dashboard
 - [x] Teacher dashboard
-- [x] Admin dashboard
+- [x] Admin dashboard (production-quality redesign: verified role/status metrics, attention list, today/finance/trends sections — see docs/ADMIN_DASHBOARD.md)
 
 ## P9 — Notifications
 
