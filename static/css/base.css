@@ -115,3 +115,11 @@ code {
 .skip-link:focus {
     top: 0;
 }
+
+/* === Hidden State ===
+ * [hidden] must always win over component display rules (e.g. .form-group's
+ * flex on role-dependent field groups in user_form.html).
+ */
+[hidden] {
+    display: none !important;
+}

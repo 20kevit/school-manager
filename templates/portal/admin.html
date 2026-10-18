@@ -33,8 +33,8 @@
 <nav class="dashboard-section" aria-label="اقدامات سریع">
     <h2 class="dashboard-section-title">اقدامات سریع</h2>
     <div class="quick-actions">
-        <a href="{{ url_for('admin.user_create') }}" class="btn btn-primary">افزودن دانش‌آموز</a>
-        <a href="{{ url_for('admin.user_create') }}" class="btn btn-primary">افزودن معلم</a>
+        <a href="{{ url_for('admin.user_create', role='STUDENT') }}" class="btn btn-primary">افزودن دانش‌آموز</a>
+        <a href="{{ url_for('admin.user_create', role='TEACHER') }}" class="btn btn-primary">افزودن معلم</a>
         <a href="{{ url_for('academy.course_create') }}" class="btn btn-secondary">ایجاد دوره</a>
         <a href="{{ url_for('academy.class_create') }}" class="btn btn-secondary">ایجاد کلاس</a>
         <a href="{{ url_for('enrollment.admin_enroll') }}" class="btn btn-secondary">ثبت‌نام دانش‌آموز</a>
@@ -67,9 +67,9 @@
             <span class="stat-card-value">{{ data.active_teachers }}</span>
             <span class="stat-card-sub">دارای نقش معلم و حساب فعال</span>
         </a>
-        <a class="stat-card stat-card-link" href="{{ url_for('academy.class_list', status='ACTIVE') }}" aria-label="کلاس‌های در حال برگزاری: {{ data.running_classes }} کلاس. مشاهده فهرست کلاس‌های فعال">
+        <a class="stat-card stat-card-link" href="{{ url_for('academy.class_list', status='ACTIVE') }}" aria-label="کلاس‌های فعال: {{ data.running_classes }} کلاس. مشاهده فهرست کلاس‌های فعال">
             <span class="stat-card-header">
-                <span class="stat-card-label">کلاس‌های در حال برگزاری</span>
+                <span class="stat-card-label">کلاس‌های فعال</span>
                 <span class="stat-card-icon info" aria-hidden="true">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
                 </span>
@@ -85,7 +85,7 @@
                 </span>
             </span>
             <span class="stat-card-value">{{ data.distinct_courses }}</span>
-            <span class="stat-card-sub">پایه {{ data.running_classes + data.planned_classes }} کلاس عملیاتی</span>
+            <span class="stat-card-sub">مبتنی بر {{ data.running_classes + data.planned_classes }} کلاس فعال و برنامه‌ریزی‌شده</span>
         </a>
         <a class="stat-card stat-card-link" href="{{ url_for('enrollment.admin_enrollment_list', status='APPROVED') }}" aria-label="ثبت‌نام‌های تأییدشده: {{ data.approved_enrollments }} ثبت‌نام. مشاهده فهرست">
             <span class="stat-card-header">

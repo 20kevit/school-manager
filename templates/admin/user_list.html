@@ -7,7 +7,7 @@
 {{ page_header("مدیریت کاربران", description="ایجاد، ویرایش و مدیریت کاربران سیستم", action_url=url_for('admin.user_create'), action_label="ایجاد کاربر") }}
 
 <div class="form-card" style="margin-bottom: var(--space-4);">
-    <form method="GET" class="form-grid" style="grid-template-columns: 1fr 1fr auto; align-items: end;">
+    <form method="GET" class="user-filter-form">
         <div class="form-group">
             <label class="form-label" for="search">جستجو</label>
             <input type="text" id="search" name="search" class="form-input" placeholder="نام کاربری..." value="{{ search }}">

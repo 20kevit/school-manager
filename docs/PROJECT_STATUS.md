@@ -1,13 +1,26 @@
 # Project Status
 
-**Current Phase:** Admin Dashboard Redesign — Completed
-**Current Objective:** Production-quality administrator landing page with verified metrics.
+**Current Phase:** UI/UX Defect Fixes — Completed
+**Current Objective:** Verified UI/UX corrections (student credentials, role preselection, form-value preservation, responsive filter, sidebar a11y, KPI wording) on branch `fix/ui-ux-defects`.
+
+**Previous Phase:** Admin Dashboard Redesign — Completed
 
 **Previous Phase:** P27 — Deployment Readiness — Completed
 
 **Previous Phase:** P26 — Automated Tasks & Audit Logging
 
 ## Status
+
+UI/UX defect-fix pass is complete on `fix/ui-ux-defects`: explicit student
+credential contract (national-ID bootstrap password + mandatory first-login
+rotation, no ignored password field), role-preselected user creation via
+dashboard quick actions, value-preserving error re-renders, responsive
+user-list filter, keyboard-accessible mobile sidebar (inert + aria state),
+and dashboards KPI wording aligned to metric definitions. 1094 tests
+passing (24 new in `tests/test_admin_user_form.py`), Ruff clean,
+real-browser validated with Playwright/Chrome at 1440/768/390/320
+(59 checks, 0 failure; screenshot set in /tmp). See
+`docs/CHANGELOG.md` for details.
 
 Admin dashboard redesign (second iteration) is complete: whole-card clickable
 KPIs with exact filtered destinations, server-rendered SVG charts (12-month

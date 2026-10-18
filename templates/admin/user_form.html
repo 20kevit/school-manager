@@ -6,6 +6,11 @@
 {% block content %}
 {{ page_header("ایجاد کاربر جدید") }}
 
+{# Form values submitted before a failed validation are re-rendered.
+   The password is never included in form_data and never repopulated. #}
+{% set is_student = selected_role == 'STUDENT' %}
+{% set is_profile_role = selected_role in ['TEACHER', 'STUDENT', 'PARENT'] %}
+
 <div class="form-card">
     <form method="POST" id="create-user-form">
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
@@ -13,63 +18,83 @@
         <div class="form-grid">
             <div class="form-group">
                 <label class="form-label" for="login">نام کاربری <span class="required">*</span></label>
-                <input type="text" id="login" name="login" class="form-input" required placeholder="نام کاربری را وارد کنید">
+                <input type="text" id="login" name="login" class="form-input" required
+                       value="{{ form_data.login }}" placeholder="نام کاربری را وارد کنید">
             </div>
-            <div class="form-group">
+            <div class="form-group" id="password-group" {% if is_student %}hidden{% endif %}>
                 <label class="form-label" for="password">رمز عبور <span class="required">*</span></label>
-                <input type="password" id="password" name="password" class="form-input" required placeholder="رمز عبور را وارد کنید" minlength="6">
+                <input type="password" id="password" name="password" class="form-input"
+                       data-required-roles="ADMIN,TEACHER,PARENT"
+                       {% if not is_student %}required{% endif %} minlength="6"
+                       placeholder="رمز عبور را وارد کنید">
             </div>
         </div>
 
+        {# Student bootstrap credential: initial password is the national ID. #}
+        <p id="student-password-note" class="form-hint" {% if not is_student %}hidden{% endif %}>
+            برای دانش‌آموز نیازی به رمز عبور نیست: رمز عبور اولیه همان کد ملی
+            دانش‌آموز است و دانش‌آموز باید در اولین ورود رمز عبور جدید تعیین شود.
+        </p>
+
         <div class="form-group">
             <label class="form-label" for="role">نقش <span class="required">*</span></label>
-            <select id="role" name="role" class="form-select" required onchange="toggleProfileFields()">
+            <select id="role" name="role" class="form-select" required data-user-form-role>
                 <option value="">— انتخاب کنید —</option>
-                <option value="ADMIN" {% if role == 'ADMIN' %}selected{% endif %}>مدیر (ADMIN)</option>
-                <option value="TEACHER" {% if role == 'TEACHER' %}selected{% endif %}>معلم (TEACHER)</option>
-                <option value="STUDENT" {% if role == 'STUDENT' %}selected{% endif %}>دانش‌آموز (STUDENT)</option>
-                <option value="PARENT" {% if role == 'PARENT' %}selected{% endif %}>والدین (PARENT)</option>
+                <option value="ADMIN" {% if selected_role == 'ADMIN' %}selected{% endif %}>مدیر (ADMIN)</option>
+                <option value="TEACHER" {% if selected_role == 'TEACHER' %}selected{% endif %}>معلم (TEACHER)</option>
+                <option value="STUDENT" {% if is_student %}selected{% endif %}>دانش‌آموز (STUDENT)</option>
+                <option value="PARENT" {% if selected_role == 'PARENT' %}selected{% endif %}>والدین (PARENT)</option>
             </select>
         </div>
 
         <!-- Profile Fields -->
-        <div id="profile-fields" style="display: none;">
+        <div id="profile-fields" {% if not is_profile_role %}hidden{% endif %}>
             <div class="form-card-title" style="margin-top: var(--space-4);">اطلاعات پروفایل</div>
 
             <div class="form-grid">
                 <div class="form-group">
                     <label class="form-label" for="first_name">نام <span class="required">*</span></label>
-                    <input type="text" id="first_name" name="first_name" class="form-input" placeholder="نام">
+                    <input type="text" id="first_name" name="first_name" class="form-input"
+                           data-required-roles="TEACHER,STUDENT,PARENT" value="{{ form_data.first_name }}"
+                           placeholder="نام">
                 </div>
                 <div class="form-group">
                     <label class="form-label" for="last_name">نام خانوادگی <span class="required">*</span></label>
-                    <input type="text" id="last_name" name="last_name" class="form-input" placeholder="نام خانوادگی">
+                    <input type="text" id="last_name" name="last_name" class="form-input"
+                           data-required-roles="TEACHER,STUDENT,PARENT" value="{{ form_data.last_name }}"
+                           placeholder="نام خانوادگی">
                 </div>
             </div>
 
             <div class="form-grid">
                 <div class="form-group">
                     <label class="form-label" for="national_id">کد ملی <span class="required">*</span></label>
-                    <input type="text" id="national_id" name="national_id" class="form-input" placeholder="کد ملی" maxlength="10">
+                    <input type="text" id="national_id" name="national_id" class="form-input"
+                           data-required-roles="TEACHER,STUDENT,PARENT" value="{{ form_data.national_id }}"
+                           placeholder="کد ملی" maxlength="10">
                 </div>
                 <div class="form-group">
                     <label class="form-label" for="mobile_phone">موبایل <span class="required">*</span></label>
-                    <input type="text" id="mobile_phone" name="mobile_phone" class="form-input" placeholder="شماره موبایل" maxlength="15">
+                    <input type="text" id="mobile_phone" name="mobile_phone" class="form-input"
+                           data-required-roles="TEACHER,STUDENT,PARENT" value="{{ form_data.mobile_phone }}"
+                           placeholder="شماره موبایل" maxlength="15">
                 </div>
             </div>
 
-            <div id="student-fields" style="display: none;">
+            <div id="student-fields" {% if not is_student %}hidden{% endif %}>
                 <div class="form-grid">
                     <div class="form-group">
                         <label class="form-label" for="birth_date">تاریخ تولد <span class="required">*</span></label>
-                        <input type="text" id="birth_date" name="birth_date" class="form-input" placeholder="مثال: ۱۳۹۰/۰۵/۱۵">
+                        <input type="text" id="birth_date" name="birth_date" class="form-input"
+                               data-required-roles="STUDENT" value="{{ form_data.birth_date }}"
+                               placeholder="مثال: ۱۳۹۰/۰۵/۱۵">
                     </div>
                     <div class="form-group">
                         <label class="form-label" for="gender">جنسیت <span class="required">*</span></label>
-                        <select id="gender" name="gender" class="form-select">
+                        <select id="gender" name="gender" class="form-select" data-required-roles="STUDENT">
                             <option value="">— انتخاب کنید —</option>
-                            <option value="MALE">پسر</option>
-                            <option value="FEMALE">دختر</option>
+                            <option value="MALE" {% if form_data.gender == 'MALE' %}selected{% endif %}>پسر</option>
+                            <option value="FEMALE" {% if form_data.gender == 'FEMALE' %}selected{% endif %}>دختر</option>
                         </select>
                     </div>
                 </div>
@@ -83,28 +108,4 @@
     </form>
 </div>
 
-{% endblock %}
-
-{% block extra_js %}
-<script>
-function toggleProfileFields() {
-    const role = document.getElementById('role').value;
-    const profileFields = document.getElementById('profile-fields');
-    const studentFields = document.getElementById('student-fields');
-
-    if (role === 'ADMIN') {
-        profileFields.style.display = 'none';
-    } else {
-        profileFields.style.display = 'block';
-        if (role === 'STUDENT') {
-            studentFields.style.display = 'block';
-        } else {
-            studentFields.style.display = 'none';
-        }
-    }
-}
-
-// Run on page load
-document.addEventListener('DOMContentLoaded', toggleProfileFields);
-</script>
 {% endblock %}

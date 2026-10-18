@@ -80,118 +80,178 @@ def user_list():
 # Create User
 # ---------------------------------------------------------------------------
 
+SUPPORTED_ROLES = ("ADMIN", "TEACHER", "STUDENT", "PARENT")
+
+#: Minimum password length for roles whose creation flow uses an explicit
+#: password. Students bootstrap with their national ID instead.
+MIN_PASSWORD_LENGTH = 6
+
+
+def _render_user_form(selected_role="", form_data=None):
+    """Render the user-creation form.
+
+    ``selected_role`` preselects the role (GET ``?role=`` param or the
+    submitted role after a validation failure).
+
+    ``form_data`` carries previously submitted, non-sensitive values so
+    failed submissions never lose the administrator's input. The password
+    is deliberately never part of it and must never be echoed back.
+    """
+    return render_template(
+        "admin/user_form.html",
+        selected_role=selected_role,
+        form_data=form_data or {},
+    )
+
+
+def _collect_user_form() -> dict:
+    """Collect submitted, non-sensitive form values for re-rendering."""
+    return {
+        "login": request.form.get("login", "").strip(),
+        "role": request.form.get("role", "").strip(),
+        "first_name": request.form.get("first_name", "").strip(),
+        "last_name": request.form.get("last_name", "").strip(),
+        "national_id": request.form.get("national_id", "").strip(),
+        "mobile_phone": request.form.get("mobile_phone", "").strip(),
+        "birth_date": request.form.get("birth_date", "").strip(),
+        "gender": request.form.get("gender", "").strip(),
+    }
+
 
 @admin_bp.route("/users/create", methods=["GET", "POST"])
 @login_required
 @role_required("ADMIN")
 def user_create():
-    """Create a new user with role-specific profile."""
-    if request.method == "POST":
-        login = request.form.get("login", "").strip()
-        password = request.form.get("password", "")
-        role = request.form.get("role", "").strip()
+    """Create a new user with role-specific profile.
 
-        if not login or not password or not role:
-            flash("نام کاربری، رمز عبور و نقش الزامی هستند.", "error")
-            return render_template("admin/user_form.html")
+    Credential contract:
 
-        if role not in ("ADMIN", "TEACHER", "STUDENT", "PARENT"):
-            flash("نقش نامعتبر است.", "error")
-            return render_template("admin/user_form.html")
+    * STUDENT — no password input; the admin supplies the login username
+      and the student bootstrap service uses the national ID as the
+      initial password with mandatory rotation at first login.
+    * ADMIN / TEACHER / PARENT — explicit password (min length 6).
 
-        try:
-            if role == "ADMIN":
-                user = create_user(login, password)
-                assign_role(user, "ADMIN")
-            elif role == "TEACHER":
-                national_id = request.form.get("national_id", "").strip()
-                first_name = request.form.get("first_name", "").strip()
-                last_name = request.form.get("last_name", "").strip()
-                mobile_phone = request.form.get("mobile_phone", "").strip()
+    GET ``?role=`` (one of SUPPORTED_ROLES) preselects the role; any other
+    value falls back to the generic form.
+    """
+    if request.method == "GET":
+        selected_role = request.args.get("role", "").strip()
+        if selected_role:
+            if selected_role in SUPPORTED_ROLES:
+                return _render_user_form(selected_role=selected_role)
+            flash("نقش انتخاب‌شده پشتیبانی نمی‌شود؛ نقش را انتخاب کنید.", "error")
+            return _render_user_form()
 
-                if not all([national_id, first_name, last_name, mobile_phone]):
-                    flash("تمام فیلدهای پروفایل معلم الزامی هستند.", "error")
-                    return render_template("admin/user_form.html", role=role)
+        return _render_user_form()
 
-                from app.application.auth.services import create_teacher_user
+    form_data = _collect_user_form()
+    login = form_data["login"]
+    password = request.form.get("password", "")
+    role = form_data["role"]
 
-                create_teacher_user(
-                    login=login,
-                    password=password,
-                    national_id=national_id,
-                    first_name=first_name,
-                    last_name=last_name,
-                    mobile_phone=mobile_phone,
-                )
-            elif role == "STUDENT":
-                national_id = request.form.get("national_id", "").strip()
-                first_name = request.form.get("first_name", "").strip()
-                last_name = request.form.get("last_name", "").strip()
-                mobile_phone = request.form.get("mobile_phone", "").strip()
-                birth_date_str = request.form.get("birth_date", "").strip()
-                gender = request.form.get("gender", "").strip()
+    if not login or not role:
+        flash("نام کاربری و نقش الزامی هستند.", "error")
+        return _render_user_form(form_data=form_data)
 
-                if not all(
-                    [
-                        national_id,
-                        first_name,
-                        last_name,
-                        mobile_phone,
-                        birth_date_str,
-                        gender,
-                    ]
-                ):
-                    flash("تمام فیلدهای پروفایل دانش‌آموز الزامی هستند.", "error")
-                    return render_template("admin/user_form.html", role=role)
+    if role not in SUPPORTED_ROLES:
+        flash("نقش نامعتبر است.", "error")
+        return _render_user_form(form_data=form_data)
 
-                from app.utils.date_utils import parse_jalali_date
+    # Students bootstrap with the national ID as the initial password
+    # (handled by create_student_user); other roles require an explicit
+    # password matching the client-side minlength.
+    if role != "STUDENT" and len(password) < MIN_PASSWORD_LENGTH:
+        flash("رمز عبور الزامی است و باید حداقل ۶ کاراکتر باشد.", "error")
+        return _render_user_form(selected_role=role, form_data=form_data)
 
-                try:
-                    birth_date = parse_jalali_date(birth_date_str)
-                except ValueError as e:
-                    flash_safe_error(e)
-                    return render_template("admin/user_form.html", role=role)
+    try:
+        if role == "ADMIN":
+            user = create_user(login, password)
+            assign_role(user, "ADMIN")
+        elif role == "TEACHER":
+            if not all(
+                [
+                    form_data["national_id"],
+                    form_data["first_name"],
+                    form_data["last_name"],
+                    form_data["mobile_phone"],
+                ]
+            ):
+                flash("تمام فیلدهای پروفایل معلم الزامی هستند.", "error")
+                return _render_user_form(selected_role=role, form_data=form_data)
 
-                from app.application.auth.services import create_student_user
+            from app.application.auth.services import create_teacher_user
 
-                create_student_user(
-                    login=login,
-                    national_id=national_id,
-                    first_name=first_name,
-                    last_name=last_name,
-                    mobile_phone=mobile_phone,
-                    birth_date=birth_date,
-                    gender=gender,
-                )
-            elif role == "PARENT":
-                national_id = request.form.get("national_id", "").strip()
-                first_name = request.form.get("first_name", "").strip()
-                last_name = request.form.get("last_name", "").strip()
-                mobile_phone = request.form.get("mobile_phone", "").strip()
+            create_teacher_user(
+                login=login,
+                password=password,
+                national_id=form_data["national_id"],
+                first_name=form_data["first_name"],
+                last_name=form_data["last_name"],
+                mobile_phone=form_data["mobile_phone"],
+            )
+        elif role == "STUDENT":
+            if not all(
+                [
+                    form_data["national_id"],
+                    form_data["first_name"],
+                    form_data["last_name"],
+                    form_data["mobile_phone"],
+                    form_data["birth_date"],
+                    form_data["gender"],
+                ]
+            ):
+                flash("تمام فیلدهای پروفایل دانش‌آموز الزامی هستند.", "error")
+                return _render_user_form(selected_role=role, form_data=form_data)
 
-                if not all([national_id, first_name, last_name, mobile_phone]):
-                    flash("تمام فیلدهای پروفایل والدین الزامی هستند.", "error")
-                    return render_template("admin/user_form.html", role=role)
+            try:
+                birth_date = parse_jalali_date(form_data["birth_date"])
+            except ValueError as e:
+                flash_safe_error(e)
+                return _render_user_form(selected_role=role, form_data=form_data)
 
-                from app.application.auth.services import create_parent_user
+            from app.application.auth.services import create_student_user
 
-                create_parent_user(
-                    login=login,
-                    password=password,
-                    national_id=national_id,
-                    first_name=first_name,
-                    last_name=last_name,
-                    mobile_phone=mobile_phone,
-                )
+            create_student_user(
+                login=login,
+                national_id=form_data["national_id"],
+                first_name=form_data["first_name"],
+                last_name=form_data["last_name"],
+                mobile_phone=form_data["mobile_phone"],
+                birth_date=birth_date,
+                gender=form_data["gender"],
+            )
+        elif role == "PARENT":
+            if not all(
+                [
+                    form_data["national_id"],
+                    form_data["first_name"],
+                    form_data["last_name"],
+                    form_data["mobile_phone"],
+                ]
+            ):
+                flash("تمام فیلدهای پروفایل والدین الزامی هستند.", "error")
+                return _render_user_form(selected_role=role, form_data=form_data)
 
-            flash("کاربر با موفقیت ایجاد شد.", "success")
-            return redirect(url_for("admin.user_list"))
+            from app.application.auth.services import create_parent_user
 
-        except Exception as e:
-            db.session.rollback()
-            flash_safe_error(e, "خطا در ایجاد کاربر.")
+            create_parent_user(
+                login=login,
+                password=password,
+                national_id=form_data["national_id"],
+                first_name=form_data["first_name"],
+                last_name=form_data["last_name"],
+                mobile_phone=form_data["mobile_phone"],
+            )
 
-    return render_template("admin/user_form.html")
+        flash("کاربر با موفقیت ایجاد شد.", "success")
+        return redirect(url_for("admin.user_list"))
+
+    except Exception as e:
+        db.session.rollback()
+        flash_safe_error(e, "خطا در ایجاد کاربر.")
+
+    return _render_user_form(selected_role=role, form_data=form_data)
 
 
 # ---------------------------------------------------------------------------

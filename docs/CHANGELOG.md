@@ -6,6 +6,34 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 
 ## Unreleased
 
+### Fixed
+- Student credential contract made consistent end-to-end: the student
+  creation form no longer asks for a password the backend ignores; a Persian
+  note explains that the initial password is the student's national ID and
+  must be rotated at first login; login page no longer claims the national
+  ID is the username (it is academy-assigned); server-side password policy
+  (min length 6) now matches the client-side `minlength` for ADMIN/TEACHER/
+  PARENT only
+- User creation quick actions in the admin dashboard now preselect the
+  right role (`/?role=STUDENT`, `/?role=TEACHER`); unknown `?role=` values
+  fall back safely to the generic form with a validation message
+- Failed user-creation submissions no longer lose entered values (username,
+  role, names, national ID, mobile, birth date, gender are re-rendered;
+  password is never echoed)
+- User-list filter form no longer overrides the responsive grid with inline
+  styles; new `.user-filter-form` collapses to a single column on mobile
+  (validated 320-1440px, no horizontal overflow)
+- Dashboard class KPI renamed from "کلاس‌های در حال برگزاری" to
+  "کلاس‌های فعال" matching its `ACTIVE`-status definition (label,
+  aria-label, and filtered link unchanged in behavior); course-card subtext
+  now states the totals are of active + planned classes
+- Mobile sidebar accessibility: `aria-controls`/synchronized
+  `aria-expanded` on the toggle, Escape/overlay/link-click closure, focus
+  restoration to the toggle, body-scroll lock only while open, `inert` on
+  the off-canvas drawer so links are unreachable while closed, and
+  breakpoint-crossing cleanup (24 regression tests in
+  `tests/test_admin_user_form.py`)
+
 ### Added
 - Administrator dashboard redesign (production-quality): role-specific
   student/teacher counts, operational class statuses, distinct course counts,
